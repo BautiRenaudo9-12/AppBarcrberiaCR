@@ -1,6 +1,6 @@
 import { MenuItem } from "./MenuItem"
 
-export function HomePage({ openedPage, setOpenedPage }) {
+export function HomePage({ homeStyle }) {
     const MENU_ITEMS_ARRAY =
         false
             ?
@@ -11,13 +11,7 @@ export function HomePage({ openedPage, setOpenedPage }) {
     return (
         <div
             className="page home-page"
-            style={
-                openedPage
-                    ?
-                    { translate: "-20% 0" }
-                    :
-                    { translate: "0 0" }
-            }
+            style={homeStyle}
         >
             <nav>
                 <h1>BARBERIA CLAUDIO RENAUDO</h1>
@@ -28,7 +22,7 @@ export function HomePage({ openedPage, setOpenedPage }) {
                 <ul>
                     {
                         MENU_ITEMS_ARRAY.map(e => {
-                            return <MenuItem key={e.pageName} pageName={e.pageName} name={e.name} srcIcon={e.srcIcon} setOpenedPage={setOpenedPage} />
+                            return <MenuItem key={e.path} pageName={e.path} name={e.name} srcIcon={e.srcIcon} />
                         })
                     }
                 </ul>

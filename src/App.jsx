@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
-
 import './App.css'
-
 import { SignPage } from "./components/SignPage"
 import { ClientPage } from "./components/ClientPage"
-
 import app from "./services/initializeFirebase"
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 

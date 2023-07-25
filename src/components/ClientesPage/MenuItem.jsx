@@ -1,6 +1,9 @@
-export function MenuItem({ pageName, name, srcIcon, setOpenedPage }) {
+import { Link } from "react-router-dom"
 
+export function MenuItem({ pageName, name, srcIcon }) {
     return (
-        <li onClick={() => { setOpenedPage(pageName) }}>{name} {<span>{srcIcon}</span>} </li>
+        <Link to={pageName}>
+            <li>{name}<span>{srcIcon}</span></li>
+        </Link>
     )
 }

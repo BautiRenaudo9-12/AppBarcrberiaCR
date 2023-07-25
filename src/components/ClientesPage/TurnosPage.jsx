@@ -1,8 +1,17 @@
-export function TurnosPage(/*{ openedPage, setOpenedPage }*/) {
+import { useEffect } from "react"
 
-   /* useEffect(() => {
-        setOpenedPage(openedPage)
-    }, [])*/
+export function TurnosPage({setPageName, setAsideStyle, setHomeStyle }) {
+    setPageName("Turnos")
+
+    useEffect(() => {
+        setAsideStyle({ translate: "0 0" })
+        setHomeStyle({ translate: "-20% 0" })
+
+        return (() => {
+            setAsideStyle({ translate: "120% 0" })
+            setHomeStyle({ translate: "0 0" })
+        })
+    }, [])
 
     return (
         <div className="page turnos-page">

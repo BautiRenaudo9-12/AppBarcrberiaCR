@@ -1,57 +1,21 @@
-import { TurnosPage } from "./TurnosPage"
-import { HistorialPage } from "./HistorialPage"
-import { useEffect } from "react"
 import { useState } from "react"
+import { AsidePageRoutes } from "../../routes/asidePageRoutes"
+import { useNavigate } from 'react-router-dom';
 
-export function AsidePage({ openedPage, setOpenedPage }) {
-
-    const renderPageComponent = () => {
-        switch (openedPage) {
-            case "TurnosPage":
-                return <TurnosPage />
-                break;
-            case "HistorialPage":
-                return <HistorialPage />
-                break;
-            case "ProfilePage":
-                return <ProfilePage />
-                break;
-            case "ListaDeTurnosPage":
-                return <ListaDeTurnosPage />
-                break;
-            case "ClientesPage":
-                return <ClientesPage />
-                break;
-            case "ConfiguracionPage":
-                return <ConfiguracionPage />
-                break;
-
-            default:
-                break;
-        }
-    }
+export function AsidePage({ asideStyle, setAsideStyle, setHomeStyle }) {
+    const [pageName, setPageName] = useState(null)
+    const navigate = useNavigate();
 
     return (
-        <div
-            className="page aside-page"
-            style={
-                //asideStyle
-                openedPage
-                    ?
-                    { translate: "0 0" }
-                    :
-                    { translate: "120% 0" }
-            }
-        >
+        <div className="page aside-page" style={asideStyle}>
             <nav>
-                <button onClick={() => { setOpenedPage(null) }}>ATRAS</button>
+                <button onClick={() => { navigate(-1) }}>
+                    <span className="icon">--</span>
+                    <span className="page-name">{pageName}</span>
+                </button>
             </nav>
-            {
-                /*<Routes>
-                    <Route path="/turnos" element={<TurnosPage openedPage={openedPage} setOpenedPage={setOpenedPage} />} />
-                </Routes>*/
-            }
-            {renderPageComponent()}
+
+            <AsidePageRoutes setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
         </div>
     )
 }
