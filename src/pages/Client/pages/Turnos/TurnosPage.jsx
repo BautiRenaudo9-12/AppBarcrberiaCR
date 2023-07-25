@@ -1,7 +1,9 @@
 import { useEffect } from "react"
 
-export function HistorialPage({setPageName, setAsideStyle, setHomeStyle }) {
-    setPageName("Historial")
+export function TurnosPage({ setPageName, setAsideStyle, setHomeStyle }) {
+    useEffect(() => {
+        setPageName("Turnos")
+    }, [])
 
     useEffect(() => {
         setAsideStyle({ translate: "0 0" })
@@ -14,8 +16,8 @@ export function HistorialPage({setPageName, setAsideStyle, setHomeStyle }) {
     }, [])
 
     return (
-        <div className="page historial-page">
-            <h1>HISTORIAL PAGE</h1>
+        <div className="page turnos-page">
+            <h1>TURNOS PAGE</h1>
         </div>
     )
 }

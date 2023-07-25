@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
-import { HomePage } from "./ClientesPage/HomePage"
-import { AsidePage } from "./ClientesPage/AsidePage"
+import { HomePage } from "./HomePage"
+import { AsidePage } from "./AsidePage"
 
 export function ClientPage() {
     const [asideStyle, setAsideStyle] = useState({ translate: "120% 0" })

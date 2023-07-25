@@ -198,7 +198,7 @@ body {
 .aside-page {
   --aside-page-height:45px;
   translate: 100% 0;
-  box-shadow: -10px 0 50px 0 rgb(0, 0, 0, 0.25);
+  box-shadow: -10px 0 50px 0 rgb(0, 0, 0, 0.2);
   padding-top: var(--aside-page-height);
   text-align: center;
 }

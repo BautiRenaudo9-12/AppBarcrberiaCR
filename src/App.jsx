@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { SignPage } from "./components/SignPage"
-import { ClientPage } from "./components/ClientPage"
+import { SignPage } from "./pages/Sign/SignPage"
+import { ClientPage } from "./pages/Client/ClientPage"
 import app from "./services/initializeFirebase"
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { Routes, Route } from "react-router-dom"
 
 function App() {
   const [isSigned, setIsSigned] = useState(true)
@@ -22,9 +23,10 @@ function App() {
 
   return (
     <>
-      {
-        isSigned ? <ClientPage /> : <SignPage />
-      }
+      <Routes>
+        <Route path="*" element={isSigned ? <ClientPage /> : <SignPage />} />
+      </Routes>
+
     </>
   )
 }

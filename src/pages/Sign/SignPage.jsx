@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 
-import { SignInPage } from "../components/SignInPage"
-import { SignUpPage } from "../components/SignUpPage"
+import { SignInPage } from "./SignInPage"
+import { SignUpPage } from "./SignUpPage"
 
 export function SignPage() {
     const [isSignInPageOpen, setIsSignInPageOpen] = useState(true)

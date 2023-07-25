@@ -1,4 +1,4 @@
-import greenArrow from "../../assets/green-arrow.svg"
+import greenArrow from "../../../assets/green-arrow.svg"
 
 export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen }) {
     const handleFooterClick = () => {

@@ -1,4 +1,4 @@
-import { MenuItem } from "./MenuItem"
+import { MenuItem } from "./components/MenuItem"
 
 export function HomePage({ homeStyle }) {
     const MENU_ITEMS_ARRAY =
