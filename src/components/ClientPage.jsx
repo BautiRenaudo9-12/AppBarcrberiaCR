@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react"
-import {HomePage} from "./ClientesPage/HomePage"
-import {AsidePage} from "./ClientesPage/AsidePage"
+import { HomePage } from "./ClientesPage/HomePage"
+import { AsidePage } from "./ClientesPage/AsidePage"
 
 export function ClientPage() {
     const [openedPage, setOpenedPage] = useState(null)
+
+    //const [asideStyle, setAsideStyle] = useState({ translate: "120% 0" })
+    //const [homeStyle, setHomeStyle] = useState({ translate: "0 0" })
 
 
     return (

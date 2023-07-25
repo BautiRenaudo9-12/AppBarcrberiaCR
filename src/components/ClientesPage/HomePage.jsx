@@ -8,8 +8,6 @@ export function HomePage({ openedPage, setOpenedPage }) {
             :
             JSON.parse(import.meta.env.VITE_MENU_ITEMS_ARRAY)
 
-            console.log(MENU_ITEMS_ARRAY)
-
     return (
         <div
             className="page home-page"

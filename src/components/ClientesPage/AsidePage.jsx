@@ -1,5 +1,7 @@
 import { TurnosPage } from "./TurnosPage"
 import { HistorialPage } from "./HistorialPage"
+import { useEffect } from "react"
+import { useState } from "react"
 
 export function AsidePage({ openedPage, setOpenedPage }) {
 
@@ -33,6 +35,7 @@ export function AsidePage({ openedPage, setOpenedPage }) {
         <div
             className="page aside-page"
             style={
+                //asideStyle
                 openedPage
                     ?
                     { translate: "0 0" }
@@ -43,6 +46,11 @@ export function AsidePage({ openedPage, setOpenedPage }) {
             <nav>
                 <button onClick={() => { setOpenedPage(null) }}>ATRAS</button>
             </nav>
+            {
+                /*<Routes>
+                    <Route path="/turnos" element={<TurnosPage openedPage={openedPage} setOpenedPage={setOpenedPage} />} />
+                </Routes>*/
+            }
             {renderPageComponent()}
         </div>
     )
