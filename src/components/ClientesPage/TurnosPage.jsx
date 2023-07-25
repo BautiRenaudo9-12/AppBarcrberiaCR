@@ -1,8 +1,4 @@
-export function TurnosPage(/*{ openedPage, setOpenedPage }*/) {
-
-   /* useEffect(() => {
-        setOpenedPage(openedPage)
-    }, [])*/
+export function TurnosPage() {
 
     return (
         <div className="page turnos-page">
