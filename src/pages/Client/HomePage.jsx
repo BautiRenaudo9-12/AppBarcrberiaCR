@@ -1,12 +1,20 @@
 import { MenuItem } from "./components/MenuItem"
 
-export function HomePage({ homeStyle }) {
+export function HomePage({ isAdmin, homeStyle }) {
     const MENU_ITEMS_ARRAY =
-        false
+        isAdmin
             ?
-            JSON.parse(import.meta.env.VITE_MENU_ITEMS_ARRAY_ADMIN)
+            [
+                { name: "RESERVA TU TURNO", "srcIcon": "IC", "path": "turnos" },
+                { name: "LISTA DE TURNOS", "srcIcon": "IC", "path": "lista-de-turnos" },
+                { name: "CLIENTES", "srcIcon": "IC", "path": "clientes" },
+                { name: "CONFIGURACION", "srcIcon": "IC", "path": "configuracion" }
+            ]
             :
-            JSON.parse(import.meta.env.VITE_MENU_ITEMS_ARRAY)
+            [
+                { name: "RESERVA TU TURNO", "srcIcon": "IC", "path": "turnos" },
+                { name: "HISTORIAL", "srcIcon": "IC", "path": "historial" }
+            ]
 
     return (
         <div

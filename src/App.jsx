@@ -6,8 +6,11 @@ import app from "./services/initializeFirebase"
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { Routes, Route } from "react-router-dom"
 
+
+
 function App() {
   const [isSigned, setIsSigned] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   /*useEffect(() => {
     const auth = getAuth();
@@ -24,7 +27,7 @@ function App() {
   return (
     <>
       <Routes>
-        <Route path="*" element={isSigned ? <ClientPage /> : <SignPage />} />
+        <Route path="*" element={isSigned ? <ClientPage isAdmin={isAdmin}/> : <SignPage />} />
       </Routes>
 
     </>

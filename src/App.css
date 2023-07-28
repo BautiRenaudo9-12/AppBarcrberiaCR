@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600;700&display=swap');
 
 * {
   margin: 0;
@@ -15,13 +15,14 @@ ul {
   list-style: none;
 }
 
-a{
+a {
   text-decoration: none;
 }
 
 button {
   border: none;
   outline: none;
+  cursor: pointer;
 }
 
 input {
@@ -42,6 +43,15 @@ body {
 
 /*----*/
 
+.modal {
+  display: grid;
+  place-content: center;
+  width: 100%;
+  height: 100dvh;
+  backdrop-filter: blur(5px);
+  position: fixed;
+  z-index: 900;
+}
 
 .page {
   display: block;
@@ -52,6 +62,49 @@ body {
   transition: all .3s;
 }
 
+/*MODALS*/
+.confirm-turno-modal .conteiner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: 40px;
+  height: 150px;
+  width: 310px;
+  background-color: #fff;
+  border-radius: 10px;
+}
+
+.confirm-turno-modal .conteiner p {
+  color: var(--green-text);
+  font-weight: 400;
+  text-align: center;
+}
+
+.confirm-turno-modal .conteiner footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.confirm-turno-modal .conteiner footer button {
+  height: 30px;
+  width: 100px;
+  font-size: 12px;
+  border-radius: 3px;
+  background-color: var(--black);
+  font-weight: 400;
+}
+
+.confirm-turno-modal .conteiner footer button.cancelar {
+  background-color: transparent;
+  color: var(--black);
+}
+
+.confirm-turno-modal .conteiner footer button.cancelar:active{
+  background-color: #0000000e;
+}
 
 /*SIGN*/
 
@@ -128,6 +181,8 @@ body {
 }
 
 
+/*CLIENT*/
+
 
 .home-page nav {
   display: flex;
@@ -196,7 +251,7 @@ body {
 
 
 .aside-page {
-  --aside-page-height:45px;
+  --aside-page-height: 45px;
   translate: 100% 0;
   box-shadow: -10px 0 50px 0 rgb(0, 0, 0, 0.2);
   padding-top: var(--aside-page-height);
@@ -213,23 +268,141 @@ body {
   left: 9;
 }
 
-.aside-page nav button{
+.aside-page nav button {
   display: flex;
-  gap: 20px;
-  margin-left: 20px;
+  align-items: center;
+  gap: 12px;
+  margin-left: 2px;
   background-color: transparent;
   cursor: pointer;
   border-radius: 5px;
-  padding:10px;
+  padding: 12px;
 }
 
-.aside-page nav button:active{
+.aside-page nav button:active {
   background: #0000001c;
 }
 
-.aside-page nav button .page-name{
+.aside-page nav button .page-name {
+  font-weight: 300;
+  font-size: 14px;
+}
+
+
+
+.aside-page .pick-up-date {
+  max-width: 400px;
+  width: 80%;
+  position: relative;
+  margin: 50px auto;
+}
+
+.aside-page .pick-up-date input {
+  display: block;
+  position: relative;
+  background-color: #ffffff;
+  font-weight: normal;
+  color: var(--green-text);
+  margin: 0 auto;
+  width: 100%;
+  height: 35px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: transparent;
+}
+
+.aside-page .pick-up-date input::-webkit-calendar-picker-indicator {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: transparent;
+  background: 0 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: all;
+}
+
+.aside-page .pick-up-date .before {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  background: rgb(255, 255, 255);
+  padding-left: 70px;
+  height: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--green-text);
+  border-radius: 10px;
+  pointer-events: none;
   font-weight: 300;
 }
+
+.aside-page .pick-up-date svg {
+  display: block;
+  position: absolute;
+  top: 50%;
+  right: 40px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.aside-page .pick-up-date svg path {
+  fill: var(--green-text);
+}
+
+
+.aside-page .turno {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 70px;
+  border-bottom: 2px solid #fff;
+}
+
+.aside-page .turno .hour {
+  display: grid;
+  place-content: center;
+  width: 40%;
+  text-align: center;
+}
+
+.aside-page .turno .elements-div {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 60%;
+  gap: 8px;
+}
+
+.aside-page .turno .elements-div .reservar-button {
+  width: 150px;
+  height: 30px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.aside-page .turno .elements-div .reservar-button:active {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.aside-page .turno .elements-div .toggle {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgb(255, 0, 0);
+  background-color: rgb(0, 255, 0);
+}
+
+
+.aside-page .turno .elements-div .info:active path {
+  opacity: .5;
+}
+
+
 
 
 
