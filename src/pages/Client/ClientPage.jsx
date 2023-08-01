@@ -5,11 +5,14 @@ import { useConfirmTurnoModal } from "../../hooks/hooks"
 
 const ConfirmTurnoModal = ({ modalConfirmTurnoModal }) => {
 
-
+    console.log(modalConfirmTurnoModal.infoConfirmTurnoModal)
     return (
         <div className="confirm-turno-modal modal">
             <div className="conteiner">
-                <p>{modalConfirmTurnoModal.infoConfirmTurnoModal}</p>
+                <span>
+                    <p>{modalConfirmTurnoModal.infoConfirmTurnoModal.day}</p>
+                    <p>{modalConfirmTurnoModal.infoConfirmTurnoModal.hour}</p>
+                </span>
                 <footer>
                     <button className="cancelar" onClick={modalConfirmTurnoModal.cancelarModal}>CANCELAR</button>
                     <button className="confirmar" onClick={modalConfirmTurnoModal.confirmarModal}>CONFIRMAR</button>
@@ -32,7 +35,7 @@ export function ClientPage() {
             <div className="page client-page">
                 {modalConfirmTurnoModal.confirmTurnoModal.open && <ConfirmTurnoModal modalConfirmTurnoModal={modalConfirmTurnoModal} />}
 
-                <HomePage homeStyle={homeStyle} />
+                <HomePage homeStyle={homeStyle} isAdmin={isAdmin} />
                 <AsidePage modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
             </div>
         </>

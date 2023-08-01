@@ -67,11 +67,18 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding-top: 40px;
+  padding-top: 45px;
   height: 150px;
   width: 310px;
   background-color: #fff;
   border-radius: 10px;
+}
+
+
+.confirm-turno-modal .conteiner span {
+  display: flex;
+  margin: 0 auto;
+  gap: 12px;
 }
 
 .confirm-turno-modal .conteiner p {
@@ -102,8 +109,18 @@ body {
   color: var(--black);
 }
 
-.confirm-turno-modal .conteiner footer button.cancelar:active{
+.confirm-turno-modal .conteiner footer button.cancelar:active {
   background-color: #0000000e;
+}
+
+/*LOADING*/
+.loading {
+  display: block;
+  position: fixed;
+  width: 100%;
+  height: 100dvh;
+  background-color: red;
+  z-index: 999;
 }
 
 /*SIGN*/
@@ -236,7 +253,7 @@ body {
   height: 42px;
   border-radius: 14px;
   background-color: #fff;
-  box-shadow: 0 8px 8px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 5px 5px 0 rgba(0, 0, 0, 0.3);
   font-size: 12px;
   cursor: pointer;
   transition: all .2s;
@@ -248,7 +265,7 @@ body {
 }
 
 
-
+/*ASIDE PAGE GENERAL COMPONENTS*/
 
 .aside-page {
   --aside-page-height: 45px;
@@ -287,8 +304,6 @@ body {
   font-weight: 300;
   font-size: 14px;
 }
-
-
 
 .aside-page .pick-up-date {
   max-width: 400px;
@@ -352,7 +367,6 @@ body {
   fill: var(--green-text);
 }
 
-
 .aside-page .turno {
   display: flex;
   align-items: center;
@@ -365,7 +379,7 @@ body {
 .aside-page .turno .hour {
   display: grid;
   place-content: center;
-  width: 40%;
+  width: 42%;
   text-align: center;
 }
 
@@ -373,7 +387,7 @@ body {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  width: 60%;
+  width: 58%;
   gap: 8px;
 }
 
@@ -392,6 +406,7 @@ body {
   display: block;
   width: 20px;
   height: 20px;
+  aspect-ratio: 1/1;
   border-radius: 50%;
   background-color: rgb(255, 0, 0);
   background-color: rgb(0, 255, 0);
@@ -403,14 +418,36 @@ body {
 }
 
 
+/*HISTORIAL*/
 
-
-
-/*CONTROL DE CAPAS*/
-.sign-in-page {
-  transform: translateX(0%);
+.historial-page * {
+  font-weight: 400;
 }
 
-.sign-up-page {
-  transform: translateX(100%);
+.historial-page .visitas-conteiner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  width: 100%;
+  margin-top: 50px;
+}
+
+.historial-page .historial-turno *{
+  color: var(--green-text);
+  font-size: 14px;
+}
+
+.historial-page .historial-turno {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 70px;
+  width: 100%;
+  border-bottom: 3px solid var(--green-text);
+  background-color: #fff;
+}
+
+.historial-page ul{
+  margin-top: 50px;
 }
