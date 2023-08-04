@@ -1,37 +1,55 @@
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { TurnosPage } from "../pages/Client/pages/Turnos/TurnosPage"
 import { HistorialPage } from "../pages/Client/pages/Historial/HistorialPage"
+import { PerfilPage } from "../pages/Client/pages/Perfil/PerfilPage"
 import { ListaDeTurnosPage } from "../pages/Client/pages/ListaDeTurnos/ListaDeTurnosPage"
 import { ClientesPage } from "../pages/Client/pages/Clientes/ClientesPage"
 import { ConfiguracionPage } from "../pages/Client/pages/Configuracion/ConfiguracionPage"
 
-const ProtectedAdminRouted = ({ children, isAdmin }) => {
+const ProtectedAdminRoute = ({ children, isAdmin }) => {
     if (!isAdmin)
         return <Navigate to="/" />
     else
         return children
 }
 
-export function AsidePageRoutes({ modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
+const ProtectedReservedRoute = ({ children, reservaDate }) => {
+    console.log(reservaDate)
+    if (reservaDate)
+        return <Navigate to="/" />
+    else
+        return children
+}
+
+export function AsidePageRoutes({ setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
     return (
         <Routes>
-            <Route path="/turnos" element={<TurnosPage isAdmin={isAdmin} modalConfirmTurnoModal={modalConfirmTurnoModal} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />} />
-            <Route path="/historial" element={<HistorialPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />} />
+            <Route path="/turnos" element={
+                <ProtectedReservedRoute reservaDate={reservaDate}>
+                    <TurnosPage setReservaDate={setReservaDate} isAdmin={isAdmin} modalConfirmTurnoModal={modalConfirmTurnoModal} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                </ProtectedReservedRoute>
+            } />
+            <Route path="/historial" element={
+                <ProtectedReservedRoute reservaDate={reservaDate}>
+                    <HistorialPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                </ProtectedReservedRoute>
+            } />
+            <Route path="/perfil" element={<PerfilPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />} />
 
             <Route path="/lista-de-turnos" element={
-                <ProtectedAdminRouted isAdmin={isAdmin}>
+                <ProtectedAdminRoute isAdmin={isAdmin}>
                     <ListaDeTurnosPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
-                </ProtectedAdminRouted>
+                </ProtectedAdminRoute>
             } />
             <Route path="/clientes" element={
-                <ProtectedAdminRouted isAdmin={isAdmin}>
+                <ProtectedAdminRoute isAdmin={isAdmin}>
                     <ClientesPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
-                </ProtectedAdminRouted>
+                </ProtectedAdminRoute>
             } />
             <Route path="/configuracion" element={
-                <ProtectedAdminRouted isAdmin={isAdmin}>
+                <ProtectedAdminRoute isAdmin={isAdmin}>
                     <ConfiguracionPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
-                </ProtectedAdminRouted>
+                </ProtectedAdminRoute>
             } />
         </Routes>
     )

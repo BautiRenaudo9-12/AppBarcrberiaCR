@@ -3,13 +3,17 @@ import moment from "moment/moment"
 
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
-export const Turno = ({ isAdmin, time, modalConfirmTurnoModal, pickUpDate }) => {
+export const Turno = ({ setReservaDate, isAdmin, time, modalConfirmTurnoModal, pickUpDate }) => {
 
     useEffect(() => {
         if (modalConfirmTurnoModal.confirmTurnoModal.confirm == true) {
-
+            //reservar turno
+            const date = moment(pickUpDate.split("/").reverse().join("-"))
+            const hour = moment(time).format("HH")
+            const minute = moment(time).format("mm")
+            const dateTransformed = moment(date).hours(hour).minutes(minute).format()
+            setReservaDate(dateTransformed)
         }
-        //reservar turno
     }, [modalConfirmTurnoModal.confirmTurnoModal])
 
     return (

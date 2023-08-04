@@ -7,8 +7,7 @@ import { db } from "../../../../services/initializeFirebase"
 import { collection, onSnapshot } from "firebase/firestore";
 
 
-
-export function TurnosPage({ isAdmin, modalConfirmTurnoModal, setPageName, setAsideStyle, setHomeStyle }) {
+export function TurnosPage({ setReservaDate, isAdmin, modalConfirmTurnoModal, setPageName, setAsideStyle, setHomeStyle }) {
     const [pickUpDate, setPickUpDate] = useState(moment().format("DD/MM/YYYY"))
     const [turnosList, setTurnosList] = useState([])
 
@@ -51,7 +50,7 @@ export function TurnosPage({ isAdmin, modalConfirmTurnoModal, setPageName, setAs
             <PickUpDate pickUpDate={pickUpDate} setPickUpDate={setPickUpDate} />
             <ul>
                 {
-                    turnosList.map((doc) => <Turno key={doc.id} isAdmin={isAdmin} time={moment(doc.data().hora.toDate()).format()} modalConfirmTurnoModal={modalConfirmTurnoModal} pickUpDate={pickUpDate} />)
+                    turnosList.map((doc) => <Turno setReservaDate={setReservaDate} key={doc.id} isAdmin={isAdmin} time={moment(doc.data().hora.toDate()).format()} modalConfirmTurnoModal={modalConfirmTurnoModal} pickUpDate={pickUpDate} />)
                 }
             </ul>
         </div>

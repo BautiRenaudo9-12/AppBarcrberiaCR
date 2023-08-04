@@ -1,4 +1,6 @@
 import { useEffect } from "react"
+import { auth } from "../../../../services/initializeFirebase"
+import { signOut } from "firebase/auth";
 
 export function PerfilPage({ setPageName, setAsideStyle, setHomeStyle }) {
     useEffect(() => {
@@ -19,6 +21,9 @@ export function PerfilPage({ setPageName, setAsideStyle, setHomeStyle }) {
     return (
         <div className="page perfil-page">
             <h2>Perfil</h2>
+            <button onClick={() => {
+                signOut(auth)
+            }}>CERRAR SESION</button>
         </div>
     )
 }

@@ -226,31 +226,31 @@ body {
   cursor: pointer;
 }
 
-.home-page .menu-conteiner {
+.home-page .menu-items {
   position: absolute;
   left: 50%;
   top: 45%;
   translate: -50% 0;
 }
 
-.home-page .menu-conteiner ul {
+.home-page .menu-items ul {
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 20px;
 }
 
-.home-page .menu-conteiner ul * {
+.home-page .menu-items ul * {
   color: var(--green-text);
 }
 
-.home-page .menu-conteiner ul li {
+.home-page .menu-items ul li {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding-left: 22px;
   padding-right: 25px;
-  width: 240px;
-  height: 42px;
+  width: 235px;
+  height: 45px;
   border-radius: 14px;
   background-color: #fff;
   box-shadow: 0 5px 5px 0 rgba(0, 0, 0, 0.3);
@@ -259,9 +259,52 @@ body {
   transition: all .2s;
 }
 
-.home-page .menu-conteiner ul li:active {
+.home-page .menu-items ul li:active {
   scale: .99;
   box-shadow: 0 8px 8px 0 rgba(0, 0, 0, 0.15);
+}
+
+.home-page .menu-reserva {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60dvh;
+}
+
+.home-page .menu-reserva .info-conteiner * {
+  font-size: 25px;
+  font-weight: 400;
+}
+
+.home-page .menu-reserva .info-conteiner {
+  display: block;
+  max-width: 250px;
+  width: 90%;
+}
+
+.home-page .menu-reserva .info-conteiner .hour {
+  margin-bottom: 15px;
+}
+
+.home-page .menu-reserva .info-conteiner img {
+  width: 50px;
+  translate: -10px 0;
+}
+
+.home-page .menu-reserva button {
+  display: block;
+  max-width: 250px;
+  width: 90%;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--green-text);
 }
 
 
@@ -433,7 +476,7 @@ body {
   margin-top: 50px;
 }
 
-.historial-page .historial-turno *{
+.historial-page .historial-turno * {
   color: var(--green-text);
   font-size: 14px;
 }
@@ -448,6 +491,6 @@ body {
   background-color: #fff;
 }
 
-.historial-page ul{
+.historial-page ul {
   margin-top: 50px;
 }

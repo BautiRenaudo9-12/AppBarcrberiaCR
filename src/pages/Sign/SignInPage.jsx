@@ -1,8 +1,19 @@
+import { useEffect, useState } from "react"
 import greenArrow from "../../../assets/green-arrow.svg"
+import { signIn } from "../../services/initializeFirebase"
 
 export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen }) {
+    const [emailValue, setEmailValue] = useState("")
+    const [passValue, setPassValue] = useState("")
+
     const handleFooterClick = () => {
         setIsSignInPageOpen(!isSignInPageOpen)
+    }
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault()
+        const user = await signIn(emailValue, passValue)
+        e.target.reset()
     }
 
     return (
@@ -12,14 +23,14 @@ export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen }) {
                 isSignInPageOpen ? { transform: "translateX(0%)" } : { transform: "translateX(-100%)" }
             }
         >
-            <form action="">
+            <form action="" onSubmit={handleFormSubmit}>
                 <h2>INICIAR SESION</h2>
                 <div className="inputs-div">
-                    <input type="email" placeholder="Email:" />
-                    <input type="password" placeholder="Contraseña:" />
+                    <input type="email" placeholder="Email:" onChange={(e) => { setEmailValue(e.target.value) }} />
+                    <input type="password" placeholder="Contraseña:" onChange={(e) => { setPassValue(e.target.value) }} />
                 </div>
                 <button type="submit">
-                    <img style={{width:30}} src={greenArrow} alt="Flecha verde para boton de formulario" />
+                    <img style={{ width: 30 }} src={greenArrow} alt="Flecha verde para boton de formulario" />
                 </button>
             </form>
             <div className="footer" onClick={handleFooterClick}>

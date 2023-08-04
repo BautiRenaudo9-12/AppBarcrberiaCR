@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 
 
 
-export function AsidePage({modalConfirmTurnoModal, isAdmin, asideStyle, setAsideStyle, setHomeStyle }) {
+export function AsidePage({ setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, asideStyle, setAsideStyle, setHomeStyle }) {
     const [pageName, setPageName] = useState(null)
     const navigate = useNavigate();
 
     return (
         <div className="page aside-page" style={asideStyle}>
-           
+
             <nav>
                 <button onClick={() => { navigate(-1) }}>
                     <svg className="icon" width="30" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,7 +20,7 @@ export function AsidePage({modalConfirmTurnoModal, isAdmin, asideStyle, setAside
                 </button>
             </nav>
 
-            <AsidePageRoutes modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+            <AsidePageRoutes setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
         </div>
     )
 }
