@@ -7,7 +7,7 @@ export const MenuReserva = ({ reservaDate }) => {
 
     const dayName = arrayDias[moment(reservaDate).format("d")]
     const date = moment(reservaDate).format("DD/MM")
-    const hour = moment(reservaDate).format("hh:mm")
+    const hour = moment(reservaDate).format("HH:mm")
 
     return (
         <div className="menu-reserva">

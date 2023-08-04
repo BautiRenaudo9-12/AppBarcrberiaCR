@@ -1,6 +1,10 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  collection, orderBy, where, doc, getDoc, getDocs, query, Timestamp
+} from "firebase/firestore";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyCEvPU8AVRTP436__VucfKIh2sKeff8ewY",
@@ -25,7 +29,7 @@ const signIn = async (email, password) => {
   }
 }
 
-const _updateProfile = async ({ nameValue}) => {
+const _updateProfile = async ({ nameValue }) => {
   updateProfile(auth.currentUser, {
     displayName: nameValue,
   })
@@ -43,4 +47,17 @@ const signUp = async (email, password) => {
 
 //signOut(auth)
 
-export { app, db, auth, signIn, signUp, _updateProfile }
+const getReserve = async (isReserveAfterNow) => {
+  const q = query(collection(db, "clientes", /*auth.currentUser.email*/ "baurenaudo@gmail.com", "reserves"), orderBy("time"))
+  const querySnapshot = await getDocs(q)
+  if (querySnapshot.size) {
+    const docTime = querySnapshot.docs[querySnapshot.size - 1].data().time.toDate()
+    if (isReserveAfterNow(docTime)) {
+      return docTime
+    } else {
+      return null
+    }
+  }
+}
+
+export { app, db, auth, signIn, signUp, _updateProfile, getReserve }
