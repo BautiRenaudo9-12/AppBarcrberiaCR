@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import greenArrow from "../../../assets/green-arrow.svg"
 import { signIn } from "../../services/initializeFirebase"
 
-export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen }) {
+export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoading }) {
     const [emailValue, setEmailValue] = useState("")
     const [passValue, setPassValue] = useState("")
 
@@ -12,7 +12,9 @@ export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen }) {
 
     const handleFormSubmit = async (e) => {
         e.preventDefault()
+        setOpenLoading(true)
         const user = await signIn(emailValue, passValue)
+        setOpenLoading(false)
         e.target.reset()
     }
 
@@ -26,8 +28,8 @@ export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen }) {
             <form action="" onSubmit={handleFormSubmit}>
                 <h2>INICIAR SESION</h2>
                 <div className="inputs-div">
-                    <input type="email" placeholder="Email:" onChange={(e) => { setEmailValue(e.target.value) }} />
-                    <input type="password" placeholder="Contraseña:" onChange={(e) => { setPassValue(e.target.value) }} />
+                    <input type="email" placeholder="Email:" onChange={(e) => { setEmailValue(e.target.value) }} required />
+                    <input type="password" placeholder="Contraseña:" onChange={(e) => { setPassValue(e.target.value) }} required />
                 </div>
                 <button type="submit">
                     <img style={{ width: 30 }} src={greenArrow} alt="Flecha verde para boton de formulario" />

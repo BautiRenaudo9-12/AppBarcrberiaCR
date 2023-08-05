@@ -6,25 +6,27 @@ import { ConfirmTurnoModal } from "./modals/ConfirmTurnoModal"
 import moment from "moment"
 import { getReserve } from "../../services/initializeFirebase"
 
-export function ClientPage({ isAdmin }) {
+
+export function ClientPage({ isAdmin, setOpenLoading }) {
     const [asideStyle, setAsideStyle] = useState({ translate: "120% 0" })
     const [homeStyle, setHomeStyle] = useState({ translate: "0 0" })
     const [reservaDate, setReservaDate] = useState(null)
     const modalConfirmTurnoModal = useConfirmTurnoModal();
+    // const
 
     useEffect(() => {
         let reserve = localStorage.getItem("RESERVE")
         if (reserve)
-            setReservaDate(isReserveAfterNow(reserve) ? reserve : null)
+            setReservaDate(isDateAfterNowBy30Min(reserve) ? reserve : null)
         else
-            getReserve(isReserveAfterNow).then(result => setReservaDate(result))
+            getReserve(isDateAfterNowBy30Min).then(result => setReservaDate(result))
 
     }, []);
 
-    function isReserveAfterNow(reservaDate) {
+    function isDateAfterNowBy30Min(date) {
         const now = moment().utcOffset("-03:00")
-        const reserve = moment(reservaDate)
-        const minutesDifference = now.diff(reserve, "m")
+        const _date = moment(date)
+        const minutesDifference = now.diff(_date, "m")
 
         return minutesDifference <= 30
     }
@@ -35,7 +37,7 @@ export function ClientPage({ isAdmin }) {
                 {modalConfirmTurnoModal.confirmTurnoModal.open && <ConfirmTurnoModal modalConfirmTurnoModal={modalConfirmTurnoModal} />}
 
                 <HomePage homeStyle={homeStyle} isAdmin={isAdmin} setReservaDate={setReservaDate} reservaDate={reservaDate} />
-                <AsidePage setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                <AsidePage setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
             </div>
         </>
     )

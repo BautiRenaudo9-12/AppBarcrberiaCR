@@ -14,19 +14,18 @@ const ProtectedAdminRoute = ({ children, isAdmin }) => {
 }
 
 const ProtectedReservedRoute = ({ children, reservaDate }) => {
-    console.log(reservaDate)
     if (reservaDate)
         return <Navigate to="/" />
     else
         return children
 }
 
-export function AsidePageRoutes({ setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
+export function AsidePageRoutes({setOpenLoading, setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
     return (
         <Routes>
             <Route path="/turnos" element={
                 <ProtectedReservedRoute reservaDate={reservaDate}>
-                    <TurnosPage setReservaDate={setReservaDate} isAdmin={isAdmin} modalConfirmTurnoModal={modalConfirmTurnoModal} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                    <TurnosPage setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} isAdmin={isAdmin} modalConfirmTurnoModal={modalConfirmTurnoModal} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
                 </ProtectedReservedRoute>
             } />
             <Route path="/historial" element={

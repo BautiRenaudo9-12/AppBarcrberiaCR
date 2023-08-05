@@ -1,20 +1,35 @@
 import { useEffect } from "react"
 import moment from "moment/moment"
-
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
-export const Turno = ({ setReservaDate, isAdmin, time, modalConfirmTurnoModal, pickUpDate }) => {
+
+export const Turno = ({ setOpenLoading, reserveId, setReservaDate, isAdmin, time, modalConfirmTurnoModal, pickUpDate }) => {
 
     useEffect(() => {
         if (modalConfirmTurnoModal.confirmTurnoModal.confirm == true) {
             //reservar turno
-            const date = moment(pickUpDate.split("/").reverse().join("-"))
-            const hour = moment(time).format("HH")
-            const minute = moment(time).format("mm")
-            const dateTransformed = moment(date).hours(hour).minutes(minute).format()
-            setReservaDate(dateTransformed)
+            setOpenLoading(true)
+            const props = {
+                arrayDias,
+                pickUpDate,
+                time,
+                reserveId,
+                setOpenLoading
+            }
+            modalConfirmTurnoModal.setReservePickedId(props).then(()=>{
+                setOpenLoading(false)
+                setReservePicked()
+            })
         }
     }, [modalConfirmTurnoModal.confirmTurnoModal])
+
+    const setReservePicked = () => {
+        const date = moment(pickUpDate.split("/").reverse().join("-"))
+        const hour = moment(time).format("HH")
+        const minute = moment(time).format("mm")
+        const dateTransformed = moment(date).hours(hour).minutes(minute).format()
+        setReservaDate(dateTransformed)
+    }
 
     return (
         <li className="turno">
@@ -23,12 +38,10 @@ export const Turno = ({ setReservaDate, isAdmin, time, modalConfirmTurnoModal, p
                 <button className="reservar-button" onClick={() => {
                     const date = moment(pickUpDate.split("/").reverse().join("-"))
                     modalConfirmTurnoModal.openModal()
-                    modalConfirmTurnoModal.setInfo(
-                        {
-                            day: arrayDias[date.day()] + " " + date.format("DD/MM"),
-                            hour: moment(time).format("HH:mm")
-                        }
-                    )
+                    modalConfirmTurnoModal.setInfo({
+                        day: arrayDias[date.day()] + " " + date.format("DD/MM"),
+                        hour: moment(time).format("HH:mm")
+                    })
                 }}>RESERVAR</button>
                 {
                     isAdmin &&

@@ -1,14 +1,17 @@
 import moment from "moment/moment"
 
 export const PickUpDate = ({ pickUpDate, setPickUpDate }) => {
-
     return (
         <div className="pick-up-date">
             <span>
                 <input onChange={(e) => {
                     const date = moment(e.target.value)
                     setPickUpDate(date.format("DD/MM/YYYY"))
-                }} type="date" name="" id="" icon="" />
+                }}
+                    type="date"
+                    min={moment().utcOffset("-03:00").format("YYYY-MM-DD")}
+                    max={moment().utcOffset("-03:00").add(6, 'd').format("YYYY-MM-DD")}
+                />
                 <div className="before">
                     {pickUpDate}
                 </div>

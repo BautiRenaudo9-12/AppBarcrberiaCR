@@ -36,6 +36,7 @@ input {
 }
 
 body {
+  /*overscroll-behavior: contain;*/
   background-color: var(--black);
 }
 
@@ -119,8 +120,42 @@ body {
   position: fixed;
   width: 100%;
   height: 100dvh;
-  background-color: red;
-  z-index: 999;
+  z-index: 950;
+}
+
+.loading-conteiner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: absolute;
+  width: 100%;
+  top: 40%;
+  height: 60dvh;
+  background: linear-gradient(to top, #000000, rgba(0, 0, 0, 0));
+  padding-bottom: 50px;
+}
+
+.loading-conteiner .circle {
+  display: block;
+  width: 40px;
+  aspect-ratio: 1/1;
+  border: 2px solid transparent;
+  border-bottom: 2px solid #fff;
+  border-top: 2px solid #fff;
+  background: transparent;
+  border-radius: 50%;
+
+  animation: loading-animation .6s ease-in-out infinite;
+}
+
+@keyframes loading-animation {
+  form {
+    rotate: 0;
+  }
+
+  to {
+    rotate: 360deg;
+  }
 }
 
 /*SIGN*/

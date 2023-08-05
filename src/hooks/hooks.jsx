@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { putReserve } from "../services/initializeFirebase"
 
 export const useConfirmTurnoModal = () => {
     const [confirmTurnoModal, setConfirmTurnoModal] = useState({ open: false, confirm: false })
@@ -11,6 +12,10 @@ export const useConfirmTurnoModal = () => {
 
     const setInfo = (info) => setInfoConfirmTurnoModal(info)
 
+    const setReservePickedId = async ({ arrayDias, pickUpDate, time, reserveId }) => {
+        await putReserve({ arrayDias, pickUpDate, time, reserveId })
+    }
+
     return {
         confirmTurnoModal,
         openModal,
@@ -18,6 +23,7 @@ export const useConfirmTurnoModal = () => {
         confirmarModal,
         cancelarModal,
         infoConfirmTurnoModal,
-        setInfo
+        setInfo,
+        setReservePickedId
     }
 }

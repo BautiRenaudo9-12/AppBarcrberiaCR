@@ -3,7 +3,7 @@ import greenArrow from "../../../assets/green-arrow.svg"
 import { signUp, db, _updateProfile } from "../../services/initializeFirebase"
 import { doc, setDoc } from "firebase/firestore";
 
-export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen }) {
+export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoading }) {
     const [emailValue, setEmailValue] = useState("")
     const [passValue, setPassValue] = useState("")
     const [nameValue, setNameValue] = useState("")
@@ -15,6 +15,7 @@ export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen }) {
 
     const handleFormSubmit = async (e) => {
         e.preventDefault()
+        setOpenLoading(true)
         const user = await signUp(emailValue, passValue)
         await _updateProfile({ nameValue })
         user
@@ -27,6 +28,7 @@ export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen }) {
                     nro: nroValue
                 }
             )
+        setOpenLoading(false)
 
         e.target.reset()
     }
@@ -41,10 +43,10 @@ export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen }) {
             <form action="" onSubmit={handleFormSubmit}>
                 <h2>CREAR CUENTA</h2>
                 <div className="inputs-div">
-                    <input type="email" placeholder="Email:" onChange={(e) => { setEmailValue(e.target.value) }} />
-                    <input type="text" placeholder="Nombre y apellido:" onChange={(e) => { setNameValue(e.target.value) }} />
-                    <input type="number" placeholder="Nro. de tel.:" onChange={(e) => { setNroValue(e.target.value) }} />
-                    <input type="password" placeholder="Contraseña:" onChange={(e) => { setPassValue(e.target.value) }} />
+                    <input type="email" placeholder="Email:" onChange={(e) => { setEmailValue(e.target.value) }} required />
+                    <input type="text" placeholder="Nombre y apellido:" onChange={(e) => { setNameValue(e.target.value) }} required />
+                    <input type="number" placeholder="Nro. de tel.:" onChange={(e) => { setNroValue(e.target.value) }} required />
+                    <input type="password" placeholder="Contraseña:" onChange={(e) => { setPassValue(e.target.value) }} required />
                 </div>
                 <button type="submit">
                     <img style={{ width: 30 }} src={greenArrow} alt="Flecha verde para boton de formulario" />
