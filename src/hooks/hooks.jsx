@@ -12,8 +12,8 @@ export const useConfirmTurnoModal = () => {
 
     const setInfo = (info) => setInfoConfirmTurnoModal(info)
 
-    const setReservePickedId = async ({ arrayDias, pickUpDate, time, reserveId }) => {
-        await putReserve({ arrayDias, pickUpDate, time, reserveId })
+    const setReservePickedId = async (props) => {
+        await putReserve(props)
     }
 
     return {

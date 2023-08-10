@@ -23,6 +23,7 @@ export function HomePage({ isAdmin, homeStyle, reservaDate, setReservaDate }) {
                 { name: "HISTORIAL", icon: <p>IC</p>, path: "historial" }
             ]
 
+
     return (
         <div
             className="page home-page"

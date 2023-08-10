@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import greenArrow from "../../../assets/green-arrow.svg"
-import { signUp, db, _updateProfile } from "../../services/initializeFirebase"
+import { signUp, db, _setUserProperties } from "../../services/initializeFirebase"
 import { doc, setDoc } from "firebase/firestore";
 
 export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoading }) {
@@ -17,10 +17,9 @@ export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoadi
         e.preventDefault()
         setOpenLoading(true)
         const user = await signUp(emailValue, passValue)
-        await _updateProfile({ nameValue })
+        await _setUserProperties({ nameValue, nroValue })
         user
-            &&
-            await setDoc(
+            && await setDoc(
                 doc(db, "clientes", emailValue),
                 {
                     email: emailValue,

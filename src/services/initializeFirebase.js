@@ -1,10 +1,12 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, getAdditionalUserInfo } from "firebase/auth";
 import {
   getFirestore, Timestamp,
-  collection, orderBy, where, doc, getDoc, getDocs, query, onSnapshot, updateDoc
+  collection, orderBy, where, doc, getDoc, getDocs, query, onSnapshot, updateDoc, setDoc, addDoc
 } from "firebase/firestore";
 import moment from "moment";
+
+const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
 
 const firebaseConfig = {
@@ -30,11 +32,13 @@ const signIn = async (email, password) => {
   }
 }
 
-const _updateProfile = async ({ nameValue }) => {
+const _setUserProperties = async ({ nameValue, nroValue }) => {
+  console.log(nameValue, nroValue)
   updateProfile(auth.currentUser, {
     displayName: nameValue,
   })
 }
+
 
 const signUp = async (email, password) => {
   try {
@@ -61,9 +65,10 @@ const getReserve = async (isDateAfterNowBy30Min) => {
   }
 }
 
-const getTurnos = async (setTurnosList, setOpenLoading) => {
+const getTurnos = async (setTurnosList, setOpenLoading, pickUpDate) => {
+  const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d")]
   setOpenLoading(true)
-  const unsub = onSnapshot(collection(db, "turnos", "lunes", "turnos"), query => {
+  const unsub = onSnapshot(collection(db, "turnos",/*dayNamePicked*/ "lunes", "turnos"), query => {
     setTurnosList(query.docs)
     setOpenLoading(false)
   })
@@ -71,14 +76,46 @@ const getTurnos = async (setTurnosList, setOpenLoading) => {
   return unsub
 }
 
-const putReserve = async ({ arrayDias, pickUpDate, time, reserveId }) => {
+const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) => {
   const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d")]
   const hour = moment(time).format("HH")
   const minute = moment(time).format("mm")
-  await updateDoc(doc(db, "turnos", /*dayNamePicked*/ "lunes", "turnos", reserveId), {
+  const reserveObj =
+    isAdmin
+      ? {
+        reserve: {
+          email: /*infoModal.email*/ "baurenaudo@gmail.com",
+          name: /*infoModal.name*/"Bauti",
+          time: Timestamp.fromDate(new Date(
+            moment(pickUpDate.split("/").toReversed().join("-"))
+              .hours(hour)
+              .minutes(minute)
+              .format()
+          ))
+        }
+      }
+      : {
+        reserve: {
+          email: auth.currentUser.email,
+          name: auth.currentUser.displayName,
+          time: Timestamp.fromDate(new Date(
+            moment(pickUpDate.split("/").toReversed().join("-"))
+              .hours(hour)
+              .minutes(minute)
+              .format()
+          ))
+        }
+      }
+  await updateDoc(doc(db, "turnos", /*dayNamePicked*/ "lunes", "turnos", reserveId), reserveObj)
+
+  const recipientEmail =
+    isAdmin
+      ? //infoModal.email
+      "baurenaudo@gmail.com"
+      : auth.currentUser.email
+
+  await updateDoc(doc(db, "clientes", recipientEmail), {
     reserve: {
-      email: auth.currentUser.email,
-      name: auth.currentUser.displayName,
       time: Timestamp.fromDate(new Date(
         moment(pickUpDate.split("/").toReversed().join("-"))
           .hours(hour)
@@ -87,6 +124,24 @@ const putReserve = async ({ arrayDias, pickUpDate, time, reserveId }) => {
       ))
     }
   })
+
+  console.log("ok")
 }
 
-export { app, db, auth, signIn, signUp, _updateProfile, getReserve, getTurnos, putReserve }
+
+
+/*prueba*/
+const prueba = () => {
+
+  getDocs(collection(db, "turnos",/*dayNamePicked*/ "lunes", "turnos"))
+    .then(query => {
+      const obj = query.docs[0].data()
+      addDoc(collection(db, "turnos", "lunes", "turnos"), obj)
+    })
+
+}
+
+//prueba()
+
+
+export { app, db, auth, signIn, signUp, _setUserProperties, getReserve, getTurnos, putReserve }

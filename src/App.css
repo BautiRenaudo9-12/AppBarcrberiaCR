@@ -36,7 +36,7 @@ input {
 }
 
 body {
-  /*overscroll-behavior: contain;*/
+  overscroll-behavior: contain;
   background-color: var(--black);
 }
 
@@ -486,8 +486,8 @@ body {
   height: 20px;
   aspect-ratio: 1/1;
   border-radius: 50%;
-  background-color: rgb(255, 0, 0);
-  background-color: rgb(0, 255, 0);
+  background-color: #ff0000;
+  background-color: #00ff00;
 }
 
 

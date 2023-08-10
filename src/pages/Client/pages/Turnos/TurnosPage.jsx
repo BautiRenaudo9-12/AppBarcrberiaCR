@@ -5,6 +5,8 @@ import { useState } from "react"
 import moment from "moment/moment"
 import { getTurnos } from "../../../../services/initializeFirebase"
 
+const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
+
 
 export function TurnosPage({ setOpenLoading, setReservaDate, isAdmin, modalConfirmTurnoModal, setPageName, setAsideStyle, setHomeStyle }) {
     const [pickUpDate, setPickUpDate] = useState(moment().format("DD/MM/YYYY"))
@@ -25,27 +27,121 @@ export function TurnosPage({ setOpenLoading, setReservaDate, isAdmin, modalConfi
     }, [])
 
     useEffect(() => {
-        const unsub = getTurnos(setTurnosList, setOpenLoading)
-
+        const unsub = getTurnos(setTurnosList, setOpenLoading, pickUpDate)
         return () => {
             unsub.then(unsub => unsub())
         }
     }, [])
 
-    function isDateAfterNowBy(date) {
+    useEffect(() => {
+        if (modalConfirmTurnoModal.confirmTurnoModal.confirm == true) {
+            //reservar turno
+            console.log("cancel onsnapshot")
+            setOpenLoading(true)
+            const props = {
+                isAdmin,
+                arrayDias,
+                pickUpDate,
+                time: modalConfirmTurnoModal.infoConfirmTurnoModal.hour,
+                reserveId: modalConfirmTurnoModal.infoConfirmTurnoModal.reserveId,
+            }
+            modalConfirmTurnoModal.setReservePickedId(props).then(() => {
+                !isAdmin && setReservePicked(modalConfirmTurnoModal.infoConfirmTurnoModal.hour)
+                console.log("shet")
+                setOpenLoading(false)
+            })
+        }
+    }, [modalConfirmTurnoModal.confirmTurnoModal])
+
+    const setReservePicked = (time) => {
+        const date = moment(pickUpDate.split("/").reverse().join("-"))
+        const hour = moment(time).format("HH")
+        const minute = moment(time).format("mm")
+        const dateTransformed = moment(date).hours(hour).minutes(minute).format()
+        setReservaDate(dateTransformed)
+    }
+
+    const stateTurnoAdmin = (doc) => {
+        let _state = {
+            reserved: {
+                state: null,
+                name: "",
+                email: "",
+            },
+            state: null
+        }
         const now = moment().utcOffset("-03:00")
-        const _date = moment(date)
-        const minutesDifference = now.diff(_date, "m")
 
-        return minutesDifference <= 0
+        //reservado
+        const reservadoFecha = moment(doc.data().reserve.time.toDate())
+        if (reservadoFecha.isSame(now, "d")) {
+            _state.reserved.state = true
+            _state.reserved.name = doc.data().reserve.name
+            _state.reserved.email = doc.data().reserve.email
+        } else {
+            _state.reserved.state = false
+        }
+
+        //activado - desactivado
+        const activadoArray = doc.data().state.active
+        if (activadoArray[0] != "siempre") {
+            _state.state = "desactive";
+            for (let i = 0; i < activadoArray.length; i++) {
+                const date = moment(activadoArray[i].toDate())
+                if (date.isSame(now, "d")) {
+                    _state.state = "active";
+                    i = activadoArray.length
+                }
+            }
+        }
+        else {
+            const desactivadoArray = doc.data().state.desactive;
+            _state.state = "active";
+            for (let i = 0; i < desactivadoArray.length; i++) {
+                const date = moment(desactivadoArray[i].toDate())
+                if (date.isSame(now, "d")) {
+                    _state.state = "desactive";
+                    i = desactivadoArray.length
+                }
+            }
+        }
+
+        return _state;
     }
 
-    const conditionShowTurnoAdmin = (time) => {
+    const showTurno = (doc) => {
+        let show;
+        const now = moment().utcOffset("-03:00")
 
-    }
-
-    const conditionShowTurno = (time) => {
-        return isDateAfterNowBy(time)
+        //reservado
+        const reservadoFecha = moment(doc.data().reserve.time.toDate())
+        if (reservadoFecha.isSame(now, "d")) return false
+        else {
+            //activado - desactivado
+            const activadoArray = doc.data().state.active
+            if (activadoArray[0] != "siempre") {
+                show = false;
+                for (let i = 0; i < activadoArray.length; i++) {
+                    const date = moment(activadoArray[i].toDate())
+                    if (date.isSame(now, "d")) {
+                        show = true;
+                        i = activadoArray.length
+                    }
+                }
+            }
+            else {
+                const desactivadoArray = doc.data().state.desactive;
+                show = true;
+                for (let i = 0; i < desactivadoArray.length; i++) {
+                    const date = moment(desactivadoArray[i].toDate())
+                    if (date.isSame(now, "d")) {
+                        show = false;
+                        i = desactivadoArray.length
+                    }
+                }
+            }
+        }
+        return show;
     }
 
     return (
@@ -57,14 +153,14 @@ export function TurnosPage({ setOpenLoading, setReservaDate, isAdmin, modalConfi
                 }
                 {
                     turnosList.map((doc) => {
-                        const hour = moment(doc.data().hora.toDate()).format("HH")
-                        const minute = moment(doc.data().hora.toDate()).format("mm")
-                        const time = moment(pickUpDate.split("/").toReversed().join("-"))
-                            .hours(hour)
-                            .minutes(minute)
-                            .format()
-                        const state = isAdmin ? conditionShowTurnoAdmin(time) : conditionShowTurno(time)
-                        return state && <Turno setOpenLoading={setOpenLoading}setReservaDate={setReservaDate} key={doc.id} reserveId={doc.id} isAdmin={isAdmin} time={moment(doc.data().hora.toDate()).format()} modalConfirmTurnoModal={modalConfirmTurnoModal} pickUpDate={pickUpDate} />
+                        if (isAdmin) {
+                            const state = stateTurnoAdmin(doc)
+                            return <Turno state={state} setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} key={doc.id} reserveId={doc.id} isAdmin={isAdmin} time={moment(doc.data().hora.toDate()).format()} modalConfirmTurnoModal={modalConfirmTurnoModal} pickUpDate={pickUpDate} />
+                        } else if (showTurno(doc)) {
+                            return (
+                                <Turno setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} key={doc.id} reserveId={doc.id} isAdmin={isAdmin} time={moment(doc.data().hora.toDate()).format()} modalConfirmTurnoModal={modalConfirmTurnoModal} pickUpDate={pickUpDate} />
+                            )
+                        }
                     })
                 }
             </ul>
