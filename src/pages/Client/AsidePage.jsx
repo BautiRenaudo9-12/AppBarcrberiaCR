@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 
-export function AsidePage({setOpenLoading, setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, asideStyle, setAsideStyle, setHomeStyle }) {
+export function AsidePage({setOpenLoading2, setOpenLoading, setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, asideStyle, setAsideStyle, setHomeStyle }) {
     const [pageName, setPageName] = useState(null)
     const navigate = useNavigate();
 
@@ -20,7 +20,7 @@ export function AsidePage({setOpenLoading, setReservaDate, reservaDate, modalCon
                 </button>
             </nav>
 
-            <AsidePageRoutes setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+            <AsidePageRoutes setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
         </div>
     )
 }

@@ -7,7 +7,7 @@ import moment from "moment"
 import { getReserve } from "../../services/initializeFirebase"
 
 
-export function ClientPage({ isAdmin, setOpenLoading }) {
+export function ClientPage({ isAdmin, setOpenLoading, setOpenLoading2 }) {
     const [asideStyle, setAsideStyle] = useState({ translate: "120% 0" })
     const [homeStyle, setHomeStyle] = useState({ translate: "0 0" })
     const [reservaDate, setReservaDate] = useState(null)
@@ -37,7 +37,7 @@ export function ClientPage({ isAdmin, setOpenLoading }) {
                 {modalConfirmTurnoModal.confirmTurnoModal.open && <ConfirmTurnoModal modalConfirmTurnoModal={modalConfirmTurnoModal} />}
 
                 <HomePage homeStyle={homeStyle} isAdmin={isAdmin} setReservaDate={setReservaDate} reservaDate={reservaDate} />
-                <AsidePage setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                <AsidePage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
             </div>
         </>
     )

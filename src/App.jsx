@@ -10,8 +10,9 @@ import { Loading } from "./components/Loading"
 
 function App() {
   const [isSigned, setIsSigned] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(true)
   const [openLoading, setOpenLoading] = useState(false)
+  const [openLoading2, setOpenLoading2] = useState(false)
 
   useEffect(() => {
     const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
@@ -31,13 +32,12 @@ function App() {
 
   return (
     <>
-      {
-        openLoading && <Loading />
-      }
+      {openLoading && <Loading />}
+      {openLoading2 && <Loading />}
       <Routes>
         <Route path="*" element={
-          isSigned != null && 
-          (isSigned == true ? <ClientPage isAdmin={isAdmin} setOpenLoading={setOpenLoading} /> : <SignPage setOpenLoading={setOpenLoading} />)
+          isSigned != null &&
+          (isSigned == true ? <ClientPage isAdmin={isAdmin} setOpenLoading={setOpenLoading} setOpenLoading2={setOpenLoading2} /> : <SignPage setOpenLoading={setOpenLoading} />)
         } />
       </Routes>
 

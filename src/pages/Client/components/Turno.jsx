@@ -5,7 +5,6 @@ const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes
 
 
 export const Turno = ({ state, reserveId, isAdmin, time, modalConfirmTurnoModal, pickUpDate }) => {
-
     return (
         <li className="turno">
             <div className="hour">{moment(time).format("HH:mm")}</div>

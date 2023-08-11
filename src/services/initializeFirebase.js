@@ -66,7 +66,7 @@ const getReserve = async (isDateAfterNowBy30Min) => {
 }
 
 const getTurnos = async (setTurnosList, setOpenLoading, pickUpDate) => {
-  const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d")]
+  const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d").toLowerCase()]
   setOpenLoading(true)
   const unsub = onSnapshot(collection(db, "turnos",/*dayNamePicked*/ "lunes", "turnos"), query => {
     setTurnosList(query.docs)

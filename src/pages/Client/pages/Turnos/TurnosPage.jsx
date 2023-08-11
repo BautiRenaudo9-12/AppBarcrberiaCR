@@ -8,7 +8,7 @@ import { getTurnos } from "../../../../services/initializeFirebase"
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
 
-export function TurnosPage({ setOpenLoading, setReservaDate, isAdmin, modalConfirmTurnoModal, setPageName, setAsideStyle, setHomeStyle }) {
+export function TurnosPage({ setOpenLoading2, setOpenLoading, setReservaDate, isAdmin, modalConfirmTurnoModal, setPageName, setAsideStyle, setHomeStyle }) {
     const [pickUpDate, setPickUpDate] = useState(moment().format("DD/MM/YYYY"))
     const [turnosList, setTurnosList] = useState([])
 
@@ -33,11 +33,11 @@ export function TurnosPage({ setOpenLoading, setReservaDate, isAdmin, modalConfi
         }
     }, [])
 
+
     useEffect(() => {
         if (modalConfirmTurnoModal.confirmTurnoModal.confirm == true) {
             //reservar turno
-            console.log("cancel onsnapshot")
-            setOpenLoading(true)
+            setOpenLoading2(true)
             const props = {
                 isAdmin,
                 arrayDias,
@@ -47,8 +47,7 @@ export function TurnosPage({ setOpenLoading, setReservaDate, isAdmin, modalConfi
             }
             modalConfirmTurnoModal.setReservePickedId(props).then(() => {
                 !isAdmin && setReservePicked(modalConfirmTurnoModal.infoConfirmTurnoModal.hour)
-                console.log("shet")
-                setOpenLoading(false)
+                setOpenLoading2(false)
             })
         }
     }, [modalConfirmTurnoModal.confirmTurnoModal])
