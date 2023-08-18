@@ -1,12 +1,18 @@
 import moment from "moment/moment"
 
-export const PickUpDate = ({ pickUpDate, setPickUpDate }) => {
+export const PickUpDate = ({ unsub, getTurnosFunction, pickUpDate, setPickUpDate }) => {
+    const handleOnchange = (e) => {
+        const date = moment(e.target.value).format("DD/MM/YYYY")
+        setPickUpDate(date)
+        unsub()
+        getTurnosFunction(date)
+    }
+
     return (
         <div className="pick-up-date">
             <span>
                 <input onChange={(e) => {
-                    const date = moment(e.target.value)
-                    setPickUpDate(date.format("DD/MM/YYYY"))
+                    handleOnchange(e)
                 }}
                     type="date"
                     min={moment().utcOffset("-03:00").format("YYYY-MM-DD")}

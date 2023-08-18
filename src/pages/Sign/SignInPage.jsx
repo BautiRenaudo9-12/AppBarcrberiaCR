@@ -14,6 +14,12 @@ export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoadi
         e.preventDefault()
         setOpenLoading(true)
         const user = await signIn(emailValue, passValue)
+        const userInfo = JSON.stringify({
+            email: emailValue,
+            name: nameValue,
+            nro: nroValue
+        })
+        localStorage.setItem("USER_INFO", userInfo)
         setOpenLoading(false)
         e.target.reset()
     }

@@ -1,9 +1,8 @@
 import moment from "moment"
 
-export const TurnoHistorial = ({date}) => {
-    console.log(date)
-    const hour= moment(date).format("HH:mm")
-    const day= moment(date).format("DD/MM/YYYY")
+export const TurnoHistorial = ({ date }) => {
+    const hour = moment(date).format("HH:mm")
+    const day = moment(date).format("DD/MM/YYYY")
 
     return (
         <li className="historial-turno">

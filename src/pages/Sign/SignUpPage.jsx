@@ -17,18 +17,16 @@ export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoadi
         e.preventDefault()
         setOpenLoading(true)
         const user = await signUp(emailValue, passValue)
+        const userInfo = JSON.stringify({
+            email: emailValue,
+            name: nameValue,
+            nro: nroValue
+        })
         await _setUserProperties({ nameValue, nroValue })
-        user
-            && await setDoc(
-                doc(db, "clientes", emailValue),
-                {
-                    email: emailValue,
-                    name: nameValue,
-                    nro: nroValue
-                }
-            )
-        setOpenLoading(false)
+        user && await setDoc(doc(db, "clientes", emailValue), userInfo)
+        localStorage.setItem("USER_INFO", userInfo)
 
+        setOpenLoading(false)
         e.target.reset()
     }
 

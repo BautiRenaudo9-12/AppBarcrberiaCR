@@ -10,7 +10,7 @@ import { Loading } from "./components/Loading"
 
 function App() {
   const [isSigned, setIsSigned] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [openLoading, setOpenLoading] = useState(false)
   const [openLoading2, setOpenLoading2] = useState(false)
 
@@ -34,6 +34,7 @@ function App() {
     <>
       {openLoading && <Loading />}
       {openLoading2 && <Loading />}
+
       <Routes>
         <Route path="*" element={
           isSigned != null &&

@@ -31,7 +31,6 @@ export const Turno = ({ state, reserveId, isAdmin, time, modalConfirmTurnoModal,
                         modalConfirmTurnoModal.openModal()
                         modalConfirmTurnoModal.setInfo({
                             day: arrayDias[date.day()] + " " + date.format("DD/MM"),
-                            hour: moment(time).format("HH:mm"),
                             time: _time,
                             reserveId
                         })

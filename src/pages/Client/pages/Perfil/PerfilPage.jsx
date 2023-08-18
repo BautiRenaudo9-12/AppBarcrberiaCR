@@ -1,8 +1,9 @@
-import { useEffect } from "react"
-import { auth } from "../../../../services/initializeFirebase"
+import { useEffect, useState } from "react"
+import { auth, getUserInfo } from "../../../../services/initializeFirebase"
 import { signOut } from "firebase/auth";
 
-export function PerfilPage({ setPageName, setAsideStyle, setHomeStyle }) {
+export function PerfilPage({ userInfo, setUserInfo, setPageName, setAsideStyle, setHomeStyle }) {
+
     useEffect(() => {
         setPageName("Perfil")
     }, [])
@@ -18,9 +19,31 @@ export function PerfilPage({ setPageName, setAsideStyle, setHomeStyle }) {
     }, [])
 
 
+    useEffect(() => {
+        JSON.stringify(userInfo) == JSON.stringify({})
+            && getUserInfo().then(userInfo => setUserInfo(userInfo))
+    }, [])
+
+
+
     return (
         <div className="page perfil-page">
-            <h2>Perfil</h2>
+            <div className="field">
+                <span>Nombre y apellido: </span>
+                <div className="value">{userInfo.name}</div>
+            </div>
+            <div className="field">
+                <span>Email: </span>
+                <div className="value">{userInfo.email}</div>
+            </div>
+            <div className="field">
+                <span>Nro. de telefono: </span>
+                <div className="value">{userInfo.nro}</div>
+            </div>
+
+
+
+
             <button onClick={() => {
                 signOut(auth)
             }}>CERRAR SESION</button>

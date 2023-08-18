@@ -1,9 +1,12 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { TurnoHistorial } from "./TurnoHistorial"
+import { getHistory } from "../../../../services/initializeFirebase"
 import moment from "moment"
 
 
-export function HistorialPage({ setPageName, setAsideStyle, setHomeStyle }) {
+export function HistorialPage({ setOpenLoading, setPageName, setAsideStyle, setHomeStyle }) {
+    const [turnosHistorialList, setTurnosHistorialList] = useState([])
+
     useEffect(() => {
         setPageName("Historial")
     }, [])
@@ -18,21 +21,11 @@ export function HistorialPage({ setPageName, setAsideStyle, setHomeStyle }) {
         })
     }, [])
 
-    const turnosHistorialList = [
-        {
-            id: 1,
-            date: moment().format()
-        },
-        {
-            id: 2,
-            date: moment().format()
-        }
-    ]
+    useEffect(() => {
+        getHistory().then(query => setTurnosHistorialList(query.docs))
+    }, [])
 
-    turnosHistorialList.map(turno => {
-        console.log(turno.id, turno.date)
 
-    })
     return (
         <div className="page historial-page">
             <div className="visitas-conteiner">
@@ -41,8 +34,9 @@ export function HistorialPage({ setPageName, setAsideStyle, setHomeStyle }) {
             </div>
             <ul>
                 {
-                    turnosHistorialList.map(turno => {
-                        return <TurnoHistorial key={turno.id} date={turno.date} />
+                    turnosHistorialList.map(doc => {
+                        const time = doc.data().time.toDate()
+                        return <TurnoHistorial key={doc.id} date={time} />
                     })
                 }
             </ul>

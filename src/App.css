@@ -129,10 +129,18 @@ body {
   justify-content: center;
   position: absolute;
   width: 100%;
+  height: 100dvh;
+  background: transparent;
+  padding-bottom: 50px;
+}
+
+.loading-conteiner::before {
+  content: "";
+  position: absolute;
+  width: 100%;
   top: 40%;
   height: 60dvh;
   background: linear-gradient(to top, #000000, rgba(0, 0, 0, 0));
-  padding-bottom: 50px;
 }
 
 .loading-conteiner .circle {
@@ -234,7 +242,9 @@ body {
 
 
 /*CLIENT*/
-
+.home-page-icon path {
+  fill: var(--green-text);
+}
 
 .home-page nav {
   display: flex;
@@ -528,4 +538,38 @@ body {
 
 .historial-page ul {
   margin-top: 50px;
+}
+
+
+/*PERFIL*/
+
+.perfil-page .field:nth-child(1) {
+  margin-top: 100px;
+}
+
+.perfil-page .field * {
+  font-size: 15px;
+  font-weight: 300;
+}
+
+.perfil-page .field {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.perfil-page .field .value {
+  opacity: .7;
+}
+
+.perfil-page button {
+  display: block;
+  background-color: rgb(255, 255, 255);
+  width: 120px;
+  height: 30px;
+  margin: 100px auto;
+  font-size: 11px;
+  border-radius: 20px;
+  color: var(--black);
 }

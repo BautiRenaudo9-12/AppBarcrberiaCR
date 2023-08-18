@@ -15,11 +15,12 @@ export function ClientPage({ isAdmin, setOpenLoading, setOpenLoading2 }) {
     // const
 
     useEffect(() => {
+        setOpenLoading(true)
         let reserve = localStorage.getItem("RESERVE")
         if (reserve)
-            setReservaDate(isDateAfterNowBy30Min(reserve) ? reserve : null)
+            setReservaDate(isDateAfterNowBy30Min(reserve) ? reserve : null), setOpenLoading(false)
         else
-            getReserve(isDateAfterNowBy30Min).then(result => setReservaDate(result))
+            getReserve(isDateAfterNowBy30Min).then(result => setReservaDate(result)).finally(() => setOpenLoading(false))
 
     }, []);
 
@@ -35,7 +36,6 @@ export function ClientPage({ isAdmin, setOpenLoading, setOpenLoading2 }) {
         <>
             <div className="page client-page">
                 {modalConfirmTurnoModal.confirmTurnoModal.open && <ConfirmTurnoModal modalConfirmTurnoModal={modalConfirmTurnoModal} />}
-
                 <HomePage homeStyle={homeStyle} isAdmin={isAdmin} setReservaDate={setReservaDate} reservaDate={reservaDate} />
                 <AsidePage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
             </div>

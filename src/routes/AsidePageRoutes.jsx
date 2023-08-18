@@ -5,6 +5,7 @@ import { PerfilPage } from "../pages/Client/pages/Perfil/PerfilPage"
 import { ListaDeTurnosPage } from "../pages/Client/pages/ListaDeTurnos/ListaDeTurnosPage"
 import { ClientesPage } from "../pages/Client/pages/Clientes/ClientesPage"
 import { ConfiguracionPage } from "../pages/Client/pages/Configuracion/ConfiguracionPage"
+import { useState } from "react"
 
 const ProtectedAdminRoute = ({ children, isAdmin }) => {
     if (!isAdmin)
@@ -20,7 +21,9 @@ const ProtectedReservedRoute = ({ children, reservaDate }) => {
         return children
 }
 
-export function AsidePageRoutes({setOpenLoading2, setOpenLoading, setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
+export function AsidePageRoutes({ setOpenLoading2, setOpenLoading, setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
+    const [userInfo, setUserInfo] = useState({})
+
     return (
         <Routes>
             <Route path="/turnos" element={
@@ -30,10 +33,10 @@ export function AsidePageRoutes({setOpenLoading2, setOpenLoading, setReservaDate
             } />
             <Route path="/historial" element={
                 <ProtectedReservedRoute reservaDate={reservaDate}>
-                    <HistorialPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                    <HistorialPage setOpenLoading={setOpenLoading} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
                 </ProtectedReservedRoute>
             } />
-            <Route path="/perfil" element={<PerfilPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />} />
+            <Route path="/perfil" element={<PerfilPage userInfo={userInfo} setUserInfo={setUserInfo} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />} />
 
             <Route path="/lista-de-turnos" element={
                 <ProtectedAdminRoute isAdmin={isAdmin}>
