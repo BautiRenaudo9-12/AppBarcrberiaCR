@@ -10,7 +10,7 @@ import { Loading } from "./components/Loading"
 
 function App() {
   const [isSigned, setIsSigned] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(true)
   const [openLoading, setOpenLoading] = useState(false)
   const [openLoading2, setOpenLoading2] = useState(false)
 

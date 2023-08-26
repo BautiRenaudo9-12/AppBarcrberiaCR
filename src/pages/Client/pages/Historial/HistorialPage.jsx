@@ -28,6 +28,7 @@ export function HistorialPage({ setOpenLoading, setPageName, setAsideStyle, setH
 
     return (
         <div className="page historial-page">
+            <div className="conteiner">
             <div className="visitas-conteiner">
                 <p>Visitas: </p>
                 <div className="visitas">3</div>
@@ -40,6 +41,7 @@ export function HistorialPage({ setOpenLoading, setPageName, setAsideStyle, setH
                     })
                 }
             </ul>
+            </div>
         </div>
     )
 }

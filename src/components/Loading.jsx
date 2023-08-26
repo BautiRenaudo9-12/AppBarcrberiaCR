@@ -6,5 +6,6 @@ export const Loading = () => {
                 <div className="circle"></div>
             </div>
         </div>
+        
     )
 }

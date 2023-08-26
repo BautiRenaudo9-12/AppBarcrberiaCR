@@ -16,16 +16,20 @@ export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoadi
     const handleFormSubmit = async (e) => {
         e.preventDefault()
         setOpenLoading(true)
-        const user = await signUp(emailValue, passValue)
-        const userInfo = JSON.stringify({
-            email: emailValue,
-            name: nameValue,
-            nro: nroValue
-        })
-        await _setUserProperties({ nameValue, nroValue })
-        user && await setDoc(doc(db, "clientes", emailValue), userInfo)
-        localStorage.setItem("USER_INFO", userInfo)
-
+        try {
+            const user = await signUp(emailValue, passValue)
+            const userInfo = JSON.stringify({
+                email: emailValue,
+                name: nameValue,
+                nro: nroValue
+            })
+            await _setUserProperties({ nameValue, nroValue })
+            user && await setDoc(doc(db, "clientes", emailValue), userInfo)
+            localStorage.setItem("USER_INFO", userInfo)
+        }
+        catch {
+            console.log("error")
+        }
         setOpenLoading(false)
         e.target.reset()
     }

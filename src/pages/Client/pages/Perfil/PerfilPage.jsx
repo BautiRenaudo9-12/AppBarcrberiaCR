@@ -25,6 +25,11 @@ export function PerfilPage({ userInfo, setUserInfo, setPageName, setAsideStyle, 
     }, [])
 
 
+    const handleSignOutClick = () => {
+        localStorage.removeItem("USER_INFO")
+        localStorage.removeItem("RESERVE")
+        signOut(auth)
+    }
 
     return (
         <div className="page perfil-page">
@@ -45,7 +50,7 @@ export function PerfilPage({ userInfo, setUserInfo, setPageName, setAsideStyle, 
 
 
             <button onClick={() => {
-                signOut(auth)
+                handleSignOutClick()
             }}>CERRAR SESION</button>
         </div>
     )

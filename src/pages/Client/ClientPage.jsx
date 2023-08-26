@@ -10,17 +10,21 @@ import { getReserve } from "../../services/initializeFirebase"
 export function ClientPage({ isAdmin, setOpenLoading, setOpenLoading2 }) {
     const [asideStyle, setAsideStyle] = useState({ translate: "120% 0" })
     const [homeStyle, setHomeStyle] = useState({ translate: "0 0" })
-    const [reservaDate, setReservaDate] = useState(null)
+    const [reserveDate, setReserveDate] = useState(null)
     const modalConfirmTurnoModal = useConfirmTurnoModal();
     // const
 
     useEffect(() => {
+        if (isAdmin) return
+        
         setOpenLoading(true)
         let reserve = localStorage.getItem("RESERVE")
-        if (reserve)
-            setReservaDate(isDateAfterNowBy30Min(reserve) ? reserve : null), setOpenLoading(false)
+        if (reserve) {
+            const reserveParsed = JSON.parse(reserve)
+            setReserveDate(isDateAfterNowBy30Min(reserveParsed.time) ? reserveParsed : null), setOpenLoading(false)
+        }
         else
-            getReserve(isDateAfterNowBy30Min).then(result => setReservaDate(result)).finally(() => setOpenLoading(false))
+            getReserve(isDateAfterNowBy30Min).then(result => setReserveDate(result)).finally(() => setOpenLoading(false))
 
     }, []);
 
@@ -36,8 +40,8 @@ export function ClientPage({ isAdmin, setOpenLoading, setOpenLoading2 }) {
         <>
             <div className="page client-page">
                 {modalConfirmTurnoModal.confirmTurnoModal.open && <ConfirmTurnoModal modalConfirmTurnoModal={modalConfirmTurnoModal} />}
-                <HomePage homeStyle={homeStyle} isAdmin={isAdmin} setReservaDate={setReservaDate} reservaDate={reservaDate} />
-                <AsidePage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} reservaDate={reservaDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                <HomePage modalConfirmTurnoModal={modalConfirmTurnoModal} setOpenLoading={setOpenLoading} homeStyle={homeStyle} isAdmin={isAdmin} reserveDate={reserveDate} setReserveDate={setReserveDate} />
+                <AsidePage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReserveDate={setReserveDate} reserveDate={reserveDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
             </div>
         </>
     )

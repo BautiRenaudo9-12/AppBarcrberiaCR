@@ -13,15 +13,20 @@ export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoadi
     const handleFormSubmit = async (e) => {
         e.preventDefault()
         setOpenLoading(true)
-        const user = await signIn(emailValue, passValue)
-        const userInfo = JSON.stringify({
-            email: emailValue,
-            name: nameValue,
-            nro: nroValue
-        })
-        localStorage.setItem("USER_INFO", userInfo)
-        setOpenLoading(false)
+        try {
+            const user = await signIn(emailValue, passValue)
+            const userInfo = JSON.stringify({
+                email: emailValue,
+                name: nameValue,
+                nro: nroValue
+            })
+            localStorage.setItem("USER_INFO", userInfo)
+        }
+        catch {
+            console.log("error")
+        }
         e.target.reset()
+        setOpenLoading(false)
     }
 
     return (

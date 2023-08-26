@@ -2,8 +2,8 @@ import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, getAdditionalUserInfo } from "firebase/auth";
 import {
   getFirestore, Timestamp,
-  collection, orderBy, doc, getDoc, getDocs, query, onSnapshot, updateDoc, setDoc, addDoc,
-  arrayUnion, arrayRemove
+  collection, doc, getDoc, getDocs, query, onSnapshot, updateDoc, setDoc, addDoc, deleteDoc,
+  orderBy, where,
 } from "firebase/firestore";
 import moment from "moment";
 import { TurnoHistorial } from "../pages/Client/pages/Historial/TurnoHistorial";
@@ -79,8 +79,11 @@ const getUserInfo = async () => {
 const getReserve = async (isDateAfterNowBy30Min) => {
   const docSnap = await getDoc(doc(db, "clientes", auth.currentUser.email))
   if (docSnap.exists) {
-    const docTime = docSnap.data().reserve.time.toDate()
-    if (isDateAfterNowBy30Min(docTime))
+    const docTime = {
+      time: docSnap.data().reserve.time.toDate(),
+      id: docSnap.data().reserve.id
+    }
+    if (isDateAfterNowBy30Min(docTime.time))
       return docTime
     else
       return null
@@ -104,6 +107,14 @@ const getTurnos = async (setTurnosList, setOpenLoading, pickUpDate) => {
   return unsub
 }
 
+const getReserves = async (setOpenLoading, pickUpDate) => {
+  const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d")].toLowerCase()
+  setOpenLoading(true)
+  const docsSnap = await getDocs(collection(db, "turnos", dayNamePicked, "turnos"))
+  setOpenLoading(false)
+  return docsSnap
+}
+
 const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) => {
   const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d")].toLowerCase()
   const hour = moment(time).format("HH")
@@ -112,11 +123,13 @@ const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) =
     .hours(hour)
     .minutes(minute)
     .format()
+  const recipientEmail = isAdmin ? /*infoModal.email*/ "renaudobautista@gmail.com" : auth.currentUser.email
+  const timestamp = Timestamp.fromDate(new Date(timeMoment))
   const reserveObj =
     isAdmin
       ? {
         reserve: {
-          email: /*infoModal.email*/ "baurenaudo@gmail.com",
+          email: /*infoModal.email*/ "renaudobautista@gmail.com",
           name: /*infoModal.name*/"Bauti",
           time: Timestamp.fromDate(new Date(
             moment(pickUpDate.split("/").toReversed().join("-"))
@@ -133,22 +146,47 @@ const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) =
           time: Timestamp.fromDate(new Date(timeMoment))
         }
       }
-  const recipientEmail = isAdmin ? /*infoModal.email*/ "baurenaudo@gmail.com" : auth.currentUser.email
-  const timestamp = Timestamp.fromDate(new Date(timeMoment))
-
-
-  await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveId), reserveObj)
-  await updateDoc(doc(db, "clientes", recipientEmail), {
-    reserve: {
-      time: timestamp,
-      id: reserveId
-    },
-  })
-  await addDoc(collection(db, "clientes", recipientEmail, "history"), {
-    time: timestamp,
+  const localStorageReserveObj = JSON.stringify({
+    time: timeMoment,
     id: reserveId
   })
-  localStorage.setItem("RESERVE", timeMoment)
+
+  try {
+    await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveId), reserveObj)
+    await updateDoc(doc(db, "clientes", recipientEmail), {
+      reserve: {
+        time: timestamp,
+        id: reserveId
+      },
+    })
+    await setDoc(doc(db, "clientes", recipientEmail, "history", reserveId), {
+      time: timestamp,
+      id: reserveId
+    })
+    localStorage.setItem("RESERVE", localStorageReserveObj)
+  }
+  catch (error) {
+    console.log(error)
+  }
+}
+
+const removeReserve = async ({ arrayDias, reserveDate }) => {
+  const dayNamePicked = arrayDias[moment(reserveDate.time.split("/").reverse().join("-")).format("d")].toLowerCase()
+  const timeMoment = moment().utcOffset("-03:00").subtract(1, 'days').format()
+
+  await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveDate.id), {
+    reserve: {
+      time: Timestamp.fromDate(new Date(timeMoment))
+    }
+  })
+  await updateDoc(doc(db, "clientes", auth.currentUser.email), {
+    reserve: {},
+  })
+  await deleteDoc(doc(db, "clientes", auth.currentUser.email, "history", reserveDate.id))
+  localStorage.setItem("RESERVE", JSON.stringify({
+    time: timeMoment,
+    id: null
+  }))
 }
 
 
@@ -157,5 +195,5 @@ export {
   app, db, auth,
   signIn, signUp,
   _setUserProperties,
-  getReserve, getTurnos, putReserve, getUserInfo, getHistory
+  getReserve, removeReserve, getTurnos, getReserves, putReserve, getUserInfo, getHistory
 }

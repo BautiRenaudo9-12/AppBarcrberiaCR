@@ -14,25 +14,25 @@ const ProtectedAdminRoute = ({ children, isAdmin }) => {
         return children
 }
 
-const ProtectedReservedRoute = ({ children, reservaDate }) => {
-    if (reservaDate)
+const ProtectedReservedRoute = ({ children, reserveDate }) => {
+    if (reserveDate)
         return <Navigate to="/" />
     else
         return children
 }
 
-export function AsidePageRoutes({ setOpenLoading2, setOpenLoading, setReservaDate, reservaDate, modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
+export function AsidePageRoutes({ setOpenLoading2, setOpenLoading, setReserveDate, reserveDate, modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
     const [userInfo, setUserInfo] = useState({})
 
     return (
         <Routes>
             <Route path="/turnos" element={
-                <ProtectedReservedRoute reservaDate={reservaDate}>
-                    <TurnosPage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReservaDate={setReservaDate} isAdmin={isAdmin} modalConfirmTurnoModal={modalConfirmTurnoModal} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                <ProtectedReservedRoute reserveDate={reserveDate}>
+                    <TurnosPage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReserveDate={setReserveDate} isAdmin={isAdmin} modalConfirmTurnoModal={modalConfirmTurnoModal} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
                 </ProtectedReservedRoute>
             } />
             <Route path="/historial" element={
-                <ProtectedReservedRoute reservaDate={reservaDate}>
+                <ProtectedReservedRoute reserveDate={reserveDate}>
                     <HistorialPage setOpenLoading={setOpenLoading} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
                 </ProtectedReservedRoute>
             } />
@@ -40,7 +40,7 @@ export function AsidePageRoutes({ setOpenLoading2, setOpenLoading, setReservaDat
 
             <Route path="/lista-de-turnos" element={
                 <ProtectedAdminRoute isAdmin={isAdmin}>
-                    <ListaDeTurnosPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                    <ListaDeTurnosPage setOpenLoading={setOpenLoading} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
                 </ProtectedAdminRoute>
             } />
             <Route path="/clientes" element={
