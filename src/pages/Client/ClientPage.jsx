@@ -40,7 +40,7 @@ export function ClientPage({ isAdmin, setOpenLoading, setOpenLoading2 }) {
         <>
             <div className="page client-page">
                 {modalConfirmTurnoModal.confirmTurnoModal.open && <ConfirmTurnoModal modalConfirmTurnoModal={modalConfirmTurnoModal} />}
-                <HomePage modalConfirmTurnoModal={modalConfirmTurnoModal} setOpenLoading={setOpenLoading} homeStyle={homeStyle} isAdmin={isAdmin} reserveDate={reserveDate} setReserveDate={setReserveDate} />
+                <HomePage modalConfirmTurnoModal={modalConfirmTurnoModal} setOpenLoading2={setOpenLoading2} homeStyle={homeStyle} isAdmin={isAdmin} reserveDate={reserveDate} setReserveDate={setReserveDate} />
                 <AsidePage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReserveDate={setReserveDate} reserveDate={reserveDate} modalConfirmTurnoModal={modalConfirmTurnoModal} isAdmin={isAdmin} asideStyle={asideStyle} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
             </div>
         </>

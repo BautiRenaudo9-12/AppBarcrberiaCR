@@ -5,7 +5,7 @@ import { useEffect } from "react"
 
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
-export const MenuReserva = ({ modalConfirmTurnoModal, setOpenLoading, reserveDate, setReserveDate }) => {
+export const MenuReserva = ({ modalConfirmTurnoModal, setOpenLoading2, reserveDate, setReserveDate }) => {
 
     const dayName = arrayDias[moment(reserveDate.time).format("d")]
     const date = moment(reserveDate.time).format("DD/MM")
@@ -23,11 +23,10 @@ export const MenuReserva = ({ modalConfirmTurnoModal, setOpenLoading, reserveDat
     }, [modalConfirmTurnoModal.confirmTurnoModal])
 
     const removeReserveFunction = () => {
-        setOpenLoading(true)
+        setOpenLoading2(true)
         removeReserve({ arrayDias, reserveDate }).then(() => {
-            console.log(reserveDate)
             setReserveDate(null)
-            setOpenLoading(false)
+            setOpenLoading2(false)
         })
     }
 

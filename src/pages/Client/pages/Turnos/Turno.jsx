@@ -6,6 +6,23 @@ const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes
 
 
 export const Turno = ({ state, reserveId, isAdmin, time, modalConfirmTurnoModal, pickUpDate }) => {
+
+    const handleClick = () => {
+        const date = moment(pickUpDate.split("/").reverse().join("-"))
+        const hour = moment(time).format("HH")
+        const minute = moment(time).format("mm")
+        const _time = moment(pickUpDate.split("/").toReversed().join("-"))
+            .hours(hour)
+            .minutes(minute)
+            .format()
+        modalConfirmTurnoModal.openModal()
+        modalConfirmTurnoModal.setInfo({
+            day: arrayDias[date.day()] + " " + date.format("DD/MM"),
+            time: _time,
+            reserveId
+        })
+    }
+
     return (
         <li className="turno">
             <div className="hour">{moment(time).format("HH:mm")}</div>
@@ -21,21 +38,7 @@ export const Turno = ({ state, reserveId, isAdmin, time, modalConfirmTurnoModal,
                             : {}
                     }
                     className="reservar-button"
-                    onClick={() => {
-                        const date = moment(pickUpDate.split("/").reverse().join("-"))
-                        const hour = moment(time).format("HH")
-                        const minute = moment(time).format("mm")
-                        const _time = moment(pickUpDate.split("/").toReversed().join("-"))
-                            .hours(hour)
-                            .minutes(minute)
-                            .format()
-                        modalConfirmTurnoModal.openModal()
-                        modalConfirmTurnoModal.setInfo({
-                            day: arrayDias[date.day()] + " " + date.format("DD/MM"),
-                            time: _time,
-                            reserveId
-                        })
-                    }}>RESERVAR</button>
+                    onClick={handleClick}>RESERVAR</button>
                 {
                     isAdmin &&
                     <>

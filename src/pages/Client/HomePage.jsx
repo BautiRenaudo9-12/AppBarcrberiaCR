@@ -5,7 +5,7 @@ import { Link } from "react-router-dom"
 import { ClientsIcon, ConfigurationsIcon, TurnosIcon, ListaDeTurnosIcon, PerfilIcon } from "../../../assets/PageIcons"
 
 
-export function HomePage({ modalConfirmTurnoModal, setOpenLoading, isAdmin, homeStyle, reserveDate, setReserveDate }) {
+export function HomePage({ modalConfirmTurnoModal, setOpenLoading2, isAdmin, homeStyle, reserveDate, setReserveDate }) {
 
     const MENU_ITEMS_ARRAY =
         isAdmin
@@ -68,7 +68,7 @@ export function HomePage({ modalConfirmTurnoModal, setOpenLoading, isAdmin, home
             </nav>
 
             {
-                reserveDate ? < MenuReserva modalConfirmTurnoModal={modalConfirmTurnoModal} setOpenLoading={setOpenLoading} reserveDate={reserveDate} setReserveDate={setReserveDate} /> : <MenuItems MENU_ITEMS_ARRAY={MENU_ITEMS_ARRAY} />
+                reserveDate ? < MenuReserva modalConfirmTurnoModal={modalConfirmTurnoModal} setOpenLoading2={setOpenLoading2} reserveDate={reserveDate} setReserveDate={setReserveDate} /> : <MenuItems MENU_ITEMS_ARRAY={MENU_ITEMS_ARRAY} />
             }
         </div>
     )

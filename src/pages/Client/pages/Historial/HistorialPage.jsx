@@ -31,7 +31,7 @@ export function HistorialPage({ setOpenLoading, setPageName, setAsideStyle, setH
             <div className="conteiner">
             <div className="visitas-conteiner">
                 <p>Visitas: </p>
-                <div className="visitas">3</div>
+                <div className="visitas">{turnosHistorialList.length}</div>
             </div>
             <ul>
                 {

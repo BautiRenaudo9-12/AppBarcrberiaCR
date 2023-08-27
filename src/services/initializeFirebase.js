@@ -6,7 +6,8 @@ import {
   orderBy, where,
 } from "firebase/firestore";
 import moment from "moment";
-import { TurnoHistorial } from "../pages/Client/pages/Historial/TurnoHistorial";
+import Toastify from 'toastify-js'
+import "toastify-js/src/toastify.css"
 
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
@@ -24,6 +25,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+const showNotification = ({ text = "Exito", duration = 1500, gravity = "top", position = "left" }) => {
+  Toastify({
+    text,
+    duration,
+    newWindow: true,
+    close: true,
+    gravity, // `top` or `bottom`
+    position, // `left`, `center` or `right`
+    stopOnFocus: true, // Prevents dismissing of toast on hover
+    style: {
+      background: "linear-gradient(to right, #2C682E, #96c93d)",
+    },
+    onClick: function () { } // Callback after click
+  }).showToast();
+}
 
 const signIn = async (email, password) => {
   try {
@@ -164,6 +181,8 @@ const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) =
       id: reserveId
     })
     localStorage.setItem("RESERVE", localStorageReserveObj)
+
+    isAdmin && showNotification({ text: "Reservado", gravity: "bottom", position: "center" })
   }
   catch (error) {
     console.log(error)
@@ -173,26 +192,35 @@ const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) =
 const removeReserve = async ({ arrayDias, reserveDate }) => {
   const dayNamePicked = arrayDias[moment(reserveDate.time.split("/").reverse().join("-")).format("d")].toLowerCase()
   const timeMoment = moment().utcOffset("-03:00").subtract(1, 'days').format()
+  
+  try {
+    await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveDate.id), {
+      reserve: {
+        time: Timestamp.fromDate(new Date(timeMoment))
+      }
+    })
+    await updateDoc(doc(db, "clientes", auth.currentUser.email), {
+      reserve: {},
+    })
+    await deleteDoc(doc(db, "clientes", auth.currentUser.email, "history", reserveDate.id))
+    localStorage.setItem("RESERVE", JSON.stringify({
+      time: timeMoment,
+      id: null
+    }))
 
-  await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveDate.id), {
-    reserve: {
-      time: Timestamp.fromDate(new Date(timeMoment))
-    }
-  })
-  await updateDoc(doc(db, "clientes", auth.currentUser.email), {
-    reserve: {},
-  })
-  await deleteDoc(doc(db, "clientes", auth.currentUser.email, "history", reserveDate.id))
-  localStorage.setItem("RESERVE", JSON.stringify({
-    time: timeMoment,
-    id: null
-  }))
+    showNotification({ text: "Reserva Cancelada", duration: 2500 })
+  }
+  catch (error) {
+    console.log(error)
+  }
+
 }
 
 
 
 export {
   app, db, auth,
+  showNotification,
   signIn, signUp,
   _setUserProperties,
   getReserve, removeReserve, getTurnos, getReserves, putReserve, getUserInfo, getHistory
