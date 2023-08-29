@@ -109,8 +109,13 @@ const getReserve = async (isDateAfterNowBy30Min) => {
 
 const getHistory = async () => {
   const q = query(collection(db, "clientes", auth.currentUser.email, "history"), orderBy("time", "desc"))
-  const docQuery = await getDocs(q)
-  return docQuery
+  const docsSnap = await getDocs(q)
+  return docsSnap
+}
+
+const getClientes = async () => {
+  const docsSnap = await getDocs(collection(db, "clientes"))
+  return docsSnap
 }
 
 const getTurnos = async (setTurnosList, setOpenLoading, pickUpDate) => {
@@ -131,6 +136,8 @@ const getReserves = async (setOpenLoading, pickUpDate) => {
   setOpenLoading(false)
   return docsSnap
 }
+
+
 
 const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) => {
   const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d")].toLowerCase()
@@ -192,7 +199,7 @@ const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) =
 const removeReserve = async ({ arrayDias, reserveDate }) => {
   const dayNamePicked = arrayDias[moment(reserveDate.time.split("/").reverse().join("-")).format("d")].toLowerCase()
   const timeMoment = moment().utcOffset("-03:00").subtract(1, 'days').format()
-  
+
   try {
     await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveDate.id), {
       reserve: {
@@ -223,5 +230,6 @@ export {
   showNotification,
   signIn, signUp,
   _setUserProperties,
-  getReserve, removeReserve, getTurnos, getReserves, putReserve, getUserInfo, getHistory
+  getReserve, removeReserve, getTurnos, getReserves, getUserInfo, getHistory, getClientes,
+  putReserve
 }

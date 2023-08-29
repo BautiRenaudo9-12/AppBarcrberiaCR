@@ -571,6 +571,56 @@ body {
   margin-top: 50px;
 }
 
+/*CLIENTES*/
+.clientes-page * {
+  font-weight: 400;
+}
+
+.clientes-page .clientes-turno * {
+  font-size: 14px;
+}
+
+.clientes-page .clientes-turno {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10%;
+  align-items: center;
+  height: 70px;
+  width: 100%;
+  border-bottom: 3px solid #fff;
+}
+
+.clientes-page .clientes-turno:hover {
+  background-color: #0000000f;
+}
+
+.clientes-page ul {
+  margin-top: 50px;
+}
+
+
+.clientes-page .search-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  width: 100%;
+  height: 50px;
+  position: relative;
+  margin-top: 80px;
+}
+
+.clientes-page .search-bar input {
+  display: block;
+  height: 35px;
+  width: 250px;
+  border-radius: 200px;
+  color: var(--green-text);
+  padding: 0 20px;
+}
+
+
+
 
 /*PERFIL*/
 

@@ -1,6 +1,12 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { getClientes } from "../../../../services/initializeFirebase"
+import { Cliente } from "./Cliente"
+import { SearchBar } from "./SearchBar"
 
-export function ClientesPage({ setPageName, setAsideStyle, setHomeStyle }) {
+export function ClientesPage({ setOpenLoading, setPageName, setAsideStyle, setHomeStyle }) {
+    const [clientesList, setClientesList] = useState([])
+    const [serachBarValue, setSerachBarValue] = useState(null)
+
     useEffect(() => {
         setPageName("Clientes")
     }, [])
@@ -15,10 +21,35 @@ export function ClientesPage({ setPageName, setAsideStyle, setHomeStyle }) {
         })
     }, [])
 
+    useEffect(() => {
+        setOpenLoading(true)
+        getClientes().then(query => {
+            setClientesList(query.docs)
+            setOpenLoading(false)
+        })
+    }, [])
+
 
     return (
         <div className="page clientes-page">
-            <h2>Clientes</h2>
+            <div className="conteiner">
+                <SearchBar setSerachBarValue={setSerachBarValue} />
+                <ul>
+                    {
+                        clientesList.map((doc) => {
+                            const name = doc.data().name
+                            const historySize = doc.data().historySize
+
+                            return serachBarValue && serachBarValue !== ""
+                                ? (
+                                    name.toLowerCase().indexOf(serachBarValue) > -1
+                                    && <Cliente key={doc.id} name={name} historySize={historySize} />
+                                )
+                                : <Cliente key={doc.id} name={name} historySize={historySize} />
+                        })
+                    }
+                </ul>
+            </div>
         </div>
     )
 }

@@ -1,5 +1,5 @@
 import moment from "moment/moment"
-import { TurnosIcon } from "../../../../assets/PageIcons"
+import { TurnosIcon } from "../../../../assets/Icons"
 
 export const PickUpDate = ({ isAdmin, unsub, getTurnosFunction, pickUpDate, setPickUpDate }) => {
     const handleOnchange = (e) => {

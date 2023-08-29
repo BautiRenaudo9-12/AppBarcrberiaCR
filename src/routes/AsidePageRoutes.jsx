@@ -45,7 +45,7 @@ export function AsidePageRoutes({ setOpenLoading2, setOpenLoading, setReserveDat
             } />
             <Route path="/clientes" element={
                 <ProtectedAdminRoute isAdmin={isAdmin}>
-                    <ClientesPage setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                    <ClientesPage setOpenLoading={setOpenLoading} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
                 </ProtectedAdminRoute>
             } />
             <Route path="/configuracion" element={

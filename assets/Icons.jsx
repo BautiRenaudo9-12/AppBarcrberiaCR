@@ -108,3 +108,20 @@ export const PerfilIcon = (props) => (
         </defs>
     </svg>
 )
+
+export const SearchBarIcon = (props) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={13}
+        height={13}
+        transform="scale(1.8)"
+        cursor={"pointer"}
+        fill="none"
+        {...props}
+    >
+        <path
+            fill="#fff"
+            d="M11.892 13 7.418 8.526a4.697 4.697 0 1 1 1.108-1.108L13 11.892 11.893 13V13ZM4.697 1.566a3.131 3.131 0 1 0 2.283.99l.474.47-.534-.533-.01-.01a3.11 3.11 0 0 0-2.213-.917Z"
+        />
+    </svg>
+)

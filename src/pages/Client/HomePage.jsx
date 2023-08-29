@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { MenuItems } from "./components/MenuItems"
 import { MenuReserva } from "./components/MenuReserva"
 import { Link } from "react-router-dom"
-import { ClientsIcon, ConfigurationsIcon, TurnosIcon, ListaDeTurnosIcon, PerfilIcon } from "../../../assets/PageIcons"
+import { ClientsIcon, ConfigurationsIcon, TurnosIcon, ListaDeTurnosIcon, PerfilIcon } from "../../../assets/Icons"
 
 
 export function HomePage({ modalConfirmTurnoModal, setOpenLoading2, isAdmin, homeStyle, reserveDate, setReserveDate }) {
