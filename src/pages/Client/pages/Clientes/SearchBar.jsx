@@ -8,7 +8,7 @@ export const SearchBar = ({ setSerachBarValue }) => {
 
     return (
         <div className="search-bar">
-            <input type="text" id="search-bar-input" onChange={handleChange} />
+            <input type="text" id="search-bar-input" onChange={handleChange} placeholder="Nombre y Apellido" />
             <label htmlFor="search-bar-input">
                 <SearchBarIcon />
             </label>
