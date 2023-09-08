@@ -1,0 +1,194 @@
+.modal {
+    display: grid;
+    place-content: center;
+    width: 100%;
+    height: 100dvh;
+    backdrop-filter: blur(5px);
+    position: fixed;
+    z-index: 900;
+}
+
+.modal .conteiner {
+    display: grid;
+    padding: 8px;
+    height: 160px;
+    width: 310px;
+    background-color: #fff;
+    border-radius: 10px;
+}
+
+.modal .conteiner footer {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    height: 30px;
+}
+
+.modal .conteiner footer button {
+    height: 30px;
+    width: 100px;
+    font-size: 12px;
+    border-radius: 3px;
+    background-color: var(--black);
+    font-weight: 400;
+}
+
+.modal .conteiner footer button.cancelar {
+    background-color: transparent;
+    color: var(--black);
+}
+
+.modal .conteiner footer button.cancelar:active {
+    background-color: #0000000e;
+}
+
+
+
+
+
+
+.confirm-turno-modal .conteiner {
+    grid-template-rows: 1fr 70px auto;
+}
+
+.confirm-turno-modal .conteiner span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto;
+    gap: 12px;
+}
+
+.confirm-turno-modal .conteiner p {
+    color: var(--green-text);
+    font-weight: 400;
+    text-align: center;
+}
+
+.confirm-turno-modal .conteiner input {
+    width: 85%;
+    margin: 0 auto;
+    translate: 0 -30px;
+    height: 40px;
+    border-radius: 200px;
+    box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.25);
+    color: var(--green-text);
+    padding: 20px;
+}
+
+
+
+
+
+
+
+
+
+
+
+.turno-state-modal .conteiner {
+    height: 350px;
+    grid-template-rows: auto 1fr 30px;
+}
+
+.turno-state-modal .nav * {
+    color: #000;
+    font-weight: 400;
+    font-size: 14px;
+}
+
+.turno-state-modal .nav {
+    display: flex;
+    width: 100%;
+    height: 60px;
+    justify-content: space-around;
+    align-items: center;
+    text-align: center;
+}
+
+.turno-state-modal .nav .time {
+    font-size: 18px;
+}
+
+.turno-state-modal ul * {
+    color: #000;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.turno-state-modal ul {
+    display: flex;
+    flex-direction: column;
+    padding-left: 18px;
+    gap: 20px;
+    justify-content: center;
+    padding-bottom: 40px;
+    text-align: left;
+}
+
+.turno-state-modal ul li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+}
+
+.turno-state-modal label {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    gap: 10px;
+}
+
+.turno-state-modal input[type="radio"] {
+    visibility: hidden;
+    position: absolute;
+    pointer-events: none;
+    right: 0;
+}
+
+.turno-state-modal label i {
+    display: block;
+    position: relative;
+    width: 15px;
+    height: 15px;
+    border: 2px solid var(--black);
+    border-radius: 50%;
+}
+
+.turno-state-modal label i:before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 100%;
+    background: var(--black);
+    transition: all 0.25s ease;
+    opacity: 0;
+}
+
+.turno-state-modal input[type="radio"]:checked~i:before {
+    opacity: 1;
+}
+
+.turno-state-modal input[type="radio"]:checked~i {
+    border: none;
+}
+
+.turno-state-modal input[type="radio"]:not(:checked)~i:before {
+    opacity: 0;
+}
+
+.turno-state-modal input[type="radio"]:not(:checked)~i {
+    border: 2px solid var(--black);
+}
+
+.turno-state-modal input[type="number"] {
+    display: block;
+    border: 3px solid var(--black);
+    width: 45px;
+    border-radius: 8px;
+    padding-left: 5px;
+    margin-left: 5px;
+}

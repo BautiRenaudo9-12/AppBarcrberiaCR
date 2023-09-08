@@ -21,14 +21,14 @@ const ProtectedReservedRoute = ({ children, reserveDate }) => {
         return children
 }
 
-export function AsidePageRoutes({ setOpenLoading2, setOpenLoading, setReserveDate, reserveDate, modalConfirmTurnoModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
+export function AsidePageRoutes({ setOpenLoading2, setOpenLoading, setReserveDate, reserveDate, modalConfirmTurnoModal, reserveInfoAdmin, turnoStateModal, isAdmin, setPageName, setAsideStyle, setHomeStyle }) {
     const [userInfo, setUserInfo] = useState({})
 
     return (
         <Routes>
             <Route path="/turnos" element={
                 <ProtectedReservedRoute reserveDate={reserveDate}>
-                    <TurnosPage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReserveDate={setReserveDate} isAdmin={isAdmin} modalConfirmTurnoModal={modalConfirmTurnoModal} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
+                    <TurnosPage setOpenLoading2={setOpenLoading2} setOpenLoading={setOpenLoading} setReserveDate={setReserveDate} isAdmin={isAdmin} modalConfirmTurnoModal={modalConfirmTurnoModal} reserveInfoAdmin={reserveInfoAdmin} turnoStateModal={turnoStateModal} setPageName={setPageName} setAsideStyle={setAsideStyle} setHomeStyle={setHomeStyle} />
                 </ProtectedReservedRoute>
             } />
             <Route path="/historial" element={

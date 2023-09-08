@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, getAdditionalUserInfo } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, getAdditionalUserInfo, ProviderId } from "firebase/auth";
 import {
   getFirestore, Timestamp,
   collection, doc, getDoc, getDocs, query, onSnapshot, updateDoc, setDoc, addDoc, deleteDoc,
@@ -53,7 +53,7 @@ const signIn = async (email, password) => {
 
 const _setUserProperties = async ({ nameValue, nroValue }) => {
   console.log(nameValue, nroValue)
-  updateProfile(auth.currentUser, {
+  await updateProfile(auth.currentUser, {
     displayName: nameValue,
   })
 }
@@ -139,22 +139,19 @@ const getReserves = async (setOpenLoading, pickUpDate) => {
 
 
 
-const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) => {
+const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId, reserveInfoAdmin }) => {
   const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d")].toLowerCase()
   const hour = moment(time).format("HH")
   const minute = moment(time).format("mm")
-  const timeMoment = moment(pickUpDate.split("/").toReversed().join("-"))
-    .hours(hour)
-    .minutes(minute)
-    .format()
-  const recipientEmail = isAdmin ? /*infoModal.email*/ "renaudobautista@gmail.com" : auth.currentUser.email
+  const timeMoment = moment(pickUpDate.split("/").toReversed().join("-")).hours(hour).minutes(minute).format()
+  const recipientEmail = isAdmin ? /*reserveInfoAdmin.infoConfirmReserve*/ "" : auth.currentUser.email
   const timestamp = Timestamp.fromDate(new Date(timeMoment))
   const reserveObj =
     isAdmin
       ? {
         reserve: {
-          email: /*infoModal.email*/ "renaudobautista@gmail.com",
-          name: /*infoModal.name*/"Bauti",
+          email: /*reserveInfoAdmin.infoConfirmReserve*/ "",
+          name: reserveInfoAdmin.infoConfirmReserve.reserveName,
           time: Timestamp.fromDate(new Date(
             moment(pickUpDate.split("/").toReversed().join("-"))
               .hours(hour)
@@ -176,25 +173,128 @@ const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId }) =
   })
 
   try {
-    await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveId), reserveObj)
-    await updateDoc(doc(db, "clientes", recipientEmail), {
-      reserve: {
+    if (isAdmin) {
+      console.log(dayNamePicked, reserveId, reserveObj)
+      await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveId), reserveObj)
+
+      showNotification({ text: "Reservado", gravity: "bottom", position: "center" })
+    } else {
+      await updateDoc(doc(db, "clientes", recipientEmail), {
+        reserve: {
+          time: timestamp,
+          id: reserveId
+        },
+      })
+      await setDoc(doc(db, "clientes", recipientEmail, "history", reserveId), {
         time: timestamp,
         id: reserveId
-      },
-    })
-    await setDoc(doc(db, "clientes", recipientEmail, "history", reserveId), {
-      time: timestamp,
-      id: reserveId
-    })
-    localStorage.setItem("RESERVE", localStorageReserveObj)
-
-    isAdmin && showNotification({ text: "Reservado", gravity: "bottom", position: "center" })
+      })
+      localStorage.setItem("RESERVE", localStorageReserveObj)
+    }
   }
   catch (error) {
     console.log(error)
   }
 }
+
+const putState = async ({ arrayDias, pickUpDate, reserveId, stateInfo, action, oldState }) => {
+  let active = []
+  let desactive = []
+  const dayNamePicked = arrayDias[moment(pickUpDate.split("/").reverse().join("-")).format("d")].toLowerCase()
+  const timeMoment = moment(pickUpDate.split("/").toReversed().join("-")).format()
+  const timestamp = Timestamp.fromDate(new Date(timeMoment))
+
+  switch (stateInfo.type) {
+    case "una":
+      if (action == "activating") {
+        if (oldState.desactive[0] == "siempre") {
+          active = [...oldState.active, timestamp]
+          desactive = ["siempre"]
+        } else {
+          const timePickedFormated = moment(pickUpDate.split("/").toReversed().join("-")).format("DD:MM:YYYY")
+          oldState.desactive = oldState.desactive.filter(time => moment(time.toDate()).format("DD:MM:YYYY") != timePickedFormated)
+
+          active = ["siempre"]
+          desactive = [...oldState.desactive]
+        }
+      } else {
+        if (oldState.desactive[0] == "siempre") {
+          const timePickedFormated = moment(pickUpDate.split("/").toReversed().join("-"))
+          oldState.active = oldState.active.filter(time => moment(time.toDate()).isSame(timePickedFormated, "d"))
+
+          active = [...oldState.active]
+          desactive = ["siempre"]
+        } else {
+          active = ["siempre"]
+          desactive = [...oldState.desactive, timestamp]
+        }
+      }
+      break
+    case "siempre":
+      if (action == "activating") {
+        active = ["siempre"]
+        desactive = []
+      } else {
+        active = []
+        desactive = ["siempre"]
+      }
+      break
+    case "semana":
+
+      let weeksTimestamp = []
+      for (let i = 0, time = moment(timeMoment); i < stateInfo.weeksAmount; i++) {
+        weeksTimestamp.push(Timestamp.fromDate(new Date(time)))
+        time.add(7, "days")
+      }
+
+      if (action == "activating") {
+        if (oldState.desactive[0] == "siempre") {
+          active = [...oldState.active, ...weeksTimestamp]
+          desactive = ["siempre"]
+        } else {
+          let auxDesactive = []
+          oldState.desactive.forEach(timeDesactive => {
+            const isWeekSameDesactivate = weeksTimestamp.some(time => moment(time.toDate()).isSame(moment(timeDesactive.toDate()), "d"))
+            if (!isWeekSameDesactivate) auxDesactive.push(timeDesactive)
+          })
+
+          active = ["siempre"]
+          desactive = [...auxDesactive]
+        }
+      } else {
+        //esta hecho asi sin pensar
+        if (oldState.desactive[0] == "siempre") {
+          let auxActive = []
+          oldState.active.forEach(timeActive => {
+            const isWeekSameActivate = weeksTimestamp.some(time => moment(time.toDate()).isSame(moment(timeActive.toDate()), "d"))
+            if (!isWeekSameActivate) auxActive.push(timeActive)
+          })
+
+          active = [...auxActive]
+          desactive = ["siempre"]
+        } else {
+          active = ["siempre"]
+          desactive = [...oldState.desactive, ...weeksTimestamp]
+        }
+      }
+
+      break
+    default:
+      return
+      break
+
+  }
+
+  const state = {
+    state: {
+      active,
+      desactive
+    }
+  }
+  const docRef = doc(db, "turnos", dayNamePicked, "turnos", reserveId)
+  await updateDoc(docRef, state)
+}
+
 
 const removeReserve = async ({ arrayDias, reserveDate }) => {
   const dayNamePicked = arrayDias[moment(reserveDate.time.split("/").reverse().join("-")).format("d")].toLowerCase()
@@ -231,5 +331,5 @@ export {
   signIn, signUp,
   _setUserProperties,
   getReserve, removeReserve, getTurnos, getReserves, getUserInfo, getHistory, getClientes,
-  putReserve
+  putReserve, putState
 }

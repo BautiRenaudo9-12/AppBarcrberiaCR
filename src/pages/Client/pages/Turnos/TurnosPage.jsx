@@ -8,10 +8,11 @@ import { getTurnos } from "../../../../services/initializeFirebase"
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
 
-export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, isAdmin, modalConfirmTurnoModal, setPageName, setAsideStyle, setHomeStyle }) {
+export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, isAdmin, modalConfirmTurnoModal, reserveInfoAdmin, turnoStateModal, setPageName, setAsideStyle, setHomeStyle }) {
     const [pickUpDate, setPickUpDate] = useState(moment().utcOffset("-03:00").format("DD/MM/YYYY"))
     const [turnosList, setTurnosList] = useState([])
     const [unsub, setUnsub] = useState(null)
+
 
     useEffect(() => {
         setPageName("Turnos")
@@ -36,14 +37,40 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
 
     useEffect(() => {
         modalConfirmTurnoModal.confirmTurnoModal.confirm = false
+        reserveInfoAdmin.confirmReserve.confirm == false
+        turnoStateModal.confirmState.confirm == false
     }, [])
 
     useEffect(() => {
-        if (modalConfirmTurnoModal.confirmTurnoModal.confirm == true) {
+        if (modalConfirmTurnoModal.confirmTurnoModal.confirm == true || reserveInfoAdmin.confirmReserve.confirm == true) {
             //reservar turno
             reserveTurno()
         }
-    }, [modalConfirmTurnoModal.confirmTurnoModal])
+    }, [modalConfirmTurnoModal.confirmTurnoModal, reserveInfoAdmin.confirmReserve])
+
+    useEffect(() => {
+        if (turnoStateModal.confirmState.confirm == true) {
+            //update state turno
+            updateTurnoState()
+        }
+    }, [turnoStateModal.confirmState])
+
+    function updateTurnoState() {
+        setOpenLoading2(true)
+        const props = {
+            arrayDias,
+            pickUpDate,
+            reserveId: turnoStateModal.info.reserveId,
+            stateInfo: {
+                type: turnoStateModal.info.type,
+                weeksAmount: turnoStateModal.info.weeksAmount
+            },
+            action: turnoStateModal.info.action,
+            oldState: turnoStateModal.info.oldState
+        }
+
+        turnoStateModal.putStateSelected(props).then(() => setOpenLoading2(false))
+    }
 
     function reserveTurno() {
         setOpenLoading2(true)
@@ -52,20 +79,26 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
             arrayDias,
             pickUpDate,
             time: modalConfirmTurnoModal.infoConfirmTurnoModal.time,
-            reserveId: modalConfirmTurnoModal.infoConfirmTurnoModal.reserveId,
+            reserveId: isAdmin ? reserveInfoAdmin.infoConfirmReserve.reserveId : modalConfirmTurnoModal.infoConfirmTurnoModal.reserveId,
+            reserveInfoAdmin,
         }
-        modalConfirmTurnoModal.setReservePickedId(props).then(() => {
-            const date = moment(pickUpDate.split("/").reverse().join("-"))
-            const hour = moment(props.time).format("HH")
-            const minute = moment(props.time).format("mm")
-            const dateTransformed = moment(date).hours(hour).minutes(minute).format()
-            const reserveObj = {
-                time: dateTransformed,
-                id: modalConfirmTurnoModal.infoConfirmTurnoModal.reserveId,
-            }
-            !isAdmin && setReserveDate(reserveObj)
-            setOpenLoading2(false)
-        })
+
+        if (isAdmin)
+            reserveInfoAdmin.putReservePicked(props).then(() => setOpenLoading2(false))
+        else {
+            modalConfirmTurnoModal.putReservePicked(props).then(() => {
+                const date = moment(pickUpDate.split("/").reverse().join("-"))
+                const hour = moment(props.time).format("HH")
+                const minute = moment(props.time).format("mm")
+                const dateTransformed = moment(date).hours(hour).minutes(minute).format()
+                const reserveObj = {
+                    time: dateTransformed,
+                    id: modalConfirmTurnoModal.infoConfirmTurnoModal.reserveId,
+                }
+                setReserveDate(reserveObj)
+                setOpenLoading2(false)
+            })
+        }
     }
 
     function getTurnosFunction(date) {
@@ -92,7 +125,7 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
             },
             state: null
         }
-        const now = moment().utcOffset("-03:00")
+
         const pickUpDateMoment = moment(pickUpDate.split("/").reverse().join("-"))
 
         //reservado
@@ -111,7 +144,7 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
             _state.state = "desactive";
             for (let i = 0; i < activadoArray.length; i++) {
                 const date = moment(activadoArray[i].toDate())
-                if (date.isSame(now, "d")) {
+                if (date.isSame(pickUpDateMoment, "d")) {
                     _state.state = "active";
                     i = activadoArray.length
                 }
@@ -122,7 +155,7 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
             _state.state = "active";
             for (let i = 0; i < desactivadoArray.length; i++) {
                 const date = moment(desactivadoArray[i].toDate())
-                if (date.isSame(now, "d")) {
+                if (date.isSame(pickUpDateMoment, "d")) {
                     _state.state = "desactive";
                     i = desactivadoArray.length
                 }
@@ -171,7 +204,7 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
     return (
         <div className="page turnos-page">
             <div className="conteiner">
-                <PickUpDate unsub={unsub} getTurnosFunction={getTurnosFunction} pickUpDate={pickUpDate} setPickUpDate={setPickUpDate} />
+                <PickUpDate isAdmin={isAdmin} unsub={unsub} getTurnosFunction={getTurnosFunction} pickUpDate={pickUpDate} setPickUpDate={setPickUpDate} />
                 <ul>
                     {
                         turnosList.length == 0 && <h3 style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY TURNOS DISPONIBLES</h3>
@@ -185,7 +218,7 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
 
                             if (isAdmin) {
                                 const state = stateTurnoAdmin(doc)
-                                return <Turno state={state} setOpenLoading={setOpenLoading} setReserveDate={setReserveDate} key={doc.id} reserveId={doc.id} isAdmin={isAdmin} time={moment(doc.data().hora.toDate()).format()} modalConfirmTurnoModal={modalConfirmTurnoModal} pickUpDate={pickUpDate} />
+                                return <Turno stateComplete={doc.data().state} state={state} setOpenLoading={setOpenLoading} setReserveDate={setReserveDate} key={doc.id} reserveId={doc.id} isAdmin={isAdmin} time={moment(doc.data().hora.toDate()).format()} reserveInfoAdmin={reserveInfoAdmin} turnoStateModal={turnoStateModal} pickUpDate={pickUpDate} />
                             } else if (showTurno(doc) && isDateAfterNow(dateTransformed)) {
                                 return (
                                     <Turno setOpenLoading={setOpenLoading} setReserveDate={setReserveDate} key={doc.id} reserveId={doc.id} isAdmin={isAdmin} time={moment(doc.data().hora.toDate()).format()} modalConfirmTurnoModal={modalConfirmTurnoModal} pickUpDate={pickUpDate} />

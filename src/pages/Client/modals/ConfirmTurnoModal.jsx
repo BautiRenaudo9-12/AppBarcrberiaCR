@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import "./modals.css"
 
 export const ConfirmTurnoModal = ({ modalConfirmTurnoModal }) => {
 
@@ -10,7 +10,7 @@ export const ConfirmTurnoModal = ({ modalConfirmTurnoModal }) => {
             :
             <>
                 <p>{modalConfirmTurnoModal.infoConfirmTurnoModal.day}</p>
-                <p>{modalConfirmTurnoModal.infoConfirmTurnoModal.hour}</p>
+                <p>{modalConfirmTurnoModal.infoConfirmTurnoModal.time}</p>
             </>
 
     return (

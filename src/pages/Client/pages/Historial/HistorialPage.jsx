@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { TurnoHistorial } from "./TurnoHistorial"
+import { TurnoHistorial } from "./Turno"
 import { getHistory } from "../../../../services/initializeFirebase"
 import moment from "moment"
 

@@ -53,11 +53,10 @@ export function ListaDeTurnosPage({ setOpenLoading, setPageName, setAsideStyle, 
                             const pickUpDateMoment = moment(pickUpDate.split("/").reverse().join("-"))
                             if (reserveTimeMoment.isSame(pickUpDateMoment, "d")) {
                                 count == 0 && setCount(1)
-                                const time = moment(doc.data().hora.toDate()).format()
-                                return <Turno info={null} key={doc.id} time={time} />
+                                return <Turno doc={doc} key={doc.id} />
                             }
                             if (i == reservesList.length - 1 && count == 0)
-                                return <h3 style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY RESERVAS PARA ESTE DIA</h3>
+                                return <h3 key={doc.id} style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY RESERVAS PARA ESTE DIA</h3>
                         })
                     }
                 </ul>

@@ -1,12 +1,21 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import "./ToggleSwitches.css"
 
-export const ToggleSwitches = ({ state }) => {
-    const [isChecked, setIsChecked] = useState(state.state == "active")
+export const ToggleSwitches = ({pickUpDate, stateComplete, state, reserveId, turnoStateModal }) => {
+
+    const handleClick = (e) => {
+        turnoStateModal.openModal()
+        turnoStateModal.setInfo({
+            reserveId,
+            action: state.state == "active" ? "desactivating" : "activating",
+            oldState: stateComplete,
+            pickUpDate
+        })
+    }
 
     return (
         <label className="switch">
-            <input /*checked={isChecked}*/ type="checkbox" />
+            <input onClick={handleClick} checked={state.state == "active"} type="checkbox" />
             <div className="slider">
                 <div className="circle">
                     <svg

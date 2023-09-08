@@ -9,6 +9,7 @@ export const PickUpDate = ({ isAdmin, unsub, getTurnosFunction, pickUpDate, setP
         getTurnosFunction(date)
     }
 
+
     return (
         <div className="pick-up-date">
             <span>
