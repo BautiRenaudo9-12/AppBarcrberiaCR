@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { auth, getUserInfo } from "../../../../services/initializeFirebase"
+import { auth, getUserInfo } from "../../../../services"
 import { signOut } from "firebase/auth";
 
 export function PerfilPage({ userInfo, setUserInfo, setPageName, setAsideStyle, setHomeStyle }) {

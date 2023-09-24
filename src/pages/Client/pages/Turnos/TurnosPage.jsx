@@ -3,7 +3,7 @@ import { Turno } from "./Turno"
 import { PickUpDate } from "../../components/PickUpDate"
 import { useState } from "react"
 import moment from "moment/moment"
-import { getTurnos } from "../../../../services/initializeFirebase"
+import { getTurnos } from "../../../../services"
 
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
@@ -37,8 +37,8 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
 
     useEffect(() => {
         modalConfirmTurnoModal.confirmTurnoModal.confirm = false
-        reserveInfoAdmin.confirmReserve.confirm == false
-        turnoStateModal.confirmState.confirm == false
+        reserveInfoAdmin.confirmReserve.confirm = false
+        turnoStateModal.confirmState.confirm = false
     }, [])
 
     useEffect(() => {
@@ -201,14 +201,16 @@ export function TurnosPage({ setOpenLoading2, setOpenLoading, setReserveDate, is
         return show;
     }
 
+    console.log(turnosList.length)
+
     return (
         <div className="page turnos-page">
             <div className="conteiner">
                 <PickUpDate isAdmin={isAdmin} unsub={unsub} getTurnosFunction={getTurnosFunction} pickUpDate={pickUpDate} setPickUpDate={setPickUpDate} />
+                {
+                    turnosList.length == 0 && <h3 style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY TURNOS DISPONIBLES</h3>
+                }
                 <ul>
-                    {
-                        turnosList.length == 0 && <h3 style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY TURNOS DISPONIBLES</h3>
-                    }
                     {
                         turnosList.map((doc) => {
                             const date = moment(pickUpDate.split("/").reverse().join("-"))

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { getClientes } from "../../../../services/initializeFirebase"
+import { getClientes } from "../../../../services"
 import { Cliente } from "./Cliente"
 import { SearchBar } from "./SearchBar"
 

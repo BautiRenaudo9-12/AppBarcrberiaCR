@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import { SignPage } from "./pages/Sign/SignPage"
 import { ClientPage } from "./pages/Client/ClientPage"
-import { app, auth } from "./services/initializeFirebase"
+import { app, auth } from "./services"
 import { onAuthStateChanged } from "firebase/auth";
 import { Routes, Route } from "react-router-dom"
 import { Loading } from "./components/Loading"

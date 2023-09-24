@@ -2,7 +2,6 @@ import "./modals.css"
 
 export const ConfirmTurnoModal = ({ modalConfirmTurnoModal }) => {
 
-
     const p =
         typeof modalConfirmTurnoModal.infoConfirmTurnoModal == "string"
             ?
@@ -10,7 +9,7 @@ export const ConfirmTurnoModal = ({ modalConfirmTurnoModal }) => {
             :
             <>
                 <p>{modalConfirmTurnoModal.infoConfirmTurnoModal.day}</p>
-                <p>{modalConfirmTurnoModal.infoConfirmTurnoModal.time}</p>
+                <p>{modalConfirmTurnoModal.infoConfirmTurnoModal.time.format("HH:mm")}</p>
             </>
 
     return (

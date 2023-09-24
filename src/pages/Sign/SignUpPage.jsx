@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import greenArrow from "../../../assets/green-arrow.svg"
-import { signUp, db, _setUserProperties } from "../../services/initializeFirebase"
+import { signUp, db, _setUserProperties } from "../../services"
 import { doc, setDoc } from "firebase/firestore";
 
 export function SignUpPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoading }) {

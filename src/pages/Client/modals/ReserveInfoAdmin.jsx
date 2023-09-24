@@ -9,7 +9,7 @@ export const ReserveInfoAdmin = ({ reserveInfoAdmin }) => {
     }
 
     return (
-        <div className="confirm-turno-modal modal">
+        <div className="confirm-turno-modal reserve-info-admin modal">
             <div className="conteiner" style={{ height: "250px" }}>
                 <span style={{ translate: "0 -20px" }}>
                     <p>{reserveInfoAdmin.infoConfirmReserve.day}</p>

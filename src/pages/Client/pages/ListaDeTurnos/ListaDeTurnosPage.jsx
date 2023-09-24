@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { PickUpDate } from "../../components/PickUpDate"
 import { Turno } from "./Turno"
-import { getReserves } from "../../../../services/initializeFirebase"
+import { getReserves } from "../../../../services"
 import moment from "moment"
 
 
@@ -43,10 +43,10 @@ export function ListaDeTurnosPage({ setOpenLoading, setPageName, setAsideStyle, 
         <div className="page listaDeTurnos-page">
             <div className="conteiner">
                 <PickUpDate isAdmin={true} getTurnosFunction={getReservesFunction} pickUpDate={pickUpDate} setPickUpDate={setPickUpDate} />
+                {
+                    reservesList.length == 0 && <h3 style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY RESERVAS PARA ESTE DIA</h3>
+                }
                 <ul>
-                    {
-                        reservesList.length == 0 && <h3 style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY RESERVAS PARA ESTE DIA</h3>
-                    }
                     {
                         reservesList.map((doc, i) => {
                             const reserveTimeMoment = moment(doc.data().reserve.time.toDate())

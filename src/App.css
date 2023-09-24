@@ -56,15 +56,18 @@ body {
   height: 100dvh;
   background: var(--black);
   transition: all .3s;
+
+  overflow-y: auto;
 }
 
-.turnos-page .conteiner,
-.historial-page .conteiner,
-.listaDeTurnos-page .conteiner {
-  display: grid;
-  height: 100dvh;
-  grid-template-rows: auto 1fr;
-  padding-top: 40px;
+.page::-webkit-scrollbar {
+  background-color: transparent;
+  width: 5px;
+}
+
+.page::-webkit-scrollbar-thumb {
+  background: #0000005d;
+  border-radius: 200px;
 }
 
 
@@ -319,7 +322,6 @@ body {
   --aside-page-height: 45px;
   translate: 100% 0;
   box-shadow: -10px 0 50px 0 rgb(0, 0, 0, 0.2);
-  /*  padding-top: var(--aside-page-height);*/
   text-align: center;
 }
 
@@ -327,7 +329,6 @@ body {
   display: grid;
   height: 100dvh;
   grid-template-rows: auto 1fr;
-  padding-top: 40px;
 }
 
 .aside-page nav {
@@ -340,6 +341,10 @@ body {
   left: 9;
   z-index: 800;
   background: var(--black);
+}
+
+.aside-page .conteiner {
+  padding-top: 40px;
 }
 
 .aside-page nav button {
@@ -537,7 +542,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 50px;
+  gap: 30px;
   width: 100%;
   height: 50px;
   position: relative;
@@ -587,4 +592,64 @@ body {
   font-size: 11px;
   border-radius: 20px;
   color: var(--black);
+}
+
+
+/*CONFIGURACION*/
+
+.configuracion-page ul {
+  padding-bottom: 30px;
+}
+
+.configuracion-page .configuracion {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 550px;
+  margin: 0 auto;
+  border-bottom: 2px solid #ffffff62;
+  height: 240px;
+  padding: 10px 5px;
+}
+
+.configuracion-page .configuracion:nth-child(1) {
+  margin-top: 50px;
+}
+
+.configuracion-page .configuracion .dayName {
+  margin-right: auto;
+  margin-left: 20px;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.configuracion-page .configuracion .elements {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.configuracion-page .configuracion .elements p {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.configuracion-page .configuracion .elements .element input {
+  color: var(--black);
+  text-align: center;
+  padding: 2px 0;
+  padding-left: 5px;
+  width: 80px;
+}
+
+.configuracion-page .configuracion button {
+  width: 120px;
+  height: 30px;
+  margin-left: auto;
+  background-color: #fff;
+  color: var(--green-text);
+  border-radius: 5px;
+  font-size: 12px;
 }

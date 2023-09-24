@@ -1,6 +1,6 @@
 import moment from "moment"
 import pinSvg from "../../../../assets/Iconpin.svg"
-import { removeReserve } from "../../../services/initializeFirebase"
+import { removeReserve } from "../../../services"
 import { useEffect } from "react"
 
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]

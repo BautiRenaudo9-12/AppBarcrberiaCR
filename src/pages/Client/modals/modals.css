@@ -48,6 +48,10 @@
 
 
 .confirm-turno-modal .conteiner {
+    grid-template-rows: 1fr auto;
+}
+
+.reserve-info-admin .conteiner {
     grid-template-rows: 1fr 70px auto;
 }
 

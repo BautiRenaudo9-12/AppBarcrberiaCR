@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import greenArrow from "../../../assets/green-arrow.svg"
-import { signIn } from "../../services/initializeFirebase"
+import { signIn } from "../../services"
 
 export function SignInPage({ isSignInPageOpen, setIsSignInPageOpen, setOpenLoading }) {
     const [emailValue, setEmailValue] = useState("")

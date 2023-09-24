@@ -5,7 +5,7 @@ import { useConfirmTurnoModal, useReserveInfoAdmin, useTurnoStateModal } from ".
 import { ConfirmTurnoModal } from "./modals/ConfirmTurnoModal"
 import { TurnoStateModal } from "./modals/TurnoStateModal"
 import moment from "moment"
-import { getReserve } from "../../services/initializeFirebase"
+import { getReserve } from "../../services"
 import { ReserveInfoAdmin } from "./modals/ReserveInfoAdmin"
 
 

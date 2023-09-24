@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { putReserve, putState } from "../services/initializeFirebase"
+import { putReserve, putState } from "../services"
 
 export const useConfirmTurnoModal = () => {
     const [confirmTurnoModal, setConfirmTurnoModal] = useState({ open: false, confirm: false })

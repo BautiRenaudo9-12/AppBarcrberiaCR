@@ -1,8 +1,10 @@
-import { useEffect } from "react"
-import moment from "moment"
-
+import { useState, useEffect } from "react"
+import { Configuracion } from "./Configuracion"
+import { getDays } from "../../../../services"
 
 export function ConfiguracionPage({ setPageName, setAsideStyle, setHomeStyle }) {
+    const [daysList, setDaysList] = useState([])
+
     useEffect(() => {
         setPageName("Configuracion")
     }, [])
@@ -17,10 +19,20 @@ export function ConfiguracionPage({ setPageName, setAsideStyle, setHomeStyle }) 
         })
     }, [])
 
+    useEffect(() => {
+        getDays().then(query => setDaysList(query.docs))
+    }, [])
+
 
     return (
         <div className="page configuracion-page">
-            <h2>Configuracion</h2>
+            <div className="conteiner">
+                <ul>
+                    {
+                        daysList.map(doc => <Configuracion key={doc.data().dia} data={doc.data()} />)
+                    }
+                </ul>
+            </div>
         </div>
     )
 }

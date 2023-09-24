@@ -137,6 +137,12 @@ const getReserves = async (setOpenLoading, pickUpDate) => {
   return docsSnap
 }
 
+const getDays = async () => {
+  const localDays = localStorage.getItem("DAYS_INFO")
+  const q = query(collection(db, "turnos"), orderBy("index"))
+  return localDays || await getDocs(q)
+}
+
 
 
 const putReserve = async ({ isAdmin, arrayDias, pickUpDate, time, reserveId, reserveInfoAdmin }) => {
@@ -281,8 +287,6 @@ const putState = async ({ arrayDias, pickUpDate, reserveId, stateInfo, action, o
       break
     default:
       return
-      break
-
   }
 
   const state = {
@@ -330,6 +334,7 @@ export {
   showNotification,
   signIn, signUp,
   _setUserProperties,
-  getReserve, removeReserve, getTurnos, getReserves, getUserInfo, getHistory, getClientes,
-  putReserve, putState
+  getReserve, getTurnos, getReserves, getUserInfo, getHistory, getClientes, getDays,
+  putReserve, putState,
+  removeReserve
 }
