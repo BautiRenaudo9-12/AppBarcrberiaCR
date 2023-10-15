@@ -9,7 +9,7 @@ import moment from "moment"
 export function ListaDeTurnosPage({ setOpenLoading, setPageName, setAsideStyle, setHomeStyle }) {
     const [pickUpDate, setPickUpDate] = useState(moment().utcOffset("-03:00").format("DD/MM/YYYY"))
     const [reservesList, setReservesList] = useState([])
-    const [count, setCount] = useState(0)
+    const [countReservedList, setCountReservedList] = useState(0)
 
     useEffect(() => {
         setPageName("Lista de turnos")
@@ -36,15 +36,16 @@ export function ListaDeTurnosPage({ setOpenLoading, setPageName, setAsideStyle, 
     function getReservesFunction(date) {
         setReservesList([])
         getReserves(setOpenLoading, date)
-            .then(query => setReservesList(query.docs), setCount(0))
+            .then(query => setReservesList(query.docs), setCountReservedList(0))
     }
+
 
     return (
         <div className="page listaDeTurnos-page">
             <div className="conteiner">
                 <PickUpDate isAdmin={true} getTurnosFunction={getReservesFunction} pickUpDate={pickUpDate} setPickUpDate={setPickUpDate} />
                 {
-                    reservesList.length == 0 && <h3 style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY RESERVAS PARA ESTE DIA</h3>
+                    (reservesList.length == 0 || countReservedList == 0) && <h3 style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY RESERVAS PARA ESTE DIA</h3>
                 }
                 <ul>
                     {
@@ -52,11 +53,9 @@ export function ListaDeTurnosPage({ setOpenLoading, setPageName, setAsideStyle, 
                             const reserveTimeMoment = moment(doc.data().reserve.time.toDate())
                             const pickUpDateMoment = moment(pickUpDate.split("/").reverse().join("-"))
                             if (reserveTimeMoment.isSame(pickUpDateMoment, "d")) {
-                                count == 0 && setCount(1)
+                                countReservedList == 0 && setCountReservedList(1)
                                 return <Turno doc={doc} key={doc.id} />
                             }
-                            if (i == reservesList.length - 1 && count == 0)
-                                return <h3 key={doc.id} style={{ translate: "0 180px", fontWeight: "300" }}>NO HAY RESERVAS PARA ESTE DIA</h3>
                         })
                     }
                 </ul>
