@@ -12,6 +12,11 @@ import "toastify-js/src/toastify.css"
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
 
+//SERVICE WORKER
+if (navigator.serviceWorker)
+  navigator.serviceWorker.register("sw.js");
+
+
 const firebaseConfig = {
   apiKey: "AIzaSyCEvPU8AVRTP436__VucfKIh2sKeff8ewY",
   authDomain: "react-appbarberiacr.firebaseapp.com",
