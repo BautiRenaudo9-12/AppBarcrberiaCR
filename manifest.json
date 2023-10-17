@@ -4,8 +4,8 @@
     "description": "Estilo y confianza en cada corte",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#2C682E",
+    "background_color": "#fff",
+    "theme_color": "#3E3E3E",
     "orientation": "portrait",
     "icons": [
         {
