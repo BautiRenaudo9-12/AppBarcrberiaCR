@@ -11,10 +11,9 @@ import "toastify-js/src/toastify.css"
 
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
-
 //SERVICE WORKER
 if (navigator.serviceWorker)
-  navigator.serviceWorker.register("sw.js");
+  navigator.serviceWorker.register("sw.js")
 
 
 const firebaseConfig = {
