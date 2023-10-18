@@ -6,6 +6,7 @@ const urlsToCache = [
     '/assets/index-a44ea685.js',
     '/assets/Iconpin-22bb335a.svg',
     '/assets/green-arrow-ff12fa96.svg',
+    '/assets/logo-4d2b120b.png',
     '/manifest.json',
 ];
 
