@@ -12,19 +12,18 @@ import "toastify-js/src/toastify.css"
 const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
 
 //SERVICE WORKER
-if (navigator.serviceWorker)
-  navigator.serviceWorker.register("sw.js")
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(registration => {
+      console.log('Service Worker registrado con éxito:', registration);
+    })
+    .catch(error => {
+      console.log('Error al registrar el Service Worker:', error);
+    });
+}
 
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCEvPU8AVRTP436__VucfKIh2sKeff8ewY",
-  authDomain: "react-appbarberiacr.firebaseapp.com",
-  projectId: "react-appbarberiacr",
-  storageBucket: "react-appbarberiacr.appspot.com",
-  messagingSenderId: "461314344648",
-  appId: "1:461314344648:web:8d5752cefcedebed9547fd",
-  measurementId: "G-L0F8BL59VQ"
-};
+const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG)
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
