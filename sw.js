@@ -1,13 +1,13 @@
 const CACHE_NAME = 'mi-cache';
 const urlsToCache = [
     '/',
-    '/index.html',
-    '/assets/index-fc1d2f65.css',
-    '/assets/index-a44ea685.js',
-    '/assets/Iconpin-22bb335a.svg',
-    '/assets/green-arrow-ff12fa96.svg',
-    '/assets/logo-4d2b120b.png',
-    '/manifest.json',
+    'index.html',
+    'assets/index-fc1d2f65.css',
+    'assets/index-f6d492cb.js',
+    'assets/Iconpin-22bb335a.svg',
+    'assets/green-arrow-ff12fa96.svg',
+    'assets/logo-4d2b120b.png',
+    'manifest.json',
 ];
 
 self.addEventListener('install', event => {
