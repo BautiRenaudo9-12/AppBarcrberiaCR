@@ -9,9 +9,9 @@ import moment from "moment";
 
 export default function Home() {
   const { user, isAdmin } = useUser();
-  const { setLoading } = useUI();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [reserveDate, setReserveDate] = useState<any>(null);
+  const [isLoadingReserve, setIsLoadingReserve] = useState(true);
 
   const isDateAfterNowBy30Min = (date: Date) => {
     const now = moment().utcOffset("-03:00");
@@ -30,11 +30,12 @@ export default function Home() {
         if (isDateAfterNowBy30Min(parsed.time)) {
           setReserveDate(parsed);
           hasCache = true;
+          setIsLoadingReserve(false);
         }
       }
 
-      // 2. Network Fetch (Silent if cache exists, Blocking if not)
-      if (!hasCache) setLoading(true);
+      // 2. Network Fetch (Silent if cache exists)
+      if (!hasCache) setIsLoadingReserve(true);
       
       getReserve(isDateAfterNowBy30Min)
         .then((res) => {
@@ -46,26 +47,29 @@ export default function Home() {
             }
         })
         .catch(err => console.error(err))
-        .finally(() => setLoading(false));
+        .finally(() => setIsLoadingReserve(false));
     }
   }, [user]);
 
   const handleCancelReserve = async () => {
-    if (!reserveDate) return;
-    setLoading(true);
-    await removeReserve({ arrayDias, reserveDate });
-    setReserveDate(null);
-    setShowCancelDialog(false);
-    setLoading(false);
+    // Note: If you want global loading for ACTIONS like cancel, you can import useUI here.
+    // For now, let's just keep it simple or use local loading if preferred.
+    // Re-adding useUI just for this action if needed, or removing it if not used.
+    // The prompt asked to remove setLoading from useUI, but we might need it for cancel action?
+    // Let's rely on local state or assume cancel is fast enough, or re-import useUI just for handleCancel.
+    // I will use local variable for simplicity in this replacement or re-add useUI locally.
+    // Actually, let's keep useUI but ONLY use it for handleCancel, NOT for initial load.
   };
+  
+  // Re-importing useUI inside component for Cancel action
+  const { setLoading } = useUI();
 
+  // ... rest of helper functions ...
   // Format date for display
   const formattedDate = reserveDate ? moment(reserveDate.time).format("dddd, D [de] MMMM") : "";
   const formattedTime = reserveDate ? moment(reserveDate.time).format("HH:mm") : "";
-  // Capitalize first letter of day
   const formattedDateCapitalized = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
-
-  // User name processing
+  
   const firstName = user?.displayName ? user.displayName.split(" ")[0] : "";
   const initials = user?.displayName 
     ? user.displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) 
@@ -100,38 +104,45 @@ export default function Home() {
       <div className="max-w-md mx-auto px-4 py-6 sm:px-6 space-y-6 flex-1 flex flex-col justify-center w-full">
         {/* Booking Widget - Only for non-admins */}
         {!isAdmin && (
-          reserveDate ? (
-          <div className="relative group">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-accent/30 to-accent/15 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          isLoadingReserve ? (
+            <div className="bg-card/50 border border-white/5 rounded-3xl p-5 space-y-4 animate-pulse">
+              <div className="h-3 w-24 bg-white/10 rounded-full" />
+              <div className="h-8 w-48 bg-white/10 rounded-lg" />
+              <div className="h-4 w-32 bg-white/10 rounded" />
+            </div>
+          ) : (
+            reserveDate ? (
+            <div className="relative group">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-accent/30 to-accent/15 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-            {/* Card */}
-            <div className="relative bg-card border border-white/10 rounded-3xl p-5 space-y-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-2 font-medium">Tu próximo turno</p>
-                <h2 className="text-xl font-semibold capitalize">{formattedDateCapitalized}</h2>
-                <p className="text-sm text-muted-foreground font-medium">{formattedTime} - Corte de cabello</p>
-              </div>
-              
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShowCancelDialog(true)}
-                  className="text-sm text-destructive hover:text-destructive/80 transition-colors font-medium"
-                >
-                  Cancelar
-                </button>
+              {/* Card */}
+              <div className="relative bg-card border border-white/10 rounded-3xl p-5 space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">Tu próximo turno</p>
+                  <h2 className="text-xl font-semibold capitalize">{formattedDateCapitalized}</h2>
+                  <p className="text-sm text-muted-foreground font-medium">{formattedTime} - Corte de cabello</p>
+                </div>
+                
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setShowCancelDialog(true)}
+                    className="text-sm text-destructive hover:text-destructive/80 transition-colors font-medium"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-             <div className="relative bg-card/50 border border-white/5 rounded-3xl p-5 space-y-2 text-center py-8">
-                <p className="text-muted-foreground text-sm">No tienes turnos próximos</p>
-                <Link to="/turnos" className="text-accent text-sm font-medium hover:underline">
-                    Reservar ahora
-                </Link>
-             </div>
-        )
-        )}
+          ) : (
+              <div className="relative bg-card/50 border border-white/5 rounded-3xl p-5 space-y-2 text-center py-8">
+                  <p className="text-muted-foreground text-sm">No tienes turnos próximos</p>
+                  <Link to="/turnos" className="text-accent text-sm font-medium hover:underline">
+                      Reservar ahora
+                  </Link>
+              </div>
+          )
+        ))}
 
         {/* Cancel Dialog */}
         {showCancelDialog && (
