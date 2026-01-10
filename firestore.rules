@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helper Functions ---
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      // Hardcoded admin email matching VITE_ADMIN_EMAIL
+      return isSignedIn() && request.auth.token.email == 'renaudobautista@gmail.com';
+    }
+    
+    function isOwner(email) {
+      return isSignedIn() && request.auth.token.email == email;
+    }
+
+    // --- Rules ---
+
+    // Clientes: Users manage their own profile. Admins can access all.
+    match /clientes/{email} {
+      allow read, write: if isOwner(email) || isAdmin();
+      
+      match /history/{historyId} {
+        allow read, write: if isOwner(email) || isAdmin();
+      }
+    }
+
+    // Turnos: Publicly readable. 
+    // Admins manage structure. 
+    // Users can "update" a specific turno to reserve it.
+    match /turnos/{day} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+      
+      match /turnos/{turnoId} {
+        allow read: if isSignedIn();
+        // Admin has full control
+        allow write: if isAdmin();
+        
+        // Users need to update the document to reserve the slot.
+        // We enforce that they must be signed in.
+        // Future improvement: Validate that request.resource.data.reserve has valid fields.
+        allow update: if isSignedIn();
+      }
+    }
+    
+    // Default: Deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

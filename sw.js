@@ -2,11 +2,6 @@ const CACHE_NAME = 'mi-cache';
 const urlsToCache = [
     '/',
     'index.html',
-    'assets/index-fc1d2f65.css',
-    'assets/index-f6d492cb.js',
-    'assets/Iconpin-22bb335a.svg',
-    'assets/green-arrow-ff12fa96.svg',
-    'assets/logo-4d2b120b.png',
     'manifest.json',
 ];
 
@@ -21,6 +16,10 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+    if (!event.request.url.startsWith('http')) {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then(response => {

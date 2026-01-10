@@ -1,0 +1,123 @@
+/** @import must precede all other statements */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   * A different format will require also updating the theme in tailwind.config.ts.
+  */
+  :root {
+    /* Premium Gray Background Palette */
+    --background: 0 0% 24%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 30%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 30%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 140 70% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 35%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 40%;
+    --muted-foreground: 0 0% 76%;
+
+    --accent: 140 70% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 35%;
+    --input: 0 0% 35%;
+    --ring: 140 70% 52%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 24%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 140 70% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 35%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 35%;
+    --sidebar-ring: 140 70% 52%;
+  }
+
+  .dark {
+    /* Same as :root for dark mode (app is always dark) */
+    --background: 0 0% 24%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 30%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 30%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 140 70% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 35%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 40%;
+    --muted-foreground: 0 0% 76%;
+
+    --accent: 140 70% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 35%;
+    --input: 0 0% 35%;
+    --ring: 140 70% 52%;
+
+    --sidebar-background: 0 0% 24%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 140 70% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 35%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 35%;
+    --sidebar-ring: 140 70% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  /* Enhanced contrast for gray background */
+  @supports (backdrop-filter: blur(1px)) {
+    :where(.backdrop-blur) {
+      background-color: rgba(62, 62, 62, 0.7);
+    }
+  }
+}
