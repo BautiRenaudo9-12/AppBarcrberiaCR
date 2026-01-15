@@ -26,6 +26,7 @@ function initFirebase() {
         // Sometimes the private key has \n that becomes \\n or literal newline
         
         try {
+            // First attempt: direct parse
             const serviceAccount = JSON.parse(serviceAccountStr);
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
@@ -33,28 +34,46 @@ function initFirebase() {
             isFirebaseInitialized = true;
         } catch (parseError) {
              console.log("First parse failed, trying to sanitize...", parseError);
-             // If it failed, maybe it's because of newlines?
-             // Try removing newlines? No, that breaks the private key block.
-             // But JSON.parse expects a single line string usually unless formatted perfectly.
              
-             // Check if it's a stringified JSON string (double encoded)
-             if (serviceAccountStr.startsWith('"{') || serviceAccountStr.startsWith('"\\{')) {
-                 try {
-                    const inner = JSON.parse(serviceAccountStr); // This decodes the string
-                    if (typeof inner === 'string') {
-                        const serviceAccount = JSON.parse(inner);
-                        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-                        isFirebaseInitialized = true;
-                        return;
-                    } else if (typeof inner === 'object') {
-                        admin.initializeApp({ credential: admin.credential.cert(inner) });
-                        isFirebaseInitialized = true;
-                        return;
-                    }
-                 } catch (e2) { /* ignore */ }
-             }
+             try {
+                // Strategy: 
+                // 1. Fix newlines INSIDE the private_key string (convert to \n)
+                // 2. Fix newlines OUTSIDE strings (convert to space, for pretty print)
+                
+                let sanitized = serviceAccountStr;
 
-             throw parseError;
+                // Fix private_key specifically: match "private_key": "CONTENT"
+                // We use [\s\S] to match across lines
+                sanitized = sanitized.replace(
+                    /("private_key"\s*:\s*")([\s\S]*?)(")/,
+                    (match, prefix, content, suffix) => {
+                        // Replace literal newlines with escaped \n inside the key
+                        const fixedContent = content.replace(/\r?\n/g, '\\n');
+                        return prefix + fixedContent + suffix;
+                    }
+                );
+
+                // Now safe to replace remaining newlines (structure) with spaces
+                sanitized = sanitized.replace(/\r?\n/g, ' ');
+
+                const serviceAccount = JSON.parse(sanitized);
+                admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+                isFirebaseInitialized = true;
+                return;
+             } catch (e2) {
+                 // Fallback: Check if it's double encoded
+                 if (serviceAccountStr.startsWith('"{') || serviceAccountStr.startsWith('"\\{')) {
+                    /* ... existing double encoded logic ... */
+                    try {
+                        const inner = JSON.parse(serviceAccountStr);
+                        const sa = typeof inner === 'string' ? JSON.parse(inner) : inner;
+                        admin.initializeApp({ credential: admin.credential.cert(sa) });
+                        isFirebaseInitialized = true;
+                        return;
+                    } catch (e3) {}
+                 }
+                 throw parseError; // Throw original if all fails
+             }
         }
 
     } catch (e: any) {
