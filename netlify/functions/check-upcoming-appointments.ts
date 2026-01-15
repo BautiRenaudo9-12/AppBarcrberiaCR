@@ -50,9 +50,14 @@ export const handler: Handler = async (event, context) => {
       // Try one more time? Or just fail gracefully
       initFirebase();
       if (!isFirebaseInitialized) {
+          const rawStart = (process.env.FIREBASE_SERVICE_ACCOUNT || '').substring(0, 20);
           return {
               statusCode: 500,
-              body: JSON.stringify({ success: false, error: 'Firebase initialization failed. Check server logs.' })
+              body: JSON.stringify({ 
+                  success: false, 
+                  error: 'Firebase initialization failed.',
+                  debug: `Raw start: '${rawStart}'`
+              })
           };
       }
   }
