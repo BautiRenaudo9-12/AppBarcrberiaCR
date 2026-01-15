@@ -11,77 +11,68 @@ function initFirebase() {
         return;
     }
     
-    try {
-        let serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT || '{}';
-        
-        // Handle potential extra quotes from .env parsing issues
-        if (serviceAccountStr.startsWith('"') && serviceAccountStr.endsWith('"')) {
-            serviceAccountStr = serviceAccountStr.slice(1, -1);
-        }
-        if (serviceAccountStr.startsWith("'") && serviceAccountStr.endsWith("'")) {
-            serviceAccountStr = serviceAccountStr.slice(1, -1);
-        }
-
-        // Try to handle escaped newlines or literal newlines
-        // Sometimes the private key has \n that becomes \\n or literal newline
-        
+    // Method 1: Try FIREBASE_SERVICE_ACCOUNT JSON
+    const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT;
+    
+    if (serviceAccountStr) {
         try {
-            // First attempt: direct parse
-            const serviceAccount = JSON.parse(serviceAccountStr);
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-            });
-            isFirebaseInitialized = true;
-        } catch (parseError) {
-             console.log("First parse failed, trying to sanitize...", parseError);
-             
-             try {
-                // Strategy: 
-                // 1. Fix newlines INSIDE the private_key string (convert to \n)
-                // 2. Fix newlines OUTSIDE strings (convert to space, for pretty print)
-                
-                let sanitized = serviceAccountStr;
+            // ... (Existing sanitization logic could go here, but let's keep it simple or reuse if robust)
+            // For brevity in this replacement, we'll try the robust sanitization we added before
+            // OR just try basic parse first. 
+            // Actually, let's keep the robust logic we built but wrap it nicely.
+            
+            let sanitized = serviceAccountStr;
+            
+            // Handle quotes wrapper
+            if (sanitized.startsWith('"') && sanitized.endsWith('"')) sanitized = sanitized.slice(1, -1);
+            if (sanitized.startsWith("'") && sanitized.endsWith("'")) sanitized = sanitized.slice(1, -1);
 
-                // Fix private_key specifically: match "private_key": "CONTENT"
-                // We use [\s\S] to match across lines
+            // Robust sanitization (re-implementing the successful logic from before)
+             try {
+                // Fix private_key specifically
                 sanitized = sanitized.replace(
                     /("private_key"\s*:\s*")([\s\S]*?)(")/,
                     (match, prefix, content, suffix) => {
-                        // Replace literal newlines with escaped \n inside the key
-                        const fixedContent = content.replace(/\r?\n/g, '\\n');
-                        return prefix + fixedContent + suffix;
+                        return prefix + content.replace(/\r?\n/g, '\\n') + suffix;
                     }
                 );
-
-                // Now safe to replace remaining newlines (structure) with spaces
-                sanitized = sanitized.replace(/\r?\n/g, ' ');
+                sanitized = sanitized.replace(/\r?\n/g, ' '); // Clean structure
 
                 const serviceAccount = JSON.parse(sanitized);
                 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
                 isFirebaseInitialized = true;
                 return;
-             } catch (e2) {
-                 // Fallback: Check if it's double encoded
-                 if (serviceAccountStr.startsWith('"{') || serviceAccountStr.startsWith('"\\{')) {
-                    /* ... existing double encoded logic ... */
-                    try {
-                        const inner = JSON.parse(serviceAccountStr);
-                        const sa = typeof inner === 'string' ? JSON.parse(inner) : inner;
-                        admin.initializeApp({ credential: admin.credential.cert(sa) });
-                        isFirebaseInitialized = true;
-                        return;
-                    } catch (e3) {}
-                 }
-                 throw parseError; // Throw original if all fails
+             } catch (jsonErr) {
+                 // Ignore and fall through to Method 2 or throw
+                 console.log("JSON init failed, trying individual vars...", jsonErr);
+                 (global as any).firebaseInitError = `JSON Parse Error: ${(jsonErr as Error).message}`;
              }
+        } catch (e: any) {
+             (global as any).firebaseInitError = e.message;
         }
+    }
 
-    } catch (e: any) {
-        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT. Raw value start:", (process.env.FIREBASE_SERVICE_ACCOUNT || '').substring(0, 50));
-        console.error(e);
-        isFirebaseInitialized = false;
-        // Store error for debug
-        (global as any).firebaseInitError = e.message;
+    // Method 2: Individual Environment Variables
+    // Check if we have the breakdown vars
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+        try {
+            admin.initializeApp({
+                credential: admin.credential.cert({
+                    projectId: process.env.FIREBASE_PROJECT_ID,
+                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Fix escaped newlines
+                }),
+            });
+            isFirebaseInitialized = true;
+            return;
+        } catch (e: any) {
+            console.error("Individual vars init failed", e);
+            (global as any).firebaseInitError = `Individual Vars Error: ${e.message}`;
+        }
+    } else {
+        if (!(global as any).firebaseInitError) {
+             (global as any).firebaseInitError = "No valid Firebase configuration found (checked FIREBASE_SERVICE_ACCOUNT and individual vars).";
+        }
     }
 }
 
