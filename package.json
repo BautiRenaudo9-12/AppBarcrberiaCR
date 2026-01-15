@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
     "predeploy": "npm run build",
     "deploy": "Xcopy dist firebase-public /E /H /C /I",
@@ -19,6 +19,7 @@
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^10.0.0",
+    "firebase-admin": "^13.6.0",
     "googleapis": "^126.0.1",
     "input-otp": "^1.4.2",
     "moment": "^2.29.4",
@@ -35,6 +36,7 @@
     "y": "^0.3.2"
   },
   "devDependencies": {
+    "@netlify/functions": "^5.1.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.8",

@@ -2,9 +2,11 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, CalendarCheck, User, XCircle, Mail, PlusCircle, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import moment from "moment";
-import { getTurnos, removeReserve, putReserve, arrayDias } from "@/services/reservations";
+import { getDayConfig, arrayDias } from "@/services/reservations";
+import { generateVirtualSlots } from "@/lib/slots";
+import { getAppointmentsByDate, createAppointment, cancelAppointment, Appointment } from "@/services/appointments";
 import { useUI } from "@/context/UIContext";
-import { DocumentData, Timestamp } from "firebase/firestore";
+import AnimatedLayout from "@/components/AnimatedLayout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +24,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function ListaTurnos() {
   const [selectedDate, setSelectedDate] = useState(moment().format("YYYY-MM-DD"));
-  const [turnosList, setTurnosList] = useState<DocumentData[]>([]);
+  const [slotsList, setSlotsList] = useState<any[]>([]);
   
   const [cancelTurno, setCancelTurno] = useState<any>(null); 
   const [reserveTurno, setReserveTurno] = useState<any>(null);
@@ -36,63 +39,97 @@ export default function ListaTurnos() {
   const { setLoading, loading } = useUI();
 
   useEffect(() => {
-    const formattedDate = moment(selectedDate).format("DD/MM/YYYY");
-    
-    let unsub: () => void;
-    getTurnos(setTurnosList, setLoading, formattedDate).then(u => unsub = u);
+    loadSchedule();
+  }, [selectedDate]);
 
-    return () => {
-      if (unsub) unsub();
-    };
-  }, [selectedDate, setLoading]);
+  const loadSchedule = async () => {
+    setLoading(true);
+    try {
+        const dateMoment = moment(selectedDate);
+        const dayName = arrayDias[Number(dateMoment.format("d"))].toLowerCase();
+        
+        // 1. Get Config
+        const config = await getDayConfig(dayName);
+        if (!config || !config.activo) {
+            setSlotsList([]);
+            return;
+        }
+
+        // 2. Virtual Slots
+        const virtualSlots = generateVirtualSlots(
+            config.desde || "09:00", 
+            config.hasta || "18:00", 
+            config.intervalo || 30
+        );
+
+        // 3. Appointments
+        const appointments = await getAppointmentsByDate(selectedDate);
+        
+        // 4. Merge
+        const merged = virtualSlots.map(time => {
+            const appointment = appointments.find(a => a.time === time);
+            return {
+                id: appointment ? appointment.id : time, // ID is docId or time string
+                time,
+                isReserved: !!appointment,
+                clientName: appointment?.clientName,
+                clientEmail: appointment?.clientEmail,
+                appointmentData: appointment
+            };
+        });
+
+        setSlotsList(merged);
+
+    } catch (error) {
+        console.error(error);
+        toast.error("Error al cargar agenda");
+    } finally {
+        setLoading(false);
+    }
+  };
 
   const handleCancel = async () => {
-    if (!cancelTurno) return;
+    if (!cancelTurno || !cancelTurno.appointmentData?.id) return;
     setLoading(true);
     
-    const formattedDate = moment(selectedDate).format("DD/MM/YYYY");
-    
-    await removeReserve({
-        arrayDias,
-        reserveDate: { 
-            time: formattedDate,
-            id: cancelTurno.id 
-        },
-        clientEmail: cancelTurno.clientEmail
-    });
-    
-    setLoading(false);
-    setCancelTurno(null);
+    try {
+        await cancelAppointment(cancelTurno.appointmentData.id);
+        toast.success("Turno liberado");
+        setCancelTurno(null);
+        loadSchedule();
+    } catch (error) {
+        toast.error("Error al cancelar");
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleAdminReserve = async () => {
     if (!reserveTurno || !adminName) return;
     setLoading(true);
 
-    const formattedDate = moment(selectedDate).format("DD/MM/YYYY");
-
-    await putReserve({
-      isAdmin: true,
-      arrayDias,
-      pickUpDate: formattedDate,
-      time: reserveTurno.timeStr, // Need to ensure timeStr is passed
-      reserveId: reserveTurno.id,
-      reserveInfoAdmin: {
-        infoConfirmReserve: {
-          reserveName: adminName,
-          reserveEmail: adminEmail
-        }
-      }
-    });
-
-    setLoading(false);
-    setReserveTurno(null);
-    setAdminName("");
-    setAdminEmail("");
+    try {
+        await createAppointment(
+            selectedDate,
+            reserveTurno.time,
+            adminEmail || "admin@reserva.com", // Fallback email if empty
+            adminName,
+            ""
+        );
+        toast.success("Turno reservado");
+        setReserveTurno(null);
+        setAdminName("");
+        setAdminEmail("");
+        loadSchedule();
+    } catch (error: any) {
+        toast.error(error.message || "Error al reservar");
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <AnimatedLayout className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
@@ -123,47 +160,14 @@ export default function ListaTurnos() {
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground font-medium px-1">Turnos</p>
           <div className="space-y-3 pb-10">
-            {turnosList.length === 0 ? (
+            {slotsList.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                     No hay turnos configurados para esta fecha.
                 </div>
             ) : (
-             turnosList
-                .map((doc) => {
-                    const timeStr = doc.id.includes(":") ? doc.id : "00:00"; 
-                    const [hour, minute] = timeStr.split(":").map(Number);
-                    const timeMoment = moment(selectedDate).hour(hour).minute(minute);
-                    const formattedTime = timeMoment.format("HH:mm");
-                    const dateTransformed = timeMoment.format();
-                    
-                    const reserveData = doc.data().reserve;
-                    let isReserved = false;
-                    let clientName = "";
-                    let clientEmail = "";
-                    
-                    if (reserveData && reserveData.time) {
-                        const reservedDate = reserveData.time instanceof Timestamp ? reserveData.time.toDate() : null;
-                        if (reservedDate && moment(reservedDate).isSame(moment(selectedDate), 'day')) {
-                             isReserved = true;
-                             clientName = reserveData.name || "Sin nombre";
-                             clientEmail = reserveData.email || "";
-                        }
-                    }
-
-                    return {
-                        id: doc.id,
-                        formattedTime,
-                        timeStr: dateTransformed,
-                        isReserved,
-                        clientName,
-                        clientEmail,
-                        data: doc.data()
-                    };
-                })
-                .sort((a, b) => a.formattedTime.localeCompare(b.formattedTime))
-                .map((slot: any) => (
+             slotsList.map((slot) => (
                   <div
-                    key={slot.id}
+                    key={`${selectedDate}-${slot.time}`}
                     className={`border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
                       slot.isReserved 
                         ? "bg-card border-white/10" 
@@ -178,7 +182,7 @@ export default function ListaTurnos() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                           <p className="font-bold text-xl">{slot.formattedTime}</p>
+                           <p className="font-bold text-xl">{slot.time}</p>
                            {slot.isReserved ? (
                                <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-[10px] font-bold uppercase tracking-wider">
                                   Ocupado
@@ -236,7 +240,7 @@ export default function ListaTurnos() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Liberar Turno?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará la reserva de las <strong>{cancelTurno?.formattedTime}</strong> a nombre de <strong>{cancelTurno?.clientName}</strong>.
+              Se eliminará la reserva de las <strong>{cancelTurno?.time}</strong> a nombre de <strong>{cancelTurno?.clientName}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -255,7 +259,7 @@ export default function ListaTurnos() {
       <Dialog open={!!reserveTurno} onOpenChange={(open) => !open && setReserveTurno(null)}>
         <DialogContent className="bg-card border-white/10 text-foreground sm:max-w-md">
             <DialogHeader>
-                <DialogTitle>Reservar Turno ({reserveTurno?.formattedTime})</DialogTitle>
+                <DialogTitle>Reservar Turno ({reserveTurno?.time})</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -295,6 +299,6 @@ export default function ListaTurnos() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AnimatedLayout>
   );
 }

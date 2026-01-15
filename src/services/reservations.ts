@@ -59,6 +59,14 @@ export const getDays = async () => {
   return await getDocs(q);
 };
 
+export const getDayConfig = async (dayName: string) => {
+  const docSnap = await getDoc(doc(db, "turnos", dayName.toLowerCase()));
+  if (docSnap.exists()) {
+    return docSnap.data();
+  }
+  return null;
+};
+
 interface PutReserveProps {
   isAdmin: boolean;
   arrayDias: string[];
@@ -156,9 +164,12 @@ export const removeReserve = async ({ arrayDias, reserveDate, clientEmail }: { a
   const timeMoment = moment().utcOffset("-03:00").subtract(1, 'days').format();
 
   try {
+    // We must send a complete object to satisfy validation rules
     await updateDoc(doc(db, "turnos", dayNamePicked, "turnos", reserveDate.id), {
       reserve: {
-        time: Timestamp.fromDate(new Date(timeMoment))
+        time: Timestamp.fromDate(new Date(timeMoment)),
+        email: "",
+        name: ""
       }
     });
     

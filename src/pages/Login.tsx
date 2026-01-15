@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import AnimatedLayout from "@/components/AnimatedLayout";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,7 +44,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+    <AnimatedLayout className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Effects */}
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight">Barberia CR</h1>
@@ -126,6 +128,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </div>
+    </AnimatedLayout>
   );
 }

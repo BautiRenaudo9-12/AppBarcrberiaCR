@@ -6,7 +6,6 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useUI } from "@/context/UIContext";
-
 interface DayConfig {
   id: string; // "lunes", "martes", etc.
   dia: string;
@@ -15,8 +14,6 @@ interface DayConfig {
   intervalo?: number;
   activo?: boolean;
 }
-
-import { regenerateSlots } from "@/services/admin";
 
 export default function Configuracion() {
   const [days, setDays] = useState<DayConfig[]>([]);
@@ -63,14 +60,7 @@ export default function Configuracion() {
         activo: sanitizedDay.activo
       });
       
-      // 2. Regenerate actual slots
-      const result = await regenerateSlots(sanitizedDay);
-      
-      toast.success(`Configuración guardada: +${result.created} / -${result.deleted} slots`);
-      
-      if (result.skipped > 0) {
-        toast.warning(`${result.skipped} slots no se borraron por tener reservas activas.`);
-      }
+      toast.success("Configuración guardada correctamente");
 
       // Update local state to reflect defaults
       setDays(prev => prev.map(d => d.id === day.id ? sanitizedDay : d));
@@ -103,77 +93,80 @@ export default function Configuracion() {
       </div>
 
       {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 py-8 sm:px-6 space-y-6">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {days.map((day) => (
-            <div key={day.id} className="bg-card border border-white/10 rounded-3xl overflow-hidden shadow-sm hover:border-white/20 transition-all group">
-              {/* Card Header */}
-              <div className="bg-white/5 px-5 py-4 flex justify-between items-center border-b border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center text-accent">
-                    <CalendarDays className="w-4 h-4" />
-                  </div>
-                  <span className="font-semibold capitalize text-lg">{day.dia}</span>
-                </div>
-                {/* Toggle Switch (Visual placeholder using checkbox for now) */}
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={day.activo !== false} // Default to true if undefined
-                    onChange={(e) => updateDayState(day.id, 'activo', e.target.checked)}
-                    className="sr-only peer" 
-                  />
-                  <div className="w-9 h-5 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
-                </label>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-5 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Inicio
+      <div className="max-w-3xl mx-auto px-4 py-8 sm:px-6 space-y-8">
+        {/* Section: Horarios */}
+        <div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {days.map((day) => (
+                <div key={day.id} className="bg-card border border-white/10 rounded-3xl overflow-hidden shadow-sm hover:border-white/20 transition-all group">
+                  {/* Card Header */}
+                  <div className="bg-white/5 px-5 py-4 flex justify-between items-center border-b border-white/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center text-accent">
+                        <CalendarDays className="w-4 h-4" />
+                      </div>
+                      <span className="font-semibold capitalize text-lg">{day.dia}</span>
+                    </div>
+                    {/* Toggle Switch */}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={day.activo !== false} // Default to true if undefined
+                        onChange={(e) => updateDayState(day.id, 'activo', e.target.checked)}
+                        className="sr-only peer" 
+                      />
+                      <div className="w-9 h-5 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
                     </label>
-                    <input
-                      type="time"
-                      value={day.desde || "09:00"}
-                      onChange={(e) => updateDayState(day.id, 'desde', e.target.value)}
-                      className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
-                    />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Fin
-                    </label>
-                    <input
-                      type="time"
-                      value={day.hasta || "18:00"}
-                      onChange={(e) => updateDayState(day.id, 'hasta', e.target.value)}
-                      className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
-                    />
+
+                  {/* Card Body */}
+                  <div className="p-5 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Inicio
+                        </label>
+                        <input
+                          type="time"
+                          value={day.desde || "09:00"}
+                          onChange={(e) => updateDayState(day.id, 'desde', e.target.value)}
+                          className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Fin
+                        </label>
+                        <input
+                          type="time"
+                          value={day.hasta || "18:00"}
+                          onChange={(e) => updateDayState(day.id, 'hasta', e.target.value)}
+                          className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">Intervalo (minutos)</label>
+                      <input
+                        type="number"
+                        value={day.intervalo || 30}
+                        onChange={(e) => updateDayState(day.id, 'intervalo', parseInt(e.target.value))}
+                        className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => handleSave(day)}
+                      className="w-full bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-xl py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      Guardar
+                    </button>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground font-medium">Intervalo (minutos)</label>
-                  <input
-                    type="number"
-                    value={day.intervalo || 30}
-                    onChange={(e) => updateDayState(day.id, 'intervalo', parseInt(e.target.value))}
-                    className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
-                  />
-                </div>
-
-                <button
-                  onClick={() => handleSave(day)}
-                  className="w-full bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-xl py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-2"
-                >
-                  <Save className="w-4 h-4" />
-                  Guardar
-                </button>
-              </div>
+              ))}
             </div>
-          ))}
         </div>
       </div>
     </div>

@@ -5,6 +5,18 @@ import { getUserInfo, getHistory } from "@/services/users";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useUser } from "@/context/UserContext";
+import AnimatedLayout from "@/components/AnimatedLayout";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Profile() {
   const [visitCount, setVisitCount] = useState(0);
@@ -32,7 +44,7 @@ export default function Profile() {
     : "U";
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <AnimatedLayout className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-md mx-auto flex items-center gap-4">
@@ -114,14 +126,34 @@ export default function Profile() {
         </div>
 
         {/* Logout Button */}
-        <button 
-            onClick={handleSignOut}
-            className="w-full bg-destructive/15 hover:bg-destructive/25 text-destructive py-3 rounded-2xl font-medium transition-colors flex items-center justify-center gap-2"
-        >
-          <LogOut className="w-5 h-5" />
-          Cerrar Sesión
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button 
+                className="w-full bg-destructive/20 hover:bg-destructive/30 text-red-100 border border-destructive/30 py-3 rounded-2xl font-medium transition-all flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-5 h-5" />
+              Cerrar Sesión
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="bg-card border-white/10 text-foreground">
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Cerrar sesión?</AlertDialogTitle>
+              <AlertDialogDescription className="text-muted-foreground">
+                Tendrás que volver a ingresar tus credenciales para acceder a tus turnos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-secondary hover:bg-secondary/80 border-0">Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleSignOut}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Cerrar Sesión
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-    </div>
+    </AnimatedLayout>
   );
 }

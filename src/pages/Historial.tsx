@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getHistory } from "@/services/users";
-import moment from "moment";
-import { DocumentData } from "firebase/firestore";
+import { useUser } from "@/context/UserContext";
+import { Timestamp } from "firebase/firestore";
+import AnimatedLayout from "@/components/AnimatedLayout";
 
 export default function Historial() {
   const [visits, setVisits] = useState<DocumentData[]>([]);
@@ -17,7 +18,7 @@ export default function Historial() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <AnimatedLayout className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-md mx-auto flex items-center gap-4">
@@ -78,6 +79,6 @@ export default function Historial() {
           </div>
         </div>
       </div>
-    </div>
+    </AnimatedLayout>
   );
 }

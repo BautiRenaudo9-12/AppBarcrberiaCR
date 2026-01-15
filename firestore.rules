@@ -16,6 +16,15 @@ service cloud.firestore {
     function isOwner(email) {
       return isSignedIn() && request.auth.token.email == email;
     }
+    
+    function isValidReserveFormat() {
+      let incoming = request.resource.data;
+      return incoming.reserve is map
+          && incoming.reserve.keys().hasAll(['email', 'name', 'time'])
+          && incoming.reserve.email is string
+          && incoming.reserve.name is string
+          && incoming.reserve.time is timestamp;
+    }
 
     // --- Rules ---
 
@@ -42,9 +51,30 @@ service cloud.firestore {
         
         // Users need to update the document to reserve the slot.
         // We enforce that they must be signed in.
-        // Future improvement: Validate that request.resource.data.reserve has valid fields.
-        allow update: if isSignedIn();
+        // Data format is validated to prevent corruption.
+        allow update: if isSignedIn() && isValidReserveFormat();
       }
+    }
+
+    // Anuncios: Public read for signed users, Admin write.
+    match /anuncios/{anuncioId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Appointments: Core logic for new architecture
+    match /appointments/{appointmentId} {
+      // Users can read their own, Admins all
+      allow read: if isAdmin() || (isSignedIn() && resource.data.clientEmail == request.auth.token.email);
+      
+      // Users can create if they sign it with their own email
+      allow create: if isSignedIn() && request.resource.data.clientEmail == request.auth.token.email;
+      
+      // Users can delete (cancel) their own
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.clientEmail == request.auth.token.email);
+      
+      // Only admins can update (e.g. change status) for now
+      allow update: if isAdmin();
     }
     
     // Default: Deny all
