@@ -22,15 +22,47 @@ function initFirebase() {
             serviceAccountStr = serviceAccountStr.slice(1, -1);
         }
 
-        const serviceAccount = JSON.parse(serviceAccountStr);
-        admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        });
-        isFirebaseInitialized = true;
-    } catch (e) {
+        // Try to handle escaped newlines or literal newlines
+        // Sometimes the private key has \n that becomes \\n or literal newline
+        
+        try {
+            const serviceAccount = JSON.parse(serviceAccountStr);
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+            });
+            isFirebaseInitialized = true;
+        } catch (parseError) {
+             console.log("First parse failed, trying to sanitize...", parseError);
+             // If it failed, maybe it's because of newlines?
+             // Try removing newlines? No, that breaks the private key block.
+             // But JSON.parse expects a single line string usually unless formatted perfectly.
+             
+             // Check if it's a stringified JSON string (double encoded)
+             if (serviceAccountStr.startsWith('"{') || serviceAccountStr.startsWith('"\\{')) {
+                 try {
+                    const inner = JSON.parse(serviceAccountStr); // This decodes the string
+                    if (typeof inner === 'string') {
+                        const serviceAccount = JSON.parse(inner);
+                        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+                        isFirebaseInitialized = true;
+                        return;
+                    } else if (typeof inner === 'object') {
+                        admin.initializeApp({ credential: admin.credential.cert(inner) });
+                        isFirebaseInitialized = true;
+                        return;
+                    }
+                 } catch (e2) { /* ignore */ }
+             }
+
+             throw parseError;
+        }
+
+    } catch (e: any) {
         console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT. Raw value start:", (process.env.FIREBASE_SERVICE_ACCOUNT || '').substring(0, 50));
         console.error(e);
         isFirebaseInitialized = false;
+        // Store error for debug
+        (global as any).firebaseInitError = e.message;
     }
 }
 
@@ -51,12 +83,14 @@ export const handler: Handler = async (event, context) => {
       initFirebase();
       if (!isFirebaseInitialized) {
           const rawStart = (process.env.FIREBASE_SERVICE_ACCOUNT || '').substring(0, 20);
+          const errorMsg = (global as any).firebaseInitError || 'Unknown error';
           return {
               statusCode: 500,
               body: JSON.stringify({ 
                   success: false, 
                   error: 'Firebase initialization failed.',
-                  debug: `Raw start: '${rawStart}'`
+                  debug: `Raw start: '${rawStart}'`,
+                  details: errorMsg
               })
           };
       }
