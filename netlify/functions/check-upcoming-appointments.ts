@@ -131,97 +131,83 @@ export const handler: Handler = async (event, context) => {
     
     console.log(`Found ${appointmentsSnapshot.size} appointments in time window.`);
 
-    let notificationsSentCount = 0;
+    const batch = db.batch();
+    let batchCount = 0;
     const notificationsSent: string[] = [];
 
-    // Process each appointment in a transaction to prevent duplicate notifications (race conditions)
-    const processPromises = appointmentsSnapshot.docs.map(async (docSnapshot) => {
-        const docRef = docSnapshot.ref;
+    for (const doc of appointmentsSnapshot.docs) {
+      const data = doc.data();
+      
+      console.log(`Checking appointment ${doc.id}:`, JSON.stringify(data));
 
+      if (data.status !== 'confirmed') {
+          console.log(`Skipping ${doc.id}: status is ${data.status}`);
+          continue;
+      }
+
+      if (data.notified) {
+          console.log(`Skipping ${doc.id}: already notified`);
+          continue;
+      }
+
+      // Found a candidate!
+      const email = data.clientEmail;
+      if (!email) {
+          console.log(`Skipping ${doc.id}: no clientEmail`);
+          continue;
+      }
+
+      // Get User Token
+      const userDoc = await db.collection('clientes').doc(email).get();
+      if (!userDoc.exists) {
+          console.log(`User ${email} not found.`);
+          continue;
+      }
+      
+      const userData = userDoc.data();
+      const fcmToken = userData?.fcmToken;
+
+      if (fcmToken) {
+        // Send Notification
         try {
-            await db.runTransaction(async (transaction) => {
-                const freshDoc = await transaction.get(docRef);
-                if (!freshDoc.exists) return;
+          const appointmentTime = data.timestamp.toDate();
+          const formattedTime = appointmentTime.toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit', hour12: true}); // e.g. 4:30 PM
 
-                const data = freshDoc.data();
-                if (!data) return;
+          await admin.messaging().send({
+            token: fcmToken,
+            notification: {
+              title: '¡Tu turno se acerca!',
+              body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
+            },
+            data: {
+              title: '¡Tu turno se acerca!',
+              body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
+              url: '/turnos'
+            }
+          });
+          notificationsSent.push(email);
+          console.log(`Notification sent to ${email}`);
 
-                // Re-check conditions inside transaction
-                if (data.status !== 'confirmed') return;
-                if (data.notified) return; // Already notified by another process
-                
-                const email = data.clientEmail;
-                if (!email) return;
-
-                // We need to fetch the user token. 
-                // Ideally this should be part of the transaction if we want strict consistency,
-                // but reading a separate collection is fine if we just want to lock the appointment.
-                // However, Firestore transactions require all reads to happen before writes.
-                
-                // Since we can't easily read a dynamic document path (users/email) inside this transaction 
-                // without knowing it beforehand (which we do from 'data'), let's try reading it.
-                // Note: Client document reference
-                const userDocRef = db.collection('clientes').doc(email);
-                const userDoc = await transaction.get(userDocRef);
-                
-                if (!userDoc.exists) return;
-                const userData = userDoc.data();
-                const fcmToken = userData?.fcmToken;
-
-                if (fcmToken) {
-                    // Send Notification
-                    // Note: Ideally, we should send notification AFTER commit to be 100% sure we secured the lock.
-                    // But if we fail to send, we might want to NOT mark it as notified?
-                    // Or we mark it as notified, and if send fails, we are out of luck?
-                    
-                    // Risk: We send notification, but transaction fails -> Duplicate notification possible if retried.
-                    // Risk: Transaction commits, but notification fails -> User never notified.
-                    
-                    // Better approach for at-least-once delivery:
-                    // 1. Mark as 'processing_notification' in transaction.
-                    // 2. Send notification.
-                    // 3. Mark as 'notified' in another update.
-                    
-                    // Simpler approach for now (Collision resistance):
-                    // Use the transaction to claim the notification rights.
-                    
-                    const appointmentTime = data.timestamp.toDate();
-                    const formattedTime = appointmentTime.toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit', hour12: true});
-                    
-                    // Side effect inside transaction is risky but practical for low volume.
-                    // A better way is to throw if send fails, aborting transaction.
-                    await admin.messaging().send({
-                        token: fcmToken,
-                        notification: {
-                            title: '¡Tu turno se acerca!',
-                            body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
-                        },
-                        data: {
-                            title: '¡Tu turno se acerca!',
-                            body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
-                            url: '/turnos'
-                        }
-                    });
-
-                    // Update doc
-                    transaction.update(docRef, { notified: true });
-                    notificationsSent.push(email);
-                    notificationsSentCount++;
-                }
-            });
-        } catch (e) {
-            console.error(`Transaction failed for ${docSnapshot.id}:`, e);
+          // Mark as notified
+          batch.update(doc.ref, { notified: true });
+          batchCount++;
+        } catch (sendError) {
+          console.error(`Failed to send to ${email}`, sendError);
         }
-    });
+      } else {
+          console.log(`No token for ${email}`);
+      }
+    }
 
-    await Promise.all(processPromises);
+    if (batchCount > 0) {
+        await batch.commit();
+    }
 
     return {
       statusCode: 200,
       body: JSON.stringify({ 
         success: true, 
         processed: appointmentsSnapshot.size, 
-        sent: notificationsSentCount,
         notificationsSent
       }),
     };
