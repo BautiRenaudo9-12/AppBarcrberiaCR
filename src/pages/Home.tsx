@@ -165,10 +165,10 @@ export default function Home() {
             reserve ? (
             <div className="relative group">
               {/* Glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-accent/30 to-accent/15 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-accent/30 to-accent/15 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
               {/* Card */}
-              <div className="relative bg-card border border-white/10 rounded-3xl p-5 space-y-4">
+              <div className="relative bg-card border border-white/10 rounded-3xl p-5 space-y-4 z-10">
                 <div>
                   <p className="text-xs text-muted-foreground mb-2 font-medium">Tu próximo turno</p>
                   <h2 className="text-xl font-semibold capitalize">{formattedDateCapitalized}</h2>
@@ -197,7 +197,7 @@ export default function Home() {
 
         {/* Cancel Dialog */}
         {showCancelDialog && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-4">
             <div className="bg-card border border-white/10 rounded-3xl p-6 w-full sm:w-auto sm:max-w-sm space-y-4 animate-in slide-in-from-bottom-10 fade-in zoom-in-95 duration-300">
               <h3 className="text-lg font-semibold">¿Cancelar este turno?</h3>
               <p className="text-sm text-muted-foreground">

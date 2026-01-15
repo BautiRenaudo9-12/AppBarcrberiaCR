@@ -6,7 +6,8 @@ import {
   where, 
   Timestamp,
   doc,
-  deleteDoc
+  deleteDoc,
+  onSnapshot
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import moment from "moment";
@@ -120,4 +121,30 @@ export const getUserActiveAppointment = async (userEmail: string) => {
         .sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
         
     return futureApps.length > 0 ? futureApps[0] : null;
+};
+
+export const subscribeToUserActiveAppointment = (userEmail: string, callback: (appointment: Appointment | null) => void) => {
+    const q = query(
+        collection(db, "appointments"),
+        where("clientEmail", "==", userEmail),
+        where("status", "==", "confirmed")
+    );
+
+    // Returns the unsubscribe function
+    return onSnapshot(q, (snapshot) => {
+        const futureApps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment))
+            .filter(app => {
+                const appDate = app.timestamp.toDate();
+                const momentApp = moment(appDate);
+                const momentNow = moment().utcOffset("-03:00");
+                const diff = momentNow.diff(momentApp, "minutes");
+                return diff <= 30;
+            })
+            .sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
+        
+        callback(futureApps.length > 0 ? futureApps[0] : null);
+    }, (error) => {
+        console.error("Error subscribing to appointments:", error);
+        callback(null);
+    });
 };

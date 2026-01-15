@@ -24,10 +24,16 @@ import { onMessageListener, showNotification } from "@/services/notifications";
 
 const queryClient = new QueryClient();
 
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
+
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { isSigned } = useUser();
 
-  if (isSigned === null) return null; // Or loading spinner
+  if (isSigned === null) return <LoadingSpinner />;
   if (isSigned === false) return <Navigate to="/login" replace />;
 
   return children;
@@ -36,9 +42,18 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
   const { isSigned, isAdmin } = useUser();
 
-  if (isSigned === null) return null;
+  if (isSigned === null) return <LoadingSpinner />;
   if (isSigned === false) return <Navigate to="/login" replace />;
   if (!isAdmin) return <Navigate to="/" replace />;
+
+  return children;
+};
+
+const PublicRoute = ({ children }: { children: JSX.Element }) => {
+  const { isSigned } = useUser();
+
+  if (isSigned === null) return <LoadingSpinner />;
+  if (isSigned === true) return <Navigate to="/" replace />;
 
   return children;
 };
@@ -49,7 +64,11 @@ const AppRoutes = () => {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } />
         <Route
           path="/"
           element={
