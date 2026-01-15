@@ -8,4 +8,12 @@ const firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG || '{}');
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-export const messaging = getMessaging(app);
+
+let messaging: any = null;
+try {
+  messaging = getMessaging(app);
+} catch (error) {
+  console.warn("Firebase Messaging not supported or failed to initialize:", error);
+}
+
+export { messaging };

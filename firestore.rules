@@ -64,8 +64,8 @@ service cloud.firestore {
 
     // Appointments: Core logic for new architecture
     match /appointments/{appointmentId} {
-      // Users can read their own, Admins all
-      allow read: if isAdmin() || (isSignedIn() && resource.data.clientEmail == request.auth.token.email);
+      // Users need to read appointments to know which slots are taken (availability)
+      allow read: if isSignedIn();
       
       // Users can create if they sign it with their own email
       allow create: if isSignedIn() && request.resource.data.clientEmail == request.auth.token.email;

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Calendar, History, Settings, Users, CalendarCheck2, Megaphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import moment from "moment";
 import AnimatedLayout from "@/components/AnimatedLayout";
 import { toast } from "sonner";
+import NotificationPrompt from "@/components/NotificationPrompt";
 
 export default function Home() {
   const { user, isAdmin } = useUser();
@@ -20,6 +21,19 @@ export default function Home() {
   const [isLoadingReserve, setIsLoadingReserve] = useState(true);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const { setLoading } = useUI();
+  
+  // Notification Prompt Logic
+  const location = useLocation();
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+
+  useEffect(() => {
+    // Check if we just came from a successful reservation
+    if (location.state?.reservationSuccess && Notification.permission !== "granted") {
+        setShowNotifPrompt(true);
+        // Clean up state so it doesn't show again on refresh (optional, but good UX)
+        window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   useEffect(() => {
     // Load active announcement
@@ -80,6 +94,14 @@ export default function Home() {
 
   return (
     <AnimatedLayout className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* Notification Prompt */}
+      {showNotifPrompt && (
+        <NotificationPrompt 
+          onDismiss={() => setShowNotifPrompt(false)} 
+          onSuccess={() => setShowNotifPrompt(false)} 
+        />
+      )}
+      
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl px-4 py-4 sm:px-6 shadow-sm">
         <div className="max-w-md mx-auto flex items-center justify-between">

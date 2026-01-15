@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 
 // Initialize Firebase Admin (Singleton)
 if (!admin.apps.length) {
@@ -15,13 +15,9 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-const arrayDias = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
-
 export const handler: Handler = async (event, context) => {
-  // 1. Security Check
   const apiKey = event.headers['x-api-key'];
   if (apiKey !== process.env.CRON_SECRET) {
-    // Check if CRON_SECRET is set, if not, maybe allow for now or default to block
     if (process.env.CRON_SECRET) {
         return { statusCode: 401, body: 'Unauthorized' };
     }
@@ -29,95 +25,83 @@ export const handler: Handler = async (event, context) => {
 
   try {
     const now = new Date();
-    // Use UTC-3 (Costa Rica/Argentina time? Project seems to use -03:00) 
-    // The previous code used moment().utcOffset("-03:00").
-    // Let's stick to standard Date comparisons if timestamps are stored as Firestore Timestamps (UTC).
-    // Firestore Timestamps are absolute points in time.
-    
-    // We want appointments starting in the next 60 minutes.
-    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000); // 60 minutes window
 
-    // Identify the current day name to pick the correct collection
-    // Note: This relies on the server time matching the "day" logic. 
-    // If the server is UTC and the business is UTC-3, we might query the wrong day at 10PM UTC (7PM Local).
-    // Safest approach: Check 'today' and 'tomorrow' if near midnight?
-    // For simplicity, let's assume the 'day' collection corresponds to the day of the appointment timestamp.
-    // Actually, we can just check the current day based on the timezone offset.
-    // The project uses -03:00 (Argentina/Uruguay/parts of Brazil? or maybe CR is -06:00? The context says 'App Barberia CR' implying Costa Rica (-06:00) but code says utcOffset("-03:00")).
-    // I will assume -03:00 based on 'src/services/reservations.ts'.
-    
-    // Adjust 'now' to -03:00 day index
-    const nowInTargetTz = new Date(now.getTime() - 3 * 60 * 60 * 1000); // Approximation if system is UTC
-    // Better: use the day index from the actual Date object relative to the timezone logic if possible.
-    // Let's rely on standard JS getDay() and the array map.
-    
-    // HOWEVER: "turnos" collection is organized by "lunes", "martes", etc.
-    // We must query the collection corresponding to TODAY's day of week.
-    
-    const dayIndex = nowInTargetTz.getDay(); // 0 = Sunday
-    const dayName = arrayDias[dayIndex];
-    
-    console.log(`Checking appointments for ${dayName} between ${now.toISOString()} and ${oneHourFromNow.toISOString()}`);
+    console.log(`Checking appointments between ${now.toISOString()} and ${oneHourFromNow.toISOString()}`);
 
-    // Query: turnos/{dayName}/turnos
-    // We can't filter by `reserve.time` easily if it's inside a map in a subcollection without a composite index maybe?
-    // But `reserve.time` is inside the `reserve` map.
-    // Let's fetch all slots for the day (usually not that many for a barber shop) and filter in memory.
+    // Query 'appointments' collection by timestamp range
+    const appointmentsSnapshot = await db.collection('appointments')
+        .where('timestamp', '>=', now)
+        .where('timestamp', '<=', oneHourFromNow)
+        .get();
     
-    const slotsSnapshot = await db.collection('turnos').doc(dayName).collection('turnos').get();
-    
-    const notificationsSent: string[] = [];
+    console.log(`Found ${appointmentsSnapshot.size} appointments in time window.`);
+
     const batch = db.batch();
     let batchCount = 0;
+    const notificationsSent: string[] = [];
 
-    for (const doc of slotsSnapshot.docs) {
+    for (const doc of appointmentsSnapshot.docs) {
       const data = doc.data();
-      const reserve = data.reserve;
+      
+      console.log(`Checking appointment ${doc.id}:`, JSON.stringify(data));
 
-      // Check if reserved
-      if (!reserve || !reserve.email || !reserve.time) continue;
+      if (data.status !== 'confirmed') {
+          console.log(`Skipping ${doc.id}: status is ${data.status}`);
+          continue;
+      }
 
-      const appointmentTime = reserve.time.toDate();
+      if (data.notified) {
+          console.log(`Skipping ${doc.id}: already notified`);
+          continue;
+      }
 
-      // Check time window: In the future, but less than 1 hour away
-      if (appointmentTime > now && appointmentTime <= oneHourFromNow) {
-        
-        // Check if already notified
-        if (data.notified) continue;
+      // Found a candidate!
+      const email = data.clientEmail;
+      if (!email) {
+          console.log(`Skipping ${doc.id}: no clientEmail`);
+          continue;
+      }
 
-        console.log(`Found upcoming appointment: ${doc.id} for ${reserve.email} at ${appointmentTime}`);
+      // Get User Token
+      const userDoc = await db.collection('clientes').doc(email).get();
+      if (!userDoc.exists) {
+          console.log(`User ${email} not found.`);
+          continue;
+      }
+      
+      const userData = userDoc.data();
+      const fcmToken = userData?.fcmToken;
 
-        // Get User Token
-        const userDoc = await db.collection('clientes').doc(reserve.email).get();
-        if (!userDoc.exists) {
-            console.log(`User ${reserve.email} not found.`);
-            continue;
+      if (fcmToken) {
+        // Send Notification
+        try {
+          const appointmentTime = data.timestamp.toDate();
+          const formattedTime = appointmentTime.toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit', hour12: true}); // e.g. 4:30 PM
+
+          await admin.messaging().send({
+            token: fcmToken,
+            notification: {
+              title: '¡Tu turno se acerca!',
+              body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
+            },
+            data: {
+              title: '¡Tu turno se acerca!',
+              body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
+              url: '/turnos'
+            }
+          });
+          notificationsSent.push(email);
+          console.log(`Notification sent to ${email}`);
+
+          // Mark as notified
+          batch.update(doc.ref, { notified: true });
+          batchCount++;
+        } catch (sendError) {
+          console.error(`Failed to send to ${email}`, sendError);
         }
-        
-        const userData = userDoc.data();
-        const fcmToken = userData?.fcmToken;
-
-        if (fcmToken) {
-          // Send Notification
-          try {
-            await admin.messaging().send({
-              token: fcmToken,
-              notification: {
-                title: '¡Tu turno se acerca!',
-                body: `Tienes un turno reservado para las ${appointmentTime.toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'})}. ¡Te esperamos!`,
-              }
-            });
-            notificationsSent.push(reserve.email);
-
-            // Mark as notified
-            batch.update(doc.ref, { notified: true });
-            batchCount++;
-          } catch (sendError) {
-            console.error(`Failed to send to ${reserve.email}`, sendError);
-          }
-        } else {
-            console.log(`No token for ${reserve.email}`);
-        }
+      } else {
+          console.log(`No token for ${email}`);
       }
     }
 
@@ -129,9 +113,8 @@ export const handler: Handler = async (event, context) => {
       statusCode: 200,
       body: JSON.stringify({ 
         success: true, 
-        processed: slotsSnapshot.size, 
-        notificationsSent,
-        dayChecked: dayName
+        processed: appointmentsSnapshot.size, 
+        notificationsSent
       }),
     };
 

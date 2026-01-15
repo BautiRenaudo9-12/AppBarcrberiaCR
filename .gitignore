@@ -25,3 +25,7 @@ dist-ssr
 
 react-appbarberiacr-firebase-adminsdk-hw4cp-16a95be05c.json
 
+# Environment variables
+.env
+.env.*
+!.env.example

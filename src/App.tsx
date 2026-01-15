@@ -124,12 +124,15 @@ const AppRoutes = () => {
 const App = () => {
   useEffect(() => {
     const unsubscribe = onMessageListener((payload: any) => {
-      console.log('Foreground notification received:', payload);
+      const body = payload.notification?.body || payload.data?.body || "Tienes un nuevo mensaje";
+      const title = payload.notification?.title || payload.data?.title || "Notificación";
+
       showNotification({ 
-        text: payload.notification?.body || "Nueva notificación",
-        duration: 4000
+        text: `${title}: ${body}`,
+        duration: 5000
       });
     });
+
     return () => {
       if (unsubscribe) unsubscribe();
     };

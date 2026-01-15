@@ -84,13 +84,16 @@ export default function Turnos() {
         "" // Phone optional
       );
       toast.success("Reserva confirmada");
-      navigate("/");
+      
+      // Navigate to Home with state flag
+      navigate("/", { state: { reservationSuccess: true } });
+
     } catch (error: any) {
       toast.error(error.message || "Error al reservar");
       loadSlots(); // Refresh to show taken
+      setSelectedTurno(null);
     } finally {
       setLoading(false);
-      setSelectedTurno(null);
     }
   };
 
