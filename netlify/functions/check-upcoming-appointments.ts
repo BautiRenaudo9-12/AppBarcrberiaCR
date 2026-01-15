@@ -2,18 +2,40 @@ import { Handler } from '@netlify/functions';
 import admin from 'firebase-admin';
 
 // Initialize Firebase Admin (Singleton)
-if (!admin.apps.length) {
-  try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-  } catch (e) {
-    console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT", e);
-  }
+// We do this lazily or safely at top level but don't crash if it fails immediately
+let isFirebaseInitialized = false;
+
+function initFirebase() {
+    if (admin.apps.length) {
+        isFirebaseInitialized = true;
+        return;
+    }
+    
+    try {
+        let serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT || '{}';
+        
+        // Handle potential extra quotes from .env parsing issues
+        if (serviceAccountStr.startsWith('"') && serviceAccountStr.endsWith('"')) {
+            serviceAccountStr = serviceAccountStr.slice(1, -1);
+        }
+        if (serviceAccountStr.startsWith("'") && serviceAccountStr.endsWith("'")) {
+            serviceAccountStr = serviceAccountStr.slice(1, -1);
+        }
+
+        const serviceAccount = JSON.parse(serviceAccountStr);
+        admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        });
+        isFirebaseInitialized = true;
+    } catch (e) {
+        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT. Raw value start:", (process.env.FIREBASE_SERVICE_ACCOUNT || '').substring(0, 50));
+        console.error(e);
+        isFirebaseInitialized = false;
+    }
 }
 
-const db = admin.firestore();
+// Attempt init at load time, but don't throw
+initFirebase();
 
 export const handler: Handler = async (event, context) => {
   const apiKey = event.headers['x-api-key'];
@@ -23,7 +45,21 @@ export const handler: Handler = async (event, context) => {
     }
   }
 
+  // Ensure Firebase is ready
+  if (!isFirebaseInitialized) {
+      // Try one more time? Or just fail gracefully
+      initFirebase();
+      if (!isFirebaseInitialized) {
+          return {
+              statusCode: 500,
+              body: JSON.stringify({ success: false, error: 'Firebase initialization failed. Check server logs.' })
+          };
+      }
+  }
+
   try {
+    const db = admin.firestore(); // Safe to call now
+
     const now = new Date();
     const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000); // 60 minutes window
 
