@@ -3,8 +3,9 @@ import { ArrowLeft, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getHistory } from "@/services/users";
 import { useUser } from "@/context/UserContext";
-import { Timestamp } from "firebase/firestore";
+import { Timestamp, DocumentData } from "firebase/firestore";
 import AnimatedLayout from "@/components/AnimatedLayout";
+import moment from "moment";
 
 export default function Historial() {
   const [visits, setVisits] = useState<DocumentData[]>([]);
