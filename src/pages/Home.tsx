@@ -1,9 +1,9 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Calendar, History, Settings, Users, CalendarCheck2, Megaphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { useUI } from "@/context/UIContext";
-import { getUserActiveAppointment, cancelAppointment } from "@/services/appointments";
+import { subscribeToUserActiveAppointment, cancelAppointment } from "@/services/appointments";
 import { getActiveAnnouncement, Announcement } from "@/services/announcements";
 import { requestForToken } from "@/services/notifications";
 import { doc, updateDoc } from "firebase/firestore";
@@ -24,6 +24,7 @@ export default function Home() {
   
   // Notification Prompt Logic
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
 
   useEffect(() => {
@@ -35,35 +36,42 @@ export default function Home() {
     }
   }, [location]);
 
+  // Handle Notification Actions (Cancel)
+  useEffect(() => {
+    const action = searchParams.get("action");
+    const id = searchParams.get("id");
+
+    if (action === "cancel" && id && reserve && reserve.id === id) {
+        setShowCancelDialog(true);
+        // Clear params so it doesn't persist on refresh
+        setSearchParams({});
+    }
+  }, [searchParams, reserve, setSearchParams]);
+
   useEffect(() => {
     // Load active announcement
     getActiveAnnouncement().then(setAnnouncement);
 
-    const fetchReserve = async () => {
-        if (!user) return;
-        
-        // Setup Notifications
-        requestForToken().then(token => {
-            if (token && user.email) {
-                // Save token to user profile
-                updateDoc(doc(db, "clientes", user.email), {
-                    fcmToken: token
-                }).catch(e => console.log("Error saving token", e));
-            }
-        });
+    if (!user) return;
 
-        setIsLoadingReserve(true);
-        try {
-            const app = await getUserActiveAppointment(user.email!);
-            setReserve(app);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsLoadingReserve(false);
+    // Setup Notifications
+    requestForToken().then(token => {
+        if (token && user.email) {
+            updateDoc(doc(db, "clientes", user.email), {
+                fcmToken: token
+            }).catch(e => console.log("Error saving token", e));
         }
-    };
+    });
 
-    fetchReserve();
+    setIsLoadingReserve(true);
+    
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToUserActiveAppointment(user.email!, (app) => {
+        setReserve(app);
+        setIsLoadingReserve(false);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const handleCancelReserve = async () => {

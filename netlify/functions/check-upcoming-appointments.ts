@@ -166,14 +166,12 @@ export const handler: Handler = async (event, context) => {
 
           await admin.messaging().send({
             token: fcmToken,
-            notification: {
-              title: '¡Tu turno se acerca!',
-              body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
-            },
             data: {
+              type: 'appointment_reminder',
+              appointmentId: doc.id,
               title: '¡Tu turno se acerca!',
               body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
-              url: '/turnos'
+              url: '/' // Changed to root so home handles it
             }
           });
           notificationsSent.push(email);
