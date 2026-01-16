@@ -18,26 +18,44 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-  if (payload.data && payload.data.type === 'appointment_reminder') {
-    const notificationTitle = payload.data.title;
-    const notificationOptions = {
-      body: payload.data.body,
-      icon: '/pwa-192x192.png',
-      badge: '/masked-icon.svg',
-      data: payload.data,
-      actions: [
-        {
-          action: 'confirm',
-          title: 'Confirmar'
-        },
-        {
-          action: 'cancel',
-          title: 'Cancelar'
-        }
-      ]
-    };
+  try {
+    // 1. Verificar si es nuestro tipo de recordatorio personalizado
+    if (payload.data && payload.data.type === 'appointment_reminder') {
+      const notificationTitle = payload.data.title;
+      const notificationOptions = {
+        body: payload.data.body,
+        icon: '/pwa-192x192.png',
+        badge: '/masked-icon.svg',
+        data: payload.data,
+        actions: [
+          { action: 'confirm', title: 'Confirmar' },
+          { action: 'cancel', title: 'Cancelar' }
+        ]
+      };
+      return self.registration.showNotification(notificationTitle, notificationOptions);
+    }
 
-    return self.registration.showNotification(notificationTitle, notificationOptions);
+    // 2. FALLBACK: Si llega cualquier otro mensaje (o la estructura falló), mostrarlo
+    // Esto evita el mensaje "Este sitio se actualizó en segundo plano"
+    if (payload.data) {
+        const title = payload.data.title || payload.notification?.title || 'Notificación';
+        const body = payload.data.body || payload.notification?.body || 'Nuevo mensaje recibido';
+        
+        return self.registration.showNotification(title, {
+            body: body,
+            icon: '/pwa-192x192.png',
+            badge: '/masked-icon.svg',
+            data: payload.data // Pasamos data para que el click funcione genéricamente
+        });
+    }
+
+  } catch (err) {
+    console.error('[firebase-messaging-sw.js] Error handling message', err);
+    // Intento desesperado de mostrar algo si falla el código principal
+    return self.registration.showNotification('Barbería CR', {
+        body: 'Tienes un nuevo mensaje (Error de visualización)',
+        icon: '/pwa-192x192.png'
+    });
   }
 });
 
