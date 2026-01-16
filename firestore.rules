@@ -76,6 +76,18 @@ service cloud.firestore {
       // Only admins can update (e.g. change status) for now
       allow update: if isAdmin();
     }
+
+    // Blocked Slots: Admin managed, User readable for availability
+    match /blocked_slots/{slotId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    
+    // Exceptions: Admin managed (to activate blocked slots), User readable
+    match /slot_exceptions/{exceptionId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
     
     // Default: Deny all
     match /{document=**} {

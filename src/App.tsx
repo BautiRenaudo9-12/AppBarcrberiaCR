@@ -13,7 +13,6 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Configuracion from "./pages/Configuracion";
 import Clientes from "./pages/Clientes";
-import ListaTurnos from "./pages/ListaTurnos";
 import Anuncios from "./pages/Anuncios";
 import NotFound from "./pages/NotFound";
 import { UIProvider } from "@/context/UIContext";
@@ -117,14 +116,7 @@ const AppRoutes = () => {
             </AdminRoute>
           }
         />
-        <Route
-          path="/admin-turnos"
-          element={
-            <AdminRoute>
-              <ListaTurnos />
-            </AdminRoute>
-          }
-        />
+
         <Route
           path="/admin-anuncios"
           element={
