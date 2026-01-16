@@ -1,22 +1,28 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Save, Clock, CalendarDays } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle2 } from "lucide-react";
 import { getDays } from "@/services/reservations";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useUI } from "@/context/UIContext";
-interface DayConfig {
-  id: string; // "lunes", "martes", etc.
-  dia: string;
-  desde?: string;
-  hasta?: string;
-  intervalo?: number;
-  activo?: boolean;
-}
+import { DayConfig } from "@/types/config";
+import { DayConfigCard } from "@/components/configuracion/DayConfigCard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Configuracion() {
   const [days, setDays] = useState<DayConfig[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [dayToCopy, setDayToCopy] = useState<DayConfig | null>(null);
   const { setLoading } = useUI();
 
   useEffect(() => {
@@ -27,8 +33,17 @@ export default function Configuracion() {
     setLoading(true);
     try {
       const snap = await getDays();
-      const loadedDays = snap.docs.map(d => ({ id: d.id, ...d.data() } as DayConfig));
-      // Sort by index if available, or predefined order
+      const loadedDays = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          dia: data.dia || d.id,
+          desde: data.desde || "09:00",
+          hasta: data.hasta || "18:00",
+          intervalo: data.intervalo || 30,
+          activo: data.activo !== false
+        } as DayConfig;
+      });
       const sorter = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
       loadedDays.sort((a, b) => sorter.indexOf(a.id) - sorter.indexOf(b.id));
       setDays(loadedDays);
@@ -40,31 +55,57 @@ export default function Configuracion() {
     }
   };
 
-  const handleSave = async (day: DayConfig) => {
+  const handleSaveAll = async () => {
+    const invalid = days.find(d => (d.desde || "09:00") >= (d.hasta || "18:00") || !d.intervalo);
+    if (invalid) {
+        toast.error(`Error en el día ${invalid.dia}: El horario o intervalo es inválido.`);
+        return;
+    }
+
     setLoading(true);
     try {
-      // Ensure defaults to avoid "undefined" error in Firebase
+      const batch = writeBatch(db);
+      
+      days.forEach(day => {
+        const ref = doc(db, "turnos", day.id);
+        batch.update(ref, {
+          desde: day.desde || "09:00",
+          hasta: day.hasta || "18:00",
+          intervalo: day.intervalo || 30,
+          activo: day.activo !== false
+        });
+      });
+
+      await batch.commit();
+      
+      // Update local state and UI
+      toast.success("Toda la configuración ha sido guardada");
+      setHasChanges(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al guardar la configuración");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveSingle = async (day: DayConfig) => {
+    setLoading(true);
+    try {
+      const batch = writeBatch(db);
+      const ref = doc(db, "turnos", day.id);
+      
       const sanitizedDay = {
-        ...day,
         desde: day.desde || "09:00",
         hasta: day.hasta || "18:00",
         intervalo: day.intervalo || 30,
-        activo: day.activo !== false // Default to true if undefined
+        activo: day.activo !== false
       };
 
-      // 1. Update metadata
-      await updateDoc(doc(db, "turnos", day.id), {
-        desde: sanitizedDay.desde,
-        hasta: sanitizedDay.hasta,
-        intervalo: sanitizedDay.intervalo,
-        activo: sanitizedDay.activo
-      });
+      batch.update(ref, sanitizedDay);
+      await batch.commit();
       
-      toast.success("Configuración guardada correctamente");
-
-      // Update local state to reflect defaults
-      setDays(prev => prev.map(d => d.id === day.id ? sanitizedDay : d));
-      
+      toast.success(`Configuración de ${day.dia} guardada`);
     } catch (error) {
       console.error(error);
       toast.error("Error al guardar");
@@ -75,100 +116,85 @@ export default function Configuracion() {
 
   const updateDayState = (id: string, field: keyof DayConfig, value: any) => {
     setDays(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d));
+    setHasChanges(true);
+  };
+
+  const handleApplyToAll = () => {
+    if (!dayToCopy) return;
+    
+    setDays(prev => prev.map(d => ({
+        ...d,
+        desde: dayToCopy.desde || "09:00",
+        hasta: dayToCopy.hasta || "18:00",
+        intervalo: dayToCopy.intervalo || 30,
+        activo: dayToCopy.activo !== false
+    })));
+    setHasChanges(true);
+    setDayToCopy(null);
+    toast.info("Configuración copiada a todos los días. No olvides guardar los cambios.");
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
+    <div className="min-h-screen bg-background text-foreground pb-20">
       <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
-        <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <Link
-            to="/"
-            className="w-10 h-10 hover:bg-secondary/30 rounded-lg flex items-center justify-center transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
-          <h1 className="text-2xl font-bold">Configuración de Horarios</h1>
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link
+              to="/"
+              className="w-10 h-10 hover:bg-secondary/30 rounded-lg flex items-center justify-center transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </Link>
+            <h1 className="text-2xl font-bold">Configuración</h1>
+          </div>
+          
+          {hasChanges && (
+            <button
+              onClick={handleSaveAll}
+              className="bg-accent text-accent-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-accent/20 animate-in fade-in zoom-in duration-300"
+            >
+              <Save className="w-4 h-4" />
+              Guardar Todo
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 py-8 sm:px-6 space-y-8">
-        {/* Section: Horarios */}
-        <div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {days.map((day) => (
-                <div key={day.id} className="bg-card border border-white/10 rounded-3xl overflow-hidden shadow-sm hover:border-white/20 transition-all group">
-                  {/* Card Header */}
-                  <div className="bg-white/5 px-5 py-4 flex justify-between items-center border-b border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center text-accent">
-                        <CalendarDays className="w-4 h-4" />
-                      </div>
-                      <span className="font-semibold capitalize text-lg">{day.dia}</span>
-                    </div>
-                    {/* Toggle Switch */}
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={day.activo !== false} // Default to true if undefined
-                        onChange={(e) => updateDayState(day.id, 'activo', e.target.checked)}
-                        className="sr-only peer" 
-                      />
-                      <div className="w-9 h-5 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
-                    </label>
-                  </div>
-
-                  {/* Card Body */}
-                  <div className="p-5 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Inicio
-                        </label>
-                        <input
-                          type="time"
-                          value={day.desde || "09:00"}
-                          onChange={(e) => updateDayState(day.id, 'desde', e.target.value)}
-                          className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Fin
-                        </label>
-                        <input
-                          type="time"
-                          value={day.hasta || "18:00"}
-                          onChange={(e) => updateDayState(day.id, 'hasta', e.target.value)}
-                          className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-xs text-muted-foreground font-medium">Intervalo (minutos)</label>
-                      <input
-                        type="number"
-                        value={day.intervalo || 30}
-                        onChange={(e) => updateDayState(day.id, 'intervalo', parseInt(e.target.value))}
-                        className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none text-center font-medium"
-                      />
-                    </div>
-
-                    <button
-                      onClick={() => handleSave(day)}
-                      className="w-full bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-xl py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      Guardar
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 space-y-8">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {days.map((day) => (
+            <DayConfigCard 
+                key={day.id}
+                day={day}
+                onUpdate={updateDayState}
+                onSave={handleSaveSingle}
+                onApplyToAll={(d) => setDayToCopy(d)}
+            />
+            ))}
         </div>
       </div>
+
+      <AlertDialog open={!!dayToCopy} onOpenChange={(open) => !open && setDayToCopy(null)}>
+        <AlertDialogContent className="bg-card border-white/10 rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Copiar configuración?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción reemplazará los horarios e intervalos de <strong>todos los días</strong> con la configuración de <strong>{dayToCopy?.dia}</strong>. Los cambios solo se aplicarán permanentemente al presionar "Guardar Todo".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="bg-secondary/50 border-white/5 rounded-xl hover:bg-secondary/70">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleApplyToAll}
+              className="bg-accent text-accent-foreground rounded-xl hover:bg-accent/90"
+            >
+              Confirmar y Copiar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

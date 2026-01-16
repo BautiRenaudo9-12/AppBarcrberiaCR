@@ -30,20 +30,50 @@ export function useTurnos() {
     // Internal subscriptions state
     const [allBlockedRules, setAllBlockedRules] = useState<BlockedSlot[]>([]);
     const [allExceptions, setAllExceptions] = useState<SlotException[]>([]);
+    const [subscriptionsReady, setSubscriptionsReady] = useState(false);
 
     // Subscriptions
     useEffect(() => {
-        const unsubBlock = subscribeToBlockedSlots(setAllBlockedRules);
-        const unsubExc = subscribeToExceptions(setAllExceptions);
+        let blocksLoaded = false;
+        let exceptionsLoaded = false;
+
+        const checkReady = () => {
+            if (blocksLoaded && exceptionsLoaded) {
+                setSubscriptionsReady(true);
+            }
+        };
+
+        const unsubBlock = subscribeToBlockedSlots((data) => {
+            setAllBlockedRules(data);
+            blocksLoaded = true;
+            checkReady();
+        });
+
+        const unsubExc = subscribeToExceptions((data) => {
+            setAllExceptions(data);
+            exceptionsLoaded = true;
+            checkReady();
+        });
+
         return () => { unsubBlock(); unsubExc(); };
     }, []);
 
     // Load Logic
     const loadSlots = useCallback(async () => {
+        // Wait until subscriptions have fired at least once
+        if (!subscriptionsReady) {
+            setLoading(true); // Keep loading while waiting
+            return;
+        }
+
         setLoading(true);
         try {
             const dateMoment = moment(selectedDate);
-            const dayName = arrayDias[Number(dateMoment.format("d"))].toLowerCase();
+            const rawDayName = arrayDias[Number(dateMoment.format("d"))].toLowerCase();
+            // Normalizar el nombre del día (quitar tildes para coincidir con IDs de Firestore)
+            const dayName = rawDayName
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
 
             const config = await getDayConfig(dayName);
 
@@ -100,7 +130,7 @@ export function useTurnos() {
         } finally {
             setLoading(false);
         }
-    }, [selectedDate, isAdmin, allBlockedRules, allExceptions]);
+    }, [selectedDate, isAdmin, allBlockedRules, allExceptions, subscriptionsReady]);
 
     // Reload when dependencies change
     useEffect(() => {
@@ -124,7 +154,8 @@ export function useTurnos() {
                 time,
                 user.email!,
                 finalClientName,
-                ""
+                "",
+                isAdmin // Force if admin
             );
             toast.success("Reserva confirmada");
             if (isAdmin) await loadSlots();

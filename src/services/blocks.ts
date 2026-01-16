@@ -136,11 +136,45 @@ export const isException = (dateStr: string, timeStr: string, exceptions: SlotEx
 
 // --- Subscriptions ---
 export const subscribeToBlockedSlots = (callback: (slots: BlockedSlot[]) => void) => {
-  const q = query(collection(db, "blocked_slots"));
-  return onSnapshot(q, (snapshot) => {
-    const slots = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BlockedSlot));
-    callback(slots);
+  // Optimization: Split into two queries to avoid fetching full history
+  // 1. Recurring Rules (Always needed)
+  const qRecurring = query(
+    collection(db, "blocked_slots"), 
+    where("type", "==", "recurring")
+  );
+
+  // 2. Single Blocks (Only future or today)
+  // Get timestamp for today at 00:00:00 to include today's blocks
+  const todayTimestamp = moment().startOf('day').valueOf();
+  const qSingle = query(
+    collection(db, "blocked_slots"),
+    where("type", "==", "single"),
+    where("date", ">=", todayTimestamp)
+  );
+
+  let recurringSlots: BlockedSlot[] = [];
+  let singleSlots: BlockedSlot[] = [];
+
+  // Helper to merge and callback
+  const emit = () => {
+    callback([...recurringSlots, ...singleSlots]);
+  };
+
+  const unsubRecurring = onSnapshot(qRecurring, (snap) => {
+    recurringSlots = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BlockedSlot));
+    emit();
   });
+
+  const unsubSingle = onSnapshot(qSingle, (snap) => {
+    singleSlots = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BlockedSlot));
+    emit();
+  });
+
+  // Return unsubscribe function that detaches both listeners
+  return () => {
+    unsubRecurring();
+    unsubSingle();
+  };
 };
 
 // --- 4. Detection / Matching Logic ---

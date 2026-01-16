@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Trash2, Megaphone, Plus, Calendar } from "lucide-react";
+import { ArrowLeft, Trash2, Megaphone, Plus, Calendar, Loader2, Database } from "lucide-react";
 import { createAnnouncement, getAllAnnouncements, deleteAnnouncement, Announcement } from "@/services/announcements";
 import { toast } from "sonner";
 import { useUI } from "@/context/UIContext";
@@ -22,6 +22,11 @@ export default function Anuncios() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const { setLoading } = useUI();
   
+  // Pagination State
+  const [hasMore, setHasMore] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
+  const observer = useRef<IntersectionObserver | null>(null);
+  
   // Form State
   const [annText, setAnnText] = useState("");
   const [annIcon, setAnnIcon] = useState("📣");
@@ -29,19 +34,77 @@ export default function Anuncios() {
   const [annEnd, setAnnEnd] = useState("");
 
   useEffect(() => {
-    loadAnnouncements();
+    // Initial load
+    loadAnnouncements(true);
   }, []);
 
-  const loadAnnouncements = async () => {
-    setLoading(true);
+  const lastElementRef = useCallback((node: HTMLDivElement) => {
+    if (pageLoading) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadAnnouncements(false);
+      }
+    });
+    
+    if (node) observer.current.observe(node);
+  }, [pageLoading, hasMore]);
+
+  const loadAnnouncements = async (isReset: boolean = false) => {
+    setPageLoading(true);
+    if (isReset) setLoading(true); 
+    
     try {
-      const list = await getAllAnnouncements();
-      setAnnouncements(list);
+      const lastDoc = isReset ? undefined : announcements[announcements.length - 1]?.doc;
+      const list = await getAllAnnouncements(lastDoc);
+      
+      if (list.length < 10) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+
+      setAnnouncements(prev => isReset ? list : [...prev, ...list]);
     } catch (error) {
       console.error(error);
       toast.error("Error al cargar anuncios");
     } finally {
       setLoading(false);
+      setPageLoading(false);
+    }
+  };
+
+  const handleSeedData = async () => {
+    if (!confirm("¿Generar 25 anuncios de prueba?")) return;
+    setLoading(true);
+    try {
+        const emojis = ["🔥", "✂️", "💈", "🎉", "⚠️", "📅", "✅"];
+        const texts = ["Descuento especial", "Horario modificado", "Nuevo barbero", "Mantenimiento", "Promo 2x1", "Cerrado por feriado", "Reserva con tiempo"];
+        
+        const promises = Array.from({ length: 25 }).map((_, i) => {
+            const startDate = new Date();
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + 7); // +7 dias
+            
+            // Variar un poco las fechas para el orden
+            startDate.setMinutes(startDate.getMinutes() - i); 
+
+            return createAnnouncement(
+                `${texts[i % texts.length]} - Prueba #${i + 1}`,
+                emojis[i % emojis.length],
+                startDate,
+                endDate
+            );
+        });
+
+        await Promise.all(promises);
+        toast.success("25 anuncios generados");
+        loadAnnouncements(true);
+    } catch (e) {
+        toast.error("Error generando datos");
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -66,7 +129,7 @@ export default function Anuncios() {
           setAnnText("");
           setAnnStart("");
           setAnnEnd("");
-          loadAnnouncements(); // Refresh list
+          loadAnnouncements(true); // Reset list
       } catch (e) {
           toast.error("Error al publicar anuncio");
       } finally {
@@ -75,8 +138,6 @@ export default function Anuncios() {
   };
 
   const handleDelete = async (id: string) => {
-      // confirm dialog handled by UI component now
-      
       setLoading(true);
       try {
           await deleteAnnouncement(id);
@@ -101,6 +162,14 @@ export default function Anuncios() {
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-2xl font-bold">Gestión de Anuncios</h1>
+          <button 
+             onClick={handleSeedData}
+             className="ml-auto text-xs bg-white/5 hover:bg-white/10 text-muted-foreground px-3 py-1.5 rounded-lg flex items-center gap-2 border border-white/5 transition-colors"
+             title="Generar 25 anuncios para pruebas"
+          >
+             <Database className="w-3 h-3" />
+             <span className="hidden sm:inline">Generar Datos</span>
+          </button>
         </div>
       </div>
 
@@ -169,21 +238,28 @@ export default function Anuncios() {
         </div>
 
         {/* List of Announcements */}
-        <div>
+        <div className="pb-10">
             <h2 className="text-xl font-bold mb-4 px-1">Anuncios Creados</h2>
             <div className="space-y-4">
-                {announcements.length === 0 ? (
+                {announcements.length === 0 && !pageLoading ? (
                     <div className="text-center py-8 text-muted-foreground bg-card/30 rounded-3xl border border-white/5">
                         No hay anuncios registrados.
                     </div>
                 ) : (
-                    announcements.map((ann) => {
+                    announcements.map((ann, index) => {
                         const start = ann.fechaInicio.toDate();
                         const end = ann.fechaFin.toDate();
                         const isActive = new Date() >= start && new Date() <= end;
+                        
+                        // Attach ref to the last element
+                        const isLast = index === announcements.length - 1;
 
                         return (
-                            <div key={ann.id} className="bg-card border border-white/10 rounded-3xl p-5 flex items-start gap-4 group hover:border-white/20 transition-all relative overflow-hidden">
+                            <div 
+                                key={ann.id} 
+                                ref={isLast ? lastElementRef : null}
+                                className="bg-card border border-white/10 rounded-3xl p-5 flex items-start gap-4 group hover:border-white/20 transition-all relative overflow-hidden"
+                            >
                                 {isActive && (
                                     <div className="absolute top-0 right-0 bg-accent text-accent-foreground text-[10px] font-bold px-3 py-1 rounded-bl-xl">
                                         ACTIVO
@@ -236,6 +312,12 @@ export default function Anuncios() {
                             </div>
                         );
                     })
+                )}
+                
+                {pageLoading && (
+                    <div className="flex justify-center py-4">
+                        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+                    </div>
                 )}
             </div>
         </div>

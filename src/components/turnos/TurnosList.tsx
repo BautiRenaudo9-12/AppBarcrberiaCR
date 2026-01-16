@@ -9,6 +9,7 @@ interface TurnosListProps {
   onBlock: (slot: Slot) => void;
   onUnblock: (slot: Slot) => void;
   onActivate: (slot: Slot) => void;
+  onRecurringAction: (slot: Slot) => void;
 }
 
 export default function TurnosList({ 
@@ -18,7 +19,8 @@ export default function TurnosList({
   onReserve, 
   onBlock, 
   onUnblock, 
-  onActivate 
+  onActivate,
+  onRecurringAction
 }: TurnosListProps) {
   
   if (loading && slots.length === 0) {
@@ -51,6 +53,7 @@ export default function TurnosList({
             onBlock={onBlock}
             onUnblock={onUnblock}
             onActivate={onActivate}
+            onRecurringAction={onRecurringAction}
           />
         ))}
       </div>

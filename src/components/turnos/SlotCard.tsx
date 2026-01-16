@@ -1,7 +1,8 @@
 import { memo } from "react";
-import { Clock, Lock, Unlock, CalendarCheck, Power } from "lucide-react";
+import { Clock, Lock, CalendarCheck, CalendarPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slot } from "@/types/turnos";
+import { Switch } from "@/components/ui/switch";
 
 interface SlotCardProps {
   slot: Slot;
@@ -10,6 +11,7 @@ interface SlotCardProps {
   onBlock: (slot: Slot) => void;
   onUnblock: (slot: Slot) => void;
   onActivate: (slot: Slot) => void;
+  onRecurringAction: (slot: Slot) => void;
 }
 
 function SlotCard({ 
@@ -18,8 +20,28 @@ function SlotCard({
   onReserve, 
   onBlock, 
   onUnblock, 
-  onActivate 
+  onActivate,
+  onRecurringAction
 }: SlotCardProps) {
+
+  const isAvailable = slot.status !== 'blocked';
+
+  const handleToggle = (checked: boolean) => {
+    if (checked) {
+      // Trying to OPEN the slot
+      if (slot.blockedRule?.type === 'recurring') {
+         // Ask user what to do with recurring block
+         onRecurringAction(slot);
+      } else {
+         // If it's a manual block, we just remove it
+         onUnblock(slot);
+      }
+    } else {
+      // Trying to CLOSE the slot
+      onBlock(slot);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -43,20 +65,23 @@ function SlotCard({
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className={cn("font-semibold text-lg", slot.status === 'blocked' && "text-muted-foreground line-through")}>
+          <p className={cn("font-semibold text-lg", slot.status === 'blocked' && "text-muted-foreground")}>
             {slot.time}
           </p>
           <div className="flex items-center gap-2">
-            <p className={cn(
-                "text-xs font-medium truncate",
-                slot.status === 'free' ? "text-muted-foreground" :
-                slot.status === 'reserved' ? "text-orange-500" : "text-red-500",
-                slot.isException && isAdmin && "text-green-600 font-semibold"
-            )}>
-                {slot.status === 'free' ? ((slot.isException && isAdmin) ? "Sobreturno Activado" : "Disponible") :
-                slot.status === 'reserved' ? (isAdmin ? `Reservado: ${slot.appointment?.clientName || 'Cliente'}` : "Reservado") : 
-                "Bloqueado"}
-            </p>
+            
+            {/* Solo mostrar si es Sobreturno o Reservado */}
+            {slot.isException && isAdmin && (
+                <span className="text-xs font-semibold text-green-600">
+                    Sobreturno
+                </span>
+            )}
+
+            {slot.status === 'reserved' && (
+                <p className="text-xs font-medium text-orange-500 truncate">
+                   {isAdmin ? (slot.appointment?.clientName || 'Cliente') : 'Reservado'}
+                </p>
+            )}
             
             {slot.blockedRule?.type === 'recurring' && !slot.isException && (
                 <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 rounded">
@@ -68,45 +93,16 @@ function SlotCard({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         {isAdmin && (
-            <>
-                {slot.status === 'free' && (
-                    <button 
-                        onClick={() => onBlock(slot)}
-                        className="p-2 rounded-full bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
-                        title="Bloquear horario"
-                    >
-                        <Lock className="w-4 h-4" />
-                    </button>
-                )}
-                 {slot.status === 'blocked' && (
-                    <div className="flex gap-1">
-                        {/* Sobreturno Button (Activate Exception) */}
-                        <button 
-                            onClick={() => onActivate(slot)}
-                            className="p-2 rounded-full bg-accent/20 hover:bg-accent/30 text-accent transition-colors"
-                            title="Activar Turno (Excepción para hoy)"
-                        >
-                            <Power className="w-4 h-4" />
-                        </button>
-
-                        {/* Unlock Button (Delete Rule) */}
-                        {slot.blockedRule && (
-                            <button 
-                                onClick={() => onUnblock(slot)}
-                                className="p-2 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-500 transition-colors"
-                                title="Eliminar regla de bloqueo"
-                            >
-                                <Unlock className="w-4 h-4" />
-                            </button>
-                        )}
-                    </div>
-                )}
-            </>
+            <Switch 
+                checked={isAvailable}
+                onCheckedChange={handleToggle}
+                className="data-[state=checked]:bg-green-600"
+            />
         )}
 
-        {(slot.status === 'free') && (
+        {(slot.status === 'free' || (isAdmin && slot.status === 'blocked')) && (
             <button 
                 onClick={() => onReserve(slot)}
                 className="px-6 py-2 rounded-full text-sm font-medium transition-colors bg-green-600/30 text-white hover:bg-green-600 shadow-sm"

@@ -14,6 +14,7 @@ import ReserveDialog from "@/components/turnos/dialogs/ReserveDialog";
 import BlockDialog from "@/components/turnos/dialogs/BlockDialog";
 import UnblockDialog from "@/components/turnos/dialogs/UnblockDialog";
 import ActivateExceptionDialog from "@/components/turnos/dialogs/ActivateExceptionDialog";
+import RecurringBlockActionDialog from "@/components/turnos/dialogs/RecurringBlockActionDialog";
 
 export default function Turnos() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function Turnos() {
   
   const [slotToUnblock, setSlotToUnblock] = useState<Slot | null>(null); // Unblock Dialog
   const [slotToActivate, setSlotToActivate] = useState<Slot | null>(null); // Activate Dialog
+  const [slotToRecurringAction, setSlotToRecurringAction] = useState<Slot | null>(null); // Recurring Choice Dialog
 
   // --- UI Handlers (Connects Dialogs to Hook) ---
 
@@ -86,6 +88,19 @@ export default function Turnos() {
           setSlotToActivate(null);
       }
   };
+  
+  // Logic from Recurring Dialog
+  const onRecurringActivate = async () => {
+      if (!slotToRecurringAction) return;
+      const success = await activateException(slotToRecurringAction.time);
+      if (success) setSlotToRecurringAction(null);
+  };
+
+  const onRecurringDelete = async () => {
+      if (!slotToRecurringAction?.blockedRule?.id) return;
+      const success = await unblockSlot(slotToRecurringAction.blockedRule.id);
+      if (success) setSlotToRecurringAction(null);
+  };
 
   return (
     <AnimatedLayout className="min-h-screen bg-background text-foreground">
@@ -109,6 +124,7 @@ export default function Turnos() {
             selectedDate={selectedDate} 
             onDateChange={setSelectedDate} 
             minDate={!isAdmin ? moment().format("YYYY-MM-DD") : undefined}
+            maxDate={!isAdmin ? moment().add(6, 'days').format("YYYY-MM-DD") : undefined}
         />
 
         <TurnosList 
@@ -119,6 +135,7 @@ export default function Turnos() {
             onBlock={setSlotToBlock}
             onUnblock={setSlotToUnblock}
             onActivate={setSlotToActivate}
+            onRecurringAction={setSlotToRecurringAction}
         />
 
         {/* --- DIALOGS --- */}
@@ -162,6 +179,15 @@ export default function Turnos() {
             onConfirm={onConfirmActivate}
             loading={loading}
             slotTime={slotToActivate?.time}
+        />
+        
+        <RecurringBlockActionDialog 
+            open={!!slotToRecurringAction}
+            onClose={() => setSlotToRecurringAction(null)}
+            onActivateException={onRecurringActivate}
+            onDeleteRule={onRecurringDelete}
+            loading={loading}
+            slotTime={slotToRecurringAction?.time}
         />
 
       </div>

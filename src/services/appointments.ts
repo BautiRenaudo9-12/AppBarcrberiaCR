@@ -1,6 +1,9 @@
 import { 
   collection, 
-  addDoc, 
+  addDoc,
+  setDoc,
+  getDoc,
+  runTransaction,
   getDocs, 
   query, 
   where, 
@@ -118,17 +121,28 @@ export const createAppointment = async (
   timeStr: string, // HH:mm
   clientEmail: string,
   clientName: string,
-  clientPhone: string = ""
+  clientPhone: string = "",
+  force: boolean = false
 ) => {
-  const isAvailable = await isSlotAvailable(dateStr, timeStr);
-  if (!isAvailable) {
-    throw new Error("El turno ya no está disponible.");
+  // 1. Check logical availability (Blocks, Exceptions, etc.)
+  // We still do this to provide specific error messages ("Blocked by admin" vs "Taken")
+  if (!force) {
+    const isAvailable = await isSlotAvailable(dateStr, timeStr);
+    if (!isAvailable) {
+      throw new Error("El turno ya no está disponible.");
+    }
   }
 
   const dateTimeStr = `${dateStr}T${timeStr}:00`;
   const timestamp = Timestamp.fromDate(new Date(dateTimeStr));
 
-  const newAppointment: Omit<Appointment, "id"> = {
+  // 2. Deterministic ID to prevent Race Conditions (Double Booking)
+  // ID format: "2026-01-16_10-00"
+  const docId = `${dateStr}_${timeStr.replace(':', '-')}`;
+  const appointmentRef = doc(db, "appointments", docId);
+
+  const newAppointment: Appointment = {
+    // id is implicit in document key but good to store
     date: dateStr,
     time: timeStr,
     timestamp,
@@ -139,57 +153,50 @@ export const createAppointment = async (
     createdAd: Timestamp.now()
   };
 
-  await addDoc(collection(db, "appointments"), newAppointment);
-  return true;
-};
+  try {
+    // 3. Atomic Write
+    // check if exists first to be safe, or use a transaction if we needed strict read-before-write logic
+    // But setDoc will overwrite if we don't check. 
+    // Actually, to prevent overwrite of an existing confirmed appointment, we should check existence.
+    // The most robust way for "Insert if not exists" is a Transaction.
+    
+    /* 
+       Why Transaction? 
+       setDoc(..., { merge: false }) overwrites. 
+       We want to fail if it exists.
+    */
+   
+    await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(appointmentRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Appointment;
+        // If it exists but is cancelled, we can overwrite.
+        if (data.status !== 'cancelled') {
+             throw new Error("El turno acaba de ser ocupado por otra persona.");
+        }
+      }
+      transaction.set(appointmentRef, newAppointment);
+    });
 
-export const blockSlot = async (dateStr: string, timeStr: string) => {
-  const isAvailable = await isSlotAvailable(dateStr, timeStr);
-  if (!isAvailable) {
-    throw new Error("El turno no se puede bloquear porque ya está ocupado.");
-  }
-
-  const dateTimeStr = `${dateStr}T${timeStr}:00`;
-  const timestamp = Timestamp.fromDate(new Date(dateTimeStr));
-
-  const newAppointment: Omit<Appointment, "id"> = {
-    date: dateStr,
-    time: timeStr,
-    timestamp,
-    clientEmail: "admin@blocked",
-    clientName: "BLOQUEADO",
-    status: "blocked",
-    createdAd: Timestamp.now()
+    return true;
+    } catch (error: any) {
+      console.error("Error creating appointment:", error);
+      if (error.message.includes("ocupado")) {
+          throw error; // Re-throw specific race condition error
+      }
+      throw new Error("No se pudo reservar el turno. Intente nuevamente.");
+    }
   };
-
-  await addDoc(collection(db, "appointments"), newAppointment);
-};
-
-export const unblockSlot = async (dateStr: string, timeStr: string) => {
-  const q = query(
-    collection(db, "appointments"),
-    where("date", "==", dateStr),
-    where("time", "==", timeStr),
-    where("status", "==", "blocked")
-  );
-  const snapshot = await getDocs(q);
   
-  const deletePromises = snapshot.docs.map(docSnapshot => 
-    deleteDoc(doc(db, "appointments", docSnapshot.id))
-  );
-  
-  await Promise.all(deletePromises);
-};
-
-// Cancel/Delete appointment
-export const cancelAppointment = async (appointmentId: string) => {
-    // We can either hard delete or soft delete (status=cancelled).
-    // Soft delete is better for history.
-    // But for this refactor, let's just delete to keep it simple or align with legacy "removeReserve".
-    // Actually, legacy removed the data from the slot.
-    // Let's hard delete for now to match "freeing up" logic simply.
-    await deleteDoc(doc(db, "appointments", appointmentId));
-};
+  // Cancel/Delete appointment
+  export const cancelAppointment = async (appointmentId: string) => {
+      // We can either hard delete or soft delete (status=cancelled).
+      // Soft delete is better for history.
+      // But for this refactor, let's just delete to keep it simple or align with legacy "removeReserve".
+      // Actually, legacy removed the data from the slot.
+      // Let's hard delete for now to match "freeing up" logic simply.
+      await deleteDoc(doc(db, "appointments", appointmentId));
+  };
 
 export const getUserActiveAppointment = async (userEmail: string) => {
     const now = new Date();

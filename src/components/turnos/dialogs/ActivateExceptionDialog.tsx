@@ -29,8 +29,7 @@ export default function ActivateExceptionDialog({
         <DialogHeader>
           <DialogTitle>Activar Turno (Excepción)</DialogTitle>
           <DialogDescription>
-            Se habilitará el turno de las <strong>{slotTime}</strong> solo por hoy. <br />
-            Cualquier cliente podrá reservarlo. La regla de bloqueo recurrente seguirá activa para las próximas semanas.
+            Se habilitará el turno de las <strong>{slotTime}</strong> solo por hoy.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-3 sm:gap-0">
