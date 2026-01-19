@@ -18,35 +18,47 @@ export const showNotification = ({ text = "Exito", duration = 1500 }: Notificati
 };
 
 export const requestForToken = async () => {
+  console.log("🔔 [Notifications] Requesting token...");
   if (!messaging) {
-    console.log("Messaging not supported or failed to initialize.");
+    console.error("❌ [Notifications] Messaging not supported or failed to initialize.");
     return null;
   }
 
   if (Notification.permission === "denied") {
-    // showNotification({ text: "Las notificaciones están bloqueadas. Habilítalas en el navegador.", duration: 5000 });
+    console.warn("⚠️ [Notifications] Permission denied.");
     return null;
   }
 
   try {
+    console.log("🔔 [Notifications] Checking Service Worker registration...");
     let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
     if (!registration) {
+      console.log("🔔 [Notifications] Registering SW...");
       registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     }
+    console.log("✅ [Notifications] SW Ready:", registration);
 
+    const vapidKey = import.meta.env.VITE_VAPID_KEY;
+    if (!vapidKey) {
+        console.error("❌ [Notifications] VITE_VAPID_KEY is missing in .env");
+        return null;
+    }
+
+    console.log("🔔 [Notifications] Getting Token...");
     const currentToken = await getToken(messaging, { 
-      vapidKey: import.meta.env.VITE_VAPID_KEY,
+      vapidKey: vapidKey,
       serviceWorkerRegistration: registration
     });
     
     if (currentToken) {
+      console.log("✅ [Notifications] Token received:", currentToken.substring(0, 10) + "...");
       return currentToken;
     } else {
-      console.log('No registration token available. Request permission to generate one.');
+      console.log('⚠️ [Notifications] No registration token available.');
       return null;
     }
   } catch (err) {
-    console.log('An error occurred while retrieving token. ', err);
+    console.error('❌ [Notifications] Error retrieving token:', err);
     return null;
   }
 };
