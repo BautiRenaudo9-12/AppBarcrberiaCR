@@ -1,5 +1,6 @@
 import { 
   doc, 
+  updateDoc,
   getDoc, 
   getDocs, 
   collection, 
@@ -157,6 +158,11 @@ export const searchClientes = async (term: string) => {
 
   return { docs };
 }
+
+export const updateUserProfile = async (email: string, data: Partial<DocumentData>) => {
+    if (!email) throw new Error("Email required");
+    await updateDoc(doc(db, "clientes", email), data);
+};
 
 export const getHistory = async () => {
   if (!auth.currentUser?.email) return { docs: [] };

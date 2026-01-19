@@ -1,11 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, LogOut, Edit2, Bell } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useUser } from "@/context/UserContext";
 import { useHistoryCount, useUserInfo } from "@/hooks/useUserQuery";
 import AnimatedLayout from "@/components/AnimatedLayout";
+import { requestForToken } from "@/services/notifications";
+import { updateUserProfile } from "@/services/users";
+import { toast } from "sonner";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +25,7 @@ import {
 export default function Profile() {
   const { isAdmin, userProfile, setUserProfile } = useUser();
   const navigate = useNavigate();
+  const [loadingNotif, setLoadingNotif] = useState(false);
 
   // Queries
   const { data: visitCount = 0 } = useHistoryCount();
@@ -39,6 +44,28 @@ export default function Profile() {
     localStorage.removeItem("IS_ADMIN");
     await signOut(auth);
     navigate("/"); 
+  };
+
+  const handleEnableNotifications = async () => {
+      setLoadingNotif(true);
+      try {
+          const token = await requestForToken();
+          if (token && userProfile?.email) {
+              await updateUserProfile(userProfile.email, { fcmToken: token });
+              toast.success("Notificaciones activadas correctamente");
+          } else if (!token) {
+              if (Notification.permission === "denied") {
+                  toast.error("Permiso denegado. Habilita las notificaciones en el navegador.");
+              } else {
+                  toast.error("No se pudo obtener el token. Intenta nuevamente.");
+              }
+          }
+      } catch (error) {
+          console.error(error);
+          toast.error("Error al activar notificaciones");
+      } finally {
+          setLoadingNotif(false);
+      }
   };
 
   const displayProfile = userProfile || fetchedProfile;
@@ -117,11 +144,19 @@ export default function Profile() {
               </div>
               <span className="text-muted-foreground font-medium group-hover:translate-x-1 transition-transform">→</span>
             </button>
-            <button className="w-full px-5 py-4 flex items-center gap-3 hover:bg-secondary/30 transition-colors group text-left">
-              <Bell className="w-5 h-5 text-accent" />
+            <button 
+                onClick={handleEnableNotifications}
+                disabled={loadingNotif}
+                className="w-full px-5 py-4 flex items-center gap-3 hover:bg-secondary/30 transition-colors group text-left"
+            >
+              <Bell className={`w-5 h-5 text-accent ${loadingNotif ? "animate-pulse" : ""}`} />
               <div className="flex-1">
-                <p className="font-medium">Notificaciones</p>
-                <p className="text-xs text-muted-foreground font-medium">Gestiona alertas</p>
+                <p className="font-medium">
+                    {loadingNotif ? "Activando..." : "Notificaciones"}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">
+                    {loadingNotif ? "Sincronizando..." : "Gestiona alertas"}
+                </p>
               </div>
               <span className="text-muted-foreground font-medium group-hover:translate-x-1 transition-transform">→</span>
             </button>
