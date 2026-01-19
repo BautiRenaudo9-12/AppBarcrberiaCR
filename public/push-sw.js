@@ -77,10 +77,11 @@ self.addEventListener('notificationclick', function(event) {
     // Redirigir a una URL que maneje la cancelación (Home.tsx lo hace)
     urlToOpen = `/?action=cancel&id=${payloadData.appointmentId}`;
   } else if (event.action === 'confirm') {
-    // Solo cerrar la notificación (ya se hizo arriba con event.notification.close())
+    // Solo cerrar la notificación
     return; 
   }
 
+  // Solo abrir ventana si NO es la acción de confirmar
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       // Intentar enfocar una ventana existente
