@@ -30,12 +30,8 @@ export const requestForToken = async () => {
   }
 
   try {
-    console.log("🔔 [Notifications] Checking Service Worker registration...");
-    let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-    if (!registration) {
-      console.log("🔔 [Notifications] Registering SW...");
-      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    }
+    console.log("🔔 [Notifications] Waiting for Service Worker...");
+    const registration = await navigator.serviceWorker.ready;
     console.log("✅ [Notifications] SW Ready:", registration);
 
     const vapidKey = import.meta.env.VITE_VAPID_KEY;
