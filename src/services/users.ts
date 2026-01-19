@@ -34,12 +34,14 @@ export const getUserInfo = async () => {
     localStorage.setItem("USER_INFO", JSON.stringify({
       name: data.name,
       email: data.email,
-      nro: data.nro
+      nro: data.nro,
+      fcmToken: data.fcmToken
     }));
     return {
       name: data.name,
       email: data.email,
-      nro: data.nro
+      nro: data.nro,
+      fcmToken: data.fcmToken
     };
   }
   return null;

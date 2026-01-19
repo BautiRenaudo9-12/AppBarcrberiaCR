@@ -4,7 +4,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { requestForToken } from "@/services/notifications";
 
-export function useFcmToken(user: User | null) {
+export function useFcmToken(user: User | null, dbToken?: string) {
     useEffect(() => {
         if (!user || !user.email) {
             console.log("ℹ️ [useFcmToken] No user or email, skipping token sync.");
@@ -17,9 +17,15 @@ export function useFcmToken(user: User | null) {
                 const token = await requestForToken();
                 if (token) {
                     const storedToken = localStorage.getItem('fcmToken');
-                    // Only update Firestore if the token has changed locally
-                    if (storedToken !== token) {
-                        console.log("📝 [useFcmToken] Token changed, updating Firestore...");
+                    
+                    // Update if:
+                    // 1. Token changed locally (storedToken !== token)
+                    // 2. OR Database doesn't have it (dbToken missing)
+                    // 3. OR Database has a different one (dbToken !== token)
+                    const needsUpdate = storedToken !== token || !dbToken || dbToken !== token;
+
+                    if (needsUpdate) {
+                        console.log("📝 [useFcmToken] Token mismatch or missing in DB, updating Firestore...");
                         await updateDoc(doc(db, "clientes", user.email!), {
                             fcmToken: token
                         });
@@ -37,5 +43,5 @@ export function useFcmToken(user: User | null) {
         };
 
         syncToken();
-    }, [user]);
+    }, [user, dbToken]);
 }

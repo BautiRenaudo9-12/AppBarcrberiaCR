@@ -4,6 +4,8 @@ import { useUser } from "@/context/UserContext";
 import { useUI } from "@/context/UIContext";
 import { subscribeToUserActiveAppointment, cancelAppointment } from "@/services/appointments";
 import { getActiveAnnouncement, Announcement } from "@/services/announcements";
+import { requestForToken } from "@/services/notifications";
+import { updateUserProfile } from "@/services/users";
 import AnimatedLayout from "@/components/AnimatedLayout";
 import { toast } from "sonner";
 import NotificationPrompt from "@/components/NotificationPrompt";
@@ -19,7 +21,7 @@ import ActiveReservation from "@/components/home/ActiveReservation";
 import CancelReservationDialog from "@/components/home/CancelReservationDialog";
 
 export default function Home() {
-    const { user, isAdmin } = useUser();
+    const { user, isAdmin, userProfile } = useUser();
     const { setLoading } = useUI();
     
     // Local State
@@ -30,7 +32,7 @@ export default function Home() {
     const [showNotifPrompt, setShowNotifPrompt] = useState(false);
 
     // Sync FCM Token
-    useFcmToken(user);
+    useFcmToken(user, userProfile?.fcmToken);
 
     // Initial Data Load (Announcements)
     useEffect(() => {
@@ -53,11 +55,43 @@ export default function Home() {
     // Handle Notification Prompt Logic
     const location = useLocation();
     useEffect(() => {
+        // 1. If explicit success state (just reserved)
         if (location.state?.reservationSuccess && Notification.permission !== "granted") {
             setShowNotifPrompt(true);
             window.history.replaceState({}, document.title);
+            return;
+        }
+
+        // 2. Proactive check for new users
+        if (Notification.permission === "default" && !localStorage.getItem("NOTIF_PROMPT_DISMISSED")) {
+             // Wait a bit before showing to not overwhelm immediately
+             const timer = setTimeout(() => {
+                 setShowNotifPrompt(true);
+             }, 3000);
+             return () => clearTimeout(timer);
         }
     }, [location]);
+
+    const handleNotifSuccess = async () => {
+        setShowNotifPrompt(false);
+        if (user && user.email) {
+            try {
+                // Ensure we have the token and it's synced
+                const token = await requestForToken();
+                if (token) {
+                    await updateUserProfile(user.email, { fcmToken: token });
+                }
+            } catch (e) {
+                console.error("Error syncing token after prompt success", e);
+            }
+        }
+    };
+
+    const handleNotifDismiss = () => {
+        setShowNotifPrompt(false);
+        // Remember dismissal for this session/browser
+        localStorage.setItem("NOTIF_PROMPT_DISMISSED", "true");
+    };
 
     // Handle URL Actions (e.g. Cancel from Notification click)
     const [searchParams, setSearchParams] = useSearchParams();
@@ -92,8 +126,8 @@ export default function Home() {
             {/* Notification Prompt Overlay */}
             {showNotifPrompt && (
                 <NotificationPrompt
-                    onDismiss={() => setShowNotifPrompt(false)}
-                    onSuccess={() => setShowNotifPrompt(false)}
+                    onDismiss={handleNotifDismiss}
+                    onSuccess={handleNotifSuccess}
                 />
             )}
 
