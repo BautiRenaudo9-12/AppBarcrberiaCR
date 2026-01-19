@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   VITE_ADMIN_EMAIL: z.string().email(),
+  VITE_VAPID_KEY: z.string().min(1, "VAPID Key is required"),
   VITE_FIREBASE_CONFIG: z.string().refine(
     (val) => {
       try {
@@ -18,6 +19,7 @@ const envSchema = z.object({
 export const validateEnv = () => {
   const env = {
     VITE_ADMIN_EMAIL: import.meta.env.VITE_ADMIN_EMAIL,
+    VITE_VAPID_KEY: import.meta.env.VITE_VAPID_KEY,
     VITE_FIREBASE_CONFIG: import.meta.env.VITE_FIREBASE_CONFIG,
   };
 
