@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Save, CheckCircle2, Database } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { getDays } from "@/services/reservations";
-import { migrateClientsKeywords } from "@/services/admin";
 import { doc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
@@ -54,19 +53,6 @@ export default function Configuracion() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleMigrateKeywords = async () => {
-      setLoading(true);
-      try {
-          const count = await migrateClientsKeywords();
-          toast.success(`Se actualizaron ${count} usuarios para búsqueda.`);
-      } catch (e) {
-          console.error(e);
-          toast.error("Error en migración");
-      } finally {
-          setLoading(false);
-      }
   };
 
   const handleSaveAll = async () => {
@@ -175,29 +161,6 @@ export default function Configuracion() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 space-y-8">
-        
-        {/* Maintenance Section */}
-        <div className="bg-card border border-white/10 rounded-3xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center text-accent">
-                    <Database className="w-5 h-5" />
-                </div>
-                <div>
-                    <h2 className="text-lg font-bold">Mantenimiento de Datos</h2>
-                    <p className="text-xs text-muted-foreground">Herramientas para corregir datos de usuarios</p>
-                </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-                <button 
-                    onClick={handleMigrateKeywords}
-                    className="flex items-center justify-center gap-2 bg-secondary/30 hover:bg-secondary/50 text-foreground py-3 rounded-xl transition-colors text-sm font-medium"
-                >
-                    <Search className="w-4 h-4" />
-                    Regenerar Índices de Búsqueda
-                </button>
-            </div>
-        </div>
-
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {days.map((day) => (
             <DayConfigCard 

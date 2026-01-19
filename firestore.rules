@@ -10,7 +10,10 @@ service cloud.firestore {
     
     function isAdmin() {
       // Hardcoded admin email matching VITE_ADMIN_EMAIL
-      return isSignedIn() && request.auth.token.email == 'renaudobautista@gmail.com';
+      // You can add more emails here or use a collection based approach in the future
+      return isSignedIn() && (
+        request.auth.token.email == 'renaudobautista@gmail.com'
+      );
     }
     
     function isOwner(email) {
@@ -28,10 +31,30 @@ service cloud.firestore {
 
     // --- Rules ---
 
-    // Clientes: Users manage their own profile. Admins can access all.
+    // Clientes: Stricter rules for better security
     match /clientes/{email} {
-      allow read, write: if isOwner(email) || isAdmin();
+      // READ: 
+      // - Get (single doc): Owner or Admin
+      // - List (queries): Only Admin can list/search clients
+      allow get: if isOwner(email) || isAdmin();
+      allow list: if isAdmin();
+
+      // CREATE: User can create their own profile.
+      // Enforce data integrity: email field must match document ID.
+      allow create: if isOwner(email) 
+                    && request.resource.data.email == email;
+
+      // UPDATE: User can update their own data.
+      // Security check: Prevent changing the 'email' field to mismatch the ID.
+      // This allows updating name, phone, keywords, fcmToken, reserve, etc.
+      allow update: if isAdmin() || (
+        isOwner(email) && request.resource.data.email == email
+      );
+
+      // DELETE: Only Admin can delete users (prevent accidental self-deletion)
+      allow delete: if isAdmin();
       
+      // Subcollection History (Legacy/Backup)
       match /history/{historyId} {
         allow read, write: if isOwner(email) || isAdmin();
       }
@@ -50,8 +73,6 @@ service cloud.firestore {
         allow write: if isAdmin();
         
         // Users need to update the document to reserve the slot.
-        // We enforce that they must be signed in.
-        // Data format is validated to prevent corruption.
         allow update: if isSignedIn() && isValidReserveFormat();
       }
     }

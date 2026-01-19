@@ -19,6 +19,7 @@ import { UIProvider } from "@/context/UIContext";
 import { UserProvider, useUser } from "@/context/UserContext";
 import InstallPrompt from "@/components/InstallPrompt";
 import ReloadPrompt from "@/components/ReloadPrompt";
+import NetworkStatus from "@/components/NetworkStatus";
 import { useEffect } from "react";
 import { onMessageListener, showNotification } from "@/services/notifications";
 
@@ -159,6 +160,7 @@ const App = () => {
             <Sonner />
             <InstallPrompt />
             <ReloadPrompt />
+            <NetworkStatus />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <AppRoutes />
             </BrowserRouter>

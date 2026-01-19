@@ -23,20 +23,14 @@ const generateKeywords = (text) => {
   const normalized = text.toLowerCase().trim();
   const keywords = [];
 
+  // Generate all substrings (n-grams)
   for (let i = 0; i < normalized.length; i++) {
-    keywords.push(normalized.substring(i));
-  }
-
-  const words = normalized.split(" ");
-  if (words.length > 1) {
-    words.forEach(word => {
-        for (let i = 0; i < word.length; i++) {
-            const suffix = word.substring(i);
-            if (!keywords.includes(suffix)) {
-                keywords.push(suffix);
-            }
+    for (let j = i + 1; j <= normalized.length; j++) {
+        const substring = normalized.substring(i, j);
+        if (substring.length >= 2) {
+            keywords.push(substring);
         }
-    });
+    }
   }
   return keywords;
 };

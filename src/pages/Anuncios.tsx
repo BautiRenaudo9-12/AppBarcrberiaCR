@@ -1,81 +1,46 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Trash2, Megaphone, Plus, Calendar, Loader2 } from "lucide-react";
-import { createAnnouncement, getAllAnnouncements, deleteAnnouncement, Announcement } from "@/services/announcements";
+import { ArrowLeft, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useUI } from "@/context/UIContext";
-import moment from "moment";
 import AnimatedLayout from "@/components/AnimatedLayout";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { useAnnouncementsInfinite, useCreateAnnouncement, useDeleteAnnouncement } from "@/hooks/useAnnouncements";
+import { AnnouncementCard } from "@/components/anuncios/AnnouncementCard";
 
 export default function Anuncios() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const { setLoading } = useUI();
-  
-  // Pagination State
-  const [hasMore, setHasMore] = useState(true);
-  const [pageLoading, setPageLoading] = useState(false);
-  const observer = useRef<IntersectionObserver | null>(null);
-  
   // Form State
   const [annText, setAnnText] = useState("");
   const [annIcon, setAnnIcon] = useState("📣");
   const [annStart, setAnnStart] = useState("");
   const [annEnd, setAnnEnd] = useState("");
 
-  useEffect(() => {
-    // Initial load
-    loadAnnouncements(true);
-  }, []);
+  // Queries & Mutations
+  const { 
+    data, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage, 
+    isLoading: isListLoading 
+  } = useAnnouncementsInfinite();
 
+  const createMutation = useCreateAnnouncement();
+  const deleteMutation = useDeleteAnnouncement();
+
+  const announcements = data?.pages.flatMap(page => page) || [];
+
+  // Infinite Scroll Observer
+  const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLDivElement) => {
-    if (pageLoading) return;
+    if (isListLoading || isFetchingNextPage) return;
     if (observer.current) observer.current.disconnect();
     
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        loadAnnouncements(false);
+      if (entries[0].isIntersecting && hasNextPage) {
+        fetchNextPage();
       }
-    });
+    }, { rootMargin: "200px" });
     
     if (node) observer.current.observe(node);
-  }, [pageLoading, hasMore]);
-
-  const loadAnnouncements = async (isReset: boolean = false) => {
-    setPageLoading(true);
-    if (isReset) setLoading(true); 
-    
-    try {
-      const lastDoc = isReset ? undefined : announcements[announcements.length - 1]?.doc;
-      const list = await getAllAnnouncements(lastDoc);
-      
-      if (list.length < 10) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
-
-      setAnnouncements(prev => isReset ? list : [...prev, ...list]);
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al cargar anuncios");
-    } finally {
-      setLoading(false);
-      setPageLoading(false);
-    }
-  };
-
-
+  }, [isListLoading, isFetchingNextPage, hasNextPage, fetchNextPage]);
 
   const handlePublishAnnouncement = async () => {
       if (!annText || !annStart || !annEnd) {
@@ -83,40 +48,32 @@ export default function Anuncios() {
           return;
       }
       
-      setLoading(true);
-      try {
-          const startDate = new Date(annStart);
-          const endDate = new Date(annEnd);
-          
-          if (endDate <= startDate) {
-              toast.error("La fecha de fin debe ser posterior a la de inicio");
-              return;
-          }
-          
-          await createAnnouncement(annText, annIcon, startDate, endDate);
-          toast.success("Anuncio publicado correctamente");
-          setAnnText("");
-          setAnnStart("");
-          setAnnEnd("");
-          loadAnnouncements(true); // Reset list
-      } catch (e) {
-          toast.error("Error al publicar anuncio");
-      } finally {
-          setLoading(false);
+      const startDate = new Date(annStart);
+      const endDate = new Date(annEnd);
+      
+      if (endDate <= startDate) {
+          toast.error("La fecha de fin debe ser posterior a la de inicio");
+          return;
       }
+
+      createMutation.mutate({ text: annText, icon: annIcon, start: startDate, end: endDate }, {
+        onSuccess: () => {
+            toast.success("Anuncio publicado correctamente");
+            setAnnText("");
+            setAnnStart("");
+            setAnnEnd("");
+        },
+        onError: () => {
+            toast.error("Error al publicar anuncio");
+        }
+      });
   };
 
-  const handleDelete = async (id: string) => {
-      setLoading(true);
-      try {
-          await deleteAnnouncement(id);
-          toast.success("Anuncio eliminado");
-          setAnnouncements(prev => prev.filter(a => a.id !== id));
-      } catch (e) {
-          toast.error("Error al eliminar");
-      } finally {
-          setLoading(false);
-      }
+  const handleDelete = (id: string) => {
+      deleteMutation.mutate(id, {
+          onSuccess: () => toast.success("Anuncio eliminado"),
+          onError: () => toast.error("Error al eliminar")
+      });
   };
 
   return (
@@ -131,7 +88,6 @@ export default function Anuncios() {
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-2xl font-bold">Gestión de Anuncios</h1>
-
         </div>
       </div>
 
@@ -191,9 +147,17 @@ export default function Anuncios() {
                 <div className="sm:col-span-2 pt-2">
                     <button 
                         onClick={handlePublishAnnouncement}
-                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-3 rounded-xl transition-colors"
+                        disabled={createMutation.isPending}
+                        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-3 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        Publicar Anuncio
+                        {createMutation.isPending ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Publicando...
+                            </>
+                        ) : (
+                            "Publicar Anuncio"
+                        )}
                     </button>
                 </div>
             </div>
@@ -203,80 +167,26 @@ export default function Anuncios() {
         <div className="pb-10">
             <h2 className="text-xl font-bold mb-4 px-1">Anuncios Creados</h2>
             <div className="space-y-4">
-                {announcements.length === 0 && !pageLoading ? (
+                {announcements.length === 0 && !isListLoading ? (
                     <div className="text-center py-8 text-muted-foreground bg-card/30 rounded-3xl border border-white/5">
                         No hay anuncios registrados.
                     </div>
                 ) : (
                     announcements.map((ann, index) => {
-                        const start = ann.fechaInicio.toDate();
-                        const end = ann.fechaFin.toDate();
-                        const isActive = new Date() >= start && new Date() <= end;
-                        
-                        // Attach ref to the last element
                         const isLast = index === announcements.length - 1;
-
                         return (
-                            <div 
+                            <AnnouncementCard 
                                 key={ann.id} 
-                                ref={isLast ? lastElementRef : null}
-                                className="bg-card border border-white/10 rounded-3xl p-5 flex items-start gap-4 group hover:border-white/20 transition-all relative overflow-hidden"
-                            >
-                                {isActive && (
-                                    <div className="absolute top-0 right-0 bg-accent text-accent-foreground text-[10px] font-bold px-3 py-1 rounded-bl-xl">
-                                        ACTIVO
-                                    </div>
-                                )}
-                                <div className="text-3xl shrink-0 bg-secondary/30 w-14 h-14 rounded-2xl flex items-center justify-center">
-                                    {ann.icono}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-lg leading-tight mb-1">{ann.texto}</h3>
-                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="w-3 h-3" />
-                                            Desde: {moment(start).format("DD/MM/YYYY HH:mm")}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="w-3 h-3" />
-                                            Hasta: {moment(end).format("DD/MM/YYYY HH:mm")}
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <button 
-                                        className="p-2 hover:bg-destructive/20 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
-                                        title="Eliminar anuncio"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="bg-card border-white/10 text-foreground">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>¿Eliminar anuncio?</AlertDialogTitle>
-                                      <AlertDialogDescription className="text-muted-foreground">
-                                        Esta acción no se puede deshacer. El anuncio dejará de ser visible para los usuarios.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel className="bg-secondary hover:bg-secondary/80 border-0">Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction 
-                                        onClick={() => handleDelete(ann.id!)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        Eliminar
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
+                                announcement={ann}
+                                onDelete={handleDelete}
+                                isDeleting={deleteMutation.isPending}
+                                innerRef={isLast ? lastElementRef : null}
+                            />
                         );
                     })
                 )}
                 
-                {pageLoading && (
+                {(isListLoading || isFetchingNextPage) && (
                     <div className="flex justify-center py-4">
                         <Loader2 className="w-6 h-6 animate-spin text-accent" />
                     </div>

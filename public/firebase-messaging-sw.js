@@ -25,7 +25,12 @@ messaging.onBackgroundMessage((payload) => {
       const notificationOptions = {
         body: payload.data.body,
         icon: '/pwa-192x192.png',
-        badge: '/masked-icon.svg',
+        badge: '/masked-icon.svg', // Icono pequeño en barra de estado (Android)
+        image: '/pwa-512x512.png', // Imagen grande (opcional)
+        vibrate: [200, 100, 200], // Vibrar: Bzz-Pausa-Bzz
+        tag: 'appointment-reminder', // Agrupar notificaciones
+        renotify: true, // Volver a sonar si llega otra con el mismo tag
+        requireInteraction: true, // Mantener visible hasta que el usuario interactúe
         data: payload.data,
         actions: [
           { action: 'confirm', title: 'Confirmar' },
@@ -35,8 +40,7 @@ messaging.onBackgroundMessage((payload) => {
       return self.registration.showNotification(notificationTitle, notificationOptions);
     }
 
-    // 2. FALLBACK: Si llega cualquier otro mensaje (o la estructura falló), mostrarlo
-    // Esto evita el mensaje "Este sitio se actualizó en segundo plano"
+    // 2. FALLBACK: Si llega cualquier otro mensaje data-only
     if (payload.data) {
         const title = payload.data.title || payload.notification?.title || 'Notificación';
         const body = payload.data.body || payload.notification?.body || 'Nuevo mensaje recibido';
@@ -45,15 +49,16 @@ messaging.onBackgroundMessage((payload) => {
             body: body,
             icon: '/pwa-192x192.png',
             badge: '/masked-icon.svg',
-            data: payload.data // Pasamos data para que el click funcione genéricamente
+            vibrate: [100, 50, 100],
+            data: payload.data
         });
     }
 
   } catch (err) {
     console.error('[firebase-messaging-sw.js] Error handling message', err);
-    // Intento desesperado de mostrar algo si falla el código principal
+    // Intento final para evitar "Site updated in background"
     return self.registration.showNotification('Barbería CR', {
-        body: 'Tienes un nuevo mensaje (Error de visualización)',
+        body: 'Tienes un nuevo mensaje',
         icon: '/pwa-192x192.png'
     });
   }
@@ -65,14 +70,23 @@ self.addEventListener('notificationclick', function(event) {
   const payloadData = event.notification.data;
   let urlToOpen = payloadData.url || '/';
 
+  // Manejo de acciones
   if (event.action === 'cancel') {
+    // Redirigir a una URL que maneje la cancelación (Home.tsx lo hace)
     urlToOpen = `/?action=cancel&id=${payloadData.appointmentId}`;
   } else if (event.action === 'confirm') {
-    return; 
+    // Si queremos solo confirmar sin abrir, podríamos hacer fetch aquí.
+    // Por ahora, abrimos la app para confirmar visualmente si es necesario, 
+    // o simplemente no hacemos nada si "Confirmar" es solo cerrar (dismiss).
+    // Si la acción es solo "Entendido", no necesitamos navegar.
+    // Pero si "Confirmar" implica una acción de backend, mejor navegar.
+    // Asumiremos que "Confirmar" es solo abrir la app para ver el turno.
+    urlToOpen = '/'; 
   }
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Intentar enfocar una ventana existente
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
         if (client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
@@ -83,6 +97,7 @@ self.addEventListener('notificationclick', function(event) {
           });
         }
       }
+      // Si no hay ventana abierta, abrir una nueva
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }

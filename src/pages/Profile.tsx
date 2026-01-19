@@ -1,10 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, LogOut, Edit2, Bell, Lock } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getUserInfo, getHistory } from "@/services/users";
+import { ArrowLeft, LogOut, Edit2, Bell } from "lucide-react";
+import { useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useUser } from "@/context/UserContext";
+import { useHistoryCount, useUserInfo } from "@/hooks/useUserQuery";
 import AnimatedLayout from "@/components/AnimatedLayout";
 import {
   AlertDialog,
@@ -19,17 +19,19 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Profile() {
-  const [visitCount, setVisitCount] = useState(0);
   const { isAdmin, userProfile, setUserProfile } = useUser();
   const navigate = useNavigate();
 
+  // Queries
+  const { data: visitCount = 0 } = useHistoryCount();
+  const { data: fetchedProfile } = useUserInfo();
+
+  // Sync React Query data with Context if context is empty
   useEffect(() => {
-    // If not in context (first time or clear cache), fetch and update context
-    if (!userProfile) {
-       getUserInfo().then(info => setUserProfile(info));
-    }
-    getHistory().then((snap) => setVisitCount(snap.docs.length));
-  }, []);
+      if (fetchedProfile && !userProfile) {
+          setUserProfile(fetchedProfile);
+      }
+  }, [fetchedProfile, userProfile, setUserProfile]);
 
   const handleSignOut = async () => {
     localStorage.removeItem("USER_INFO");
@@ -39,8 +41,10 @@ export default function Profile() {
     navigate("/"); 
   };
 
-  const initials = userProfile?.name 
-    ? userProfile.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+  const displayProfile = userProfile || fetchedProfile;
+
+  const initials = displayProfile?.name 
+    ? displayProfile.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
   return (
@@ -66,7 +70,7 @@ export default function Profile() {
             <span className="text-4xl font-bold text-accent">{initials}</span>
           </div>
           <div className="text-center">
-            <h2 className="text-xl font-bold">{userProfile?.name || "Cargando..."}</h2>
+            <h2 className="text-xl font-bold">{displayProfile?.name || "Cargando..."}</h2>
             <p className="text-xs text-muted-foreground font-medium">{isAdmin ? "Administrador" : "Cliente"}</p>
           </div>
         </div>
@@ -77,13 +81,12 @@ export default function Profile() {
           <div className="bg-card border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/10">
             <div className="px-5 py-4">
               <p className="text-xs text-muted-foreground mb-1 font-medium">Correo Electrónico</p>
-              <p className="font-medium">{userProfile?.email || "-"}</p>
+              <p className="font-medium">{displayProfile?.email || "-"}</p>
             </div>
             <div className="px-5 py-4">
               <p className="text-xs text-muted-foreground mb-1 font-medium">Teléfono</p>
-              <p className="font-medium">{userProfile?.nro || "-"}</p>
+              <p className="font-medium">{displayProfile?.nro || "-"}</p>
             </div>
-            {/* Registration date not in legacy model */}
           </div>
         </div>
 

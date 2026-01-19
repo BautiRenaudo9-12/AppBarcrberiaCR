@@ -3,21 +3,25 @@ export const generateKeywords = (text: string): string[] => {
   const normalized = text.toLowerCase().trim();
   const keywords: string[] = [];
 
-  // Generate suffixes
+  // Generate all substrings (n-grams)
+  // Loop through all start positions
   for (let i = 0; i < normalized.length; i++) {
-    keywords.push(normalized.substring(i));
+    // Loop through all end positions
+    for (let j = i + 1; j <= normalized.length; j++) {
+        const substring = normalized.substring(i, j);
+        // Optional: filter out very short substrings if noise is an issue, e.g. length < 2
+        // But for "exact" substring match feel, keeping all is safer.
+        if (substring.length >= 2) { // Filtering 1-char substrings to save space/noise
+            keywords.push(substring);
+        }
+    }
   }
 
-  // Also split by space and generate suffixes for each word (optional, but good for "Perez" in "Juan Perez")
+  // Add words split by space (for prefix matching logic consistency)
   const words = normalized.split(" ");
   if (words.length > 1) {
     words.forEach(word => {
-        for (let i = 0; i < word.length; i++) {
-            const suffix = word.substring(i);
-            if (!keywords.includes(suffix)) {
-                keywords.push(suffix);
-            }
-        }
+       if (word && !keywords.includes(word)) keywords.push(word);
     });
   }
 

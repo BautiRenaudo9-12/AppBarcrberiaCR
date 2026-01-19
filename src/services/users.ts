@@ -9,7 +9,8 @@ import {
   startAfter, 
   where,
   QueryDocumentSnapshot, 
-  DocumentData 
+  DocumentData,
+  getCountFromServer
 } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 
@@ -67,6 +68,17 @@ export const getClientesPaginated = async (lastDoc?: QueryDocumentSnapshot<Docum
 
   const docsSnap = await getDocs(q);
   return docsSnap;
+};
+
+export const getClientsCount = async () => {
+    try {
+        const coll = collection(db, "clientes");
+        const snapshot = await getCountFromServer(coll);
+        return snapshot.data().count;
+    } catch (e) {
+        console.error("Error getting count", e);
+        return 0;
+    }
 };
 
 export const searchClientes = async (term: string) => {
@@ -151,4 +163,16 @@ export const getHistory = async () => {
   const q = query(collection(db, "clientes", auth.currentUser.email, "history"), orderBy("time", "desc"));
   const docsSnap = await getDocs(q);
   return docsSnap;
+};
+
+export const getHistoryCount = async () => {
+    if (!auth.currentUser?.email) return 0;
+    try {
+        const coll = collection(db, "clientes", auth.currentUser.email, "history");
+        const snapshot = await getCountFromServer(coll);
+        return snapshot.data().count;
+    } catch (e) {
+        console.error("Error getting history count", e);
+        return 0;
+    }
 };
