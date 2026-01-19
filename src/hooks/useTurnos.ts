@@ -149,13 +149,15 @@ export function useTurnos() {
 
         setLoading(true);
         try {
+            const fcmToken = localStorage.getItem('fcmToken') || undefined;
             await createAppointment(
                 selectedDate,
                 time,
                 user.email!,
                 finalClientName,
                 "",
-                isAdmin // Force if admin
+                isAdmin, // Force if admin
+                fcmToken
             );
             toast.success("Reserva confirmada");
             if (isAdmin) await loadSlots();

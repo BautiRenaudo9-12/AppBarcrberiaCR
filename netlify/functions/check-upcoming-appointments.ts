@@ -143,53 +143,105 @@ export const handler: Handler = async (event, context) => {
 
       // Found a candidate!
       const email = data.clientEmail;
-      if (!email) {
-          console.log(`Skipping ${doc.id}: no clientEmail`);
-          continue;
-      }
-
-      // Get User Token
-      const userDoc = await db.collection('clientes').doc(email).get();
-      if (!userDoc.exists) {
-          console.log(`User ${email} not found.`);
-          continue;
-      }
       
-      const userData = userDoc.data();
-      const fcmToken = userData?.fcmToken;
+      // Start with the denormalized token
+      let fcmToken = data.fcmToken;
+      
+      // Variable to track if we need to fetch user data (lazy load)
+      let userDataFetchPromise: Promise<FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>> | null = null;
+      const fetchUserData = () => {
+          if (!userDataFetchPromise && email) {
+              userDataFetchPromise = db.collection('clientes').doc(email).get();
+          }
+          return userDataFetchPromise;
+      };
+
+      // If no token in appointment, try fetch immediately
+      if (!fcmToken) {
+          if (!email) {
+              console.log(`Skipping ${doc.id}: no clientEmail`);
+              continue;
+          }
+          console.log(`Token missing in appointment ${doc.id}, fetching profile...`);
+          const userDoc = await fetchUserData();
+          if (userDoc && userDoc.exists) {
+              fcmToken = userDoc.data()?.fcmToken;
+          }
+      }
 
       if (fcmToken) {
-        // Send Notification
-        try {
-          const appointmentTime = data.timestamp.toDate();
-          const formattedTime = appointmentTime.toLocaleTimeString('es-AR', {
+        // Prepare Notification Payload
+        const appointmentTime = data.timestamp.toDate();
+        const formattedTime = appointmentTime.toLocaleTimeString('es-AR', {
               hour: '2-digit', 
               minute:'2-digit', 
               hour12: true, 
               timeZone: 'America/Argentina/Buenos_Aires'
-          });
+        });
 
-          await admin.messaging().send({
-            token: fcmToken,
+        const messagePayload = {
             data: {
               type: 'appointment_reminder',
               appointmentId: doc.id,
               title: '¡Tu turno se acerca!',
               body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
-              url: '/' // Changed to root so home handles it
+              url: '/'
             }
-          });
-          notificationsSent.push(email);
-          console.log(`Notification sent to ${email}`);
+        };
 
-          // Mark as notified
+        // Send Notification with Failover Logic
+        try {
+          await admin.messaging().send({ token: fcmToken, ...messagePayload });
+          
+          notificationsSent.push(email);
+          console.log(`Notification sent to ${email} (using ${data.fcmToken ? 'cached' : 'profile'} token)`);
+          
           batch.update(doc.ref, { notified: true });
           batchCount++;
-        } catch (sendError) {
-          console.error(`Failed to send to ${email}`, sendError);
+
+        } catch (sendError: any) {
+          console.error(`Failed first attempt for ${email}:`, sendError.code || sendError.message);
+          
+          // CHECK FOR FAILOVER CONDITIONS
+          // Error codes: messaging/registration-token-not-registered, messaging/invalid-registration-token
+          const isInvalidToken = sendError.code === 'messaging/registration-token-not-registered' || 
+                                 sendError.code === 'messaging/invalid-registration-token';
+
+          if (isInvalidToken && data.fcmToken) {
+               console.log(`⚠️ Token in appointment is stale. Attempting failover for ${email}...`);
+               
+               // Try to get fresh token from profile
+               const userDoc = await fetchUserData();
+               if (userDoc && userDoc.exists) {
+                   const freshToken = userDoc.data()?.fcmToken;
+                   
+                   if (freshToken && freshToken !== fcmToken) {
+                       try {
+                           console.log(`🔄 Retrying with fresh profile token...`);
+                           await admin.messaging().send({ token: freshToken, ...messagePayload });
+                           
+                           notificationsSent.push(email);
+                           console.log(`✅ Failover success for ${email}`);
+                           
+                           // Update notified flag AND correct the stale token in the appointment
+                           batch.update(doc.ref, { 
+                               notified: true,
+                               fcmToken: freshToken // Self-healing
+                           });
+                           batchCount++;
+                       } catch (retryError) {
+                           console.error(`❌ Failover failed for ${email}`, retryError);
+                       }
+                   } else {
+                       console.log(`❌ No new token found in profile or it is same as stale token.`);
+                   }
+               } else {
+                   console.log(`❌ User profile not found for failover.`);
+               }
+          }
         }
       } else {
-          console.log(`No token for ${email}`);
+          console.log(`No token found for ${email} (checked appointment and profile).`);
       }
     }
 
