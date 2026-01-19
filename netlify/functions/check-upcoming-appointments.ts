@@ -162,7 +162,12 @@ export const handler: Handler = async (event, context) => {
         // Send Notification
         try {
           const appointmentTime = data.timestamp.toDate();
-          const formattedTime = appointmentTime.toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit', hour12: true}); // e.g. 4:30 PM
+          const formattedTime = appointmentTime.toLocaleTimeString('es-AR', {
+              hour: '2-digit', 
+              minute:'2-digit', 
+              hour12: true, 
+              timeZone: 'America/Argentina/Buenos_Aires'
+          });
 
           await admin.messaging().send({
             token: fcmToken,
