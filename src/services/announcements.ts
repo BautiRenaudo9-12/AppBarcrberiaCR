@@ -25,7 +25,55 @@ export interface Announcement {
   doc?: QueryDocumentSnapshot<DocumentData>; // Helper for pagination
 }
 
-// ... (createAnnouncement, getActiveAnnouncement, deleteAnnouncement remain the same)
+export const createAnnouncement = async (text: string, icon: string, startDate: Date, endDate: Date) => {
+    try {
+        await addDoc(collection(db, "anuncios"), {
+            texto: text,
+            icono: icon,
+            fechaInicio: Timestamp.fromDate(startDate),
+            fechaFin: Timestamp.fromDate(endDate),
+            creadoEn: Timestamp.now()
+        });
+    } catch (error) {
+        console.error("Error creating announcement", error);
+        throw error;
+    }
+};
+
+export const deleteAnnouncement = async (id: string) => {
+    try {
+        await deleteDoc(doc(db, "anuncios", id));
+    } catch (error) {
+        console.error("Error deleting announcement", error);
+        throw error;
+    }
+};
+
+export const getActiveAnnouncement = async (): Promise<Announcement | null> => {
+    try {
+        // Query announcements that haven't ended yet
+        // Note: This requires a single-field index on fechaFin (usually auto-created)
+        const q = query(
+            collection(db, "anuncios"),
+            where("fechaFin", ">=", Timestamp.now()),
+            orderBy("fechaFin", "asc") 
+        );
+
+        const snapshot = await getDocs(q);
+        const now = new Date();
+
+        // Filter client-side for those that have already started
+        const active = snapshot.docs
+            .map(d => ({ id: d.id, ...d.data() } as Announcement))
+            .filter(a => a.fechaInicio.toDate() <= now);
+
+        // Return the first one found
+        return active.length > 0 ? active[0] : null;
+    } catch (error) {
+        console.error("Error getting active announcement", error);
+        return null;
+    }
+};
 
 export const getAllAnnouncements = async (lastDoc?: QueryDocumentSnapshot<DocumentData>) => {
     try {

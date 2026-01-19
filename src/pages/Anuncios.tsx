@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Trash2, Megaphone, Plus, Calendar, Loader2, Database } from "lucide-react";
+import { ArrowLeft, Trash2, Megaphone, Plus, Calendar, Loader2 } from "lucide-react";
 import { createAnnouncement, getAllAnnouncements, deleteAnnouncement, Announcement } from "@/services/announcements";
 import { toast } from "sonner";
 import { useUI } from "@/context/UIContext";
@@ -75,38 +75,7 @@ export default function Anuncios() {
     }
   };
 
-  const handleSeedData = async () => {
-    if (!confirm("¿Generar 25 anuncios de prueba?")) return;
-    setLoading(true);
-    try {
-        const emojis = ["🔥", "✂️", "💈", "🎉", "⚠️", "📅", "✅"];
-        const texts = ["Descuento especial", "Horario modificado", "Nuevo barbero", "Mantenimiento", "Promo 2x1", "Cerrado por feriado", "Reserva con tiempo"];
-        
-        const promises = Array.from({ length: 25 }).map((_, i) => {
-            const startDate = new Date();
-            const endDate = new Date();
-            endDate.setDate(endDate.getDate() + 7); // +7 dias
-            
-            // Variar un poco las fechas para el orden
-            startDate.setMinutes(startDate.getMinutes() - i); 
 
-            return createAnnouncement(
-                `${texts[i % texts.length]} - Prueba #${i + 1}`,
-                emojis[i % emojis.length],
-                startDate,
-                endDate
-            );
-        });
-
-        await Promise.all(promises);
-        toast.success("25 anuncios generados");
-        loadAnnouncements(true);
-    } catch (e) {
-        toast.error("Error generando datos");
-    } finally {
-        setLoading(false);
-    }
-  };
 
   const handlePublishAnnouncement = async () => {
       if (!annText || !annStart || !annEnd) {
@@ -162,14 +131,7 @@ export default function Anuncios() {
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-2xl font-bold">Gestión de Anuncios</h1>
-          <button 
-             onClick={handleSeedData}
-             className="ml-auto text-xs bg-white/5 hover:bg-white/10 text-muted-foreground px-3 py-1.5 rounded-lg flex items-center gap-2 border border-white/5 transition-colors"
-             title="Generar 25 anuncios para pruebas"
-          >
-             <Database className="w-3 h-3" />
-             <span className="hidden sm:inline">Generar Datos</span>
-          </button>
+
         </div>
       </div>
 

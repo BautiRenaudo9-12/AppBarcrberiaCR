@@ -3,9 +3,10 @@ import { signIn, signUp, _setUserProperties } from "@/services/auth";
 import { useUI } from "@/context/UIContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import AnimatedLayout from "@/components/AnimatedLayout";
+import { createSearchKeywords } from "@/lib/keywords";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,15 +23,34 @@ export default function Login() {
     try {
       if (isLogin) {
         await signIn(email, password);
+        
+        // Update keywords on login (backfill strategy)
+        try {
+            const userRef = doc(db, "clientes", email);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                const keywords = createSearchKeywords(userData.name || "", userData.email || email, userData.nro || "");
+                await setDoc(userRef, { keywords }, { merge: true });
+            }
+        } catch (err) {
+            console.error("Error updating search keywords on login:", err);
+            // Non-blocking error
+        }
+
         toast.success("Bienvenido de nuevo");
       } else {
         const user = await signUp(email, password);
         if (user) {
           await _setUserProperties({ nameValue: name, nroValue: phone });
+          
+          const keywords = createSearchKeywords(name, email, phone);
+          
           await setDoc(doc(db, "clientes", email), {
             email,
             name,
-            nro: phone
+            nro: phone,
+            keywords
           });
           toast.success("Cuenta creada exitosamente");
         }
