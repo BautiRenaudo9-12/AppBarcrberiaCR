@@ -75,13 +75,8 @@ self.addEventListener('notificationclick', function(event) {
     // Redirigir a una URL que maneje la cancelación (Home.tsx lo hace)
     urlToOpen = `/?action=cancel&id=${payloadData.appointmentId}`;
   } else if (event.action === 'confirm') {
-    // Si queremos solo confirmar sin abrir, podríamos hacer fetch aquí.
-    // Por ahora, abrimos la app para confirmar visualmente si es necesario, 
-    // o simplemente no hacemos nada si "Confirmar" es solo cerrar (dismiss).
-    // Si la acción es solo "Entendido", no necesitamos navegar.
-    // Pero si "Confirmar" implica una acción de backend, mejor navegar.
-    // Asumiremos que "Confirmar" es solo abrir la app para ver el turno.
-    urlToOpen = '/'; 
+    // Solo cerrar la notificación (ya se hizo arriba con event.notification.close())
+    return; 
   }
 
   event.waitUntil(
