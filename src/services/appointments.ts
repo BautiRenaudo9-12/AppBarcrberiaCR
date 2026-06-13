@@ -23,8 +23,6 @@ export interface Appointment {
   timestamp: Timestamp;
   clientEmail: string;
   clientName: string;
-  clientPhone?: string;
-  fcmToken?: string; // Denormalized Token
   status: "confirmed" | "cancelled" | "completed" | "blocked";
   createdAd: Timestamp;
 }
@@ -122,9 +120,7 @@ export const createAppointment = async (
   timeStr: string, // HH:mm
   clientEmail: string,
   clientName: string,
-  clientPhone: string = "",
-  force: boolean = false,
-  fcmToken?: string
+  force: boolean = false
 ) => {
   // 1. Check logical availability (Blocks, Exceptions, etc.)
   // We still do this to provide specific error messages ("Blocked by admin" vs "Taken")
@@ -150,10 +146,8 @@ export const createAppointment = async (
     timestamp,
     clientEmail,
     clientName,
-    clientPhone,
     status: "confirmed",
-    createdAd: Timestamp.now(),
-    fcmToken // Include Denormalized Token
+    createdAd: Timestamp.now()
   };
 
   try {

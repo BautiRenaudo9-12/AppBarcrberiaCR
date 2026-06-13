@@ -34,7 +34,7 @@ export default function ActivateExceptionDialog({
         </DialogHeader>
         <DialogFooter className="gap-3 sm:gap-0">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={onConfirm} disabled={loading} className="bg-green-600 hover:bg-green-700 text-white">
+          <Button onClick={onConfirm} disabled={loading} className="bg-accent hover:bg-accent/90 text-white">
             {loading ? "Procesando..." : "Activar Turno"}
           </Button>
         </DialogFooter>

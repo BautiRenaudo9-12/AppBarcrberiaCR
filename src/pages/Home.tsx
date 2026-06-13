@@ -6,9 +6,9 @@ import { subscribeToUserActiveAppointment, cancelAppointment } from "@/services/
 import { getActiveAnnouncement, Announcement } from "@/services/announcements";
 import { requestForToken } from "@/services/notifications";
 import { updateUserProfile } from "@/services/users";
-import AnimatedLayout from "@/components/AnimatedLayout";
 import { toast } from "sonner";
 import NotificationPrompt from "@/components/NotificationPrompt";
+import { useHomeAnimations } from "@/hooks/useHomeAnimations";
 
 // Custom Hooks
 import { useFcmToken } from "@/hooks/useFcmToken";
@@ -23,6 +23,7 @@ import CancelReservationDialog from "@/components/home/CancelReservationDialog";
 export default function Home() {
     const { user, isAdmin, userProfile } = useUser();
     const { setLoading } = useUI();
+    const contentRef = useHomeAnimations();
     
     // Local State
     const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -122,7 +123,7 @@ export default function Home() {
     };
 
     return (
-        <AnimatedLayout className="min-h-screen bg-background text-foreground flex flex-col">
+        <div className="min-h-screen bg-background text-foreground flex flex-col">
             {/* Notification Prompt Overlay */}
             {showNotifPrompt && (
                 <NotificationPrompt
@@ -133,7 +134,7 @@ export default function Home() {
 
             <HomeHeader user={user} />
 
-            <div className="max-w-md mx-auto px-4 py-6 sm:px-6 space-y-6 flex-1 flex flex-col justify-center w-full">
+            <div ref={contentRef} className="max-w-md mx-auto px-4 py-6 sm:px-6 space-y-6 flex-1 flex flex-col justify-center w-full">
                 
                 {/* Announcements */}
                 {!isAdmin && announcement && (
@@ -142,15 +143,19 @@ export default function Home() {
 
                 {/* Active Reservation Widget */}
                 {!isAdmin && (
-                    <ActiveReservation 
-                        reserve={reserve} 
-                        isLoading={isLoadingReserve} 
-                        onCancel={() => setShowCancelDialog(true)} 
-                    />
+                    <div data-animate="card">
+                        <ActiveReservation 
+                            reserve={reserve} 
+                            isLoading={isLoadingReserve} 
+                            onCancel={() => setShowCancelDialog(true)} 
+                        />
+                    </div>
                 )}
 
                 {/* Main Menu */}
-                <HomeMenu isAdmin={isAdmin} />
+                <div data-animate="menu">
+                    <HomeMenu isAdmin={isAdmin} />
+                </div>
 
                 {/* Dialogs */}
                 <CancelReservationDialog 
@@ -160,6 +165,6 @@ export default function Home() {
                 />
 
             </div>
-        </AnimatedLayout>
+        </div>
     );
 }

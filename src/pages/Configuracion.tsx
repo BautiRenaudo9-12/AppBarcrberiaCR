@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
+import { useConfigAnimations } from "@/hooks/useConfigAnimations";
 import { getDays } from "@/services/reservations";
 import { doc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 import { useUI } from "@/context/UIContext";
 import { DayConfig } from "@/types/config";
 import { DayConfigCard } from "@/components/configuracion/DayConfigCard";
+import ConfigSkeleton from "@/components/configuracion/ConfigSkeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,16 +20,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { gsap } from "gsap";
 
 export default function Configuracion() {
   const [days, setDays] = useState<DayConfig[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [dayToCopy, setDayToCopy] = useState<DayConfig | null>(null);
+  const [isLoadingDays, setIsLoadingDays] = useState(true);
   const { setLoading } = useUI();
+  const pageRef = useConfigAnimations();
+  const saveBtnRef = useRef<HTMLButtonElement>(null);
+  const prevHasChanges = useRef(false);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadDays();
   }, []);
+
+  useEffect(() => {
+    if (!saveBtnRef.current) return;
+
+    if (hasChanges && !prevHasChanges.current) {
+      gsap.fromTo(saveBtnRef.current, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+    } else if (!hasChanges && prevHasChanges.current) {
+      gsap.to(saveBtnRef.current, { scale: 0, opacity: 0, duration: 0.2, ease: "power2.in" });
+    }
+    prevHasChanges.current = hasChanges;
+  }, [hasChanges]);
 
   const loadDays = async () => {
     setLoading(true);
@@ -52,13 +71,26 @@ export default function Configuracion() {
       toast.error("Error al cargar configuraciones");
     } finally {
       setLoading(false);
+      setIsLoadingDays(false);
     }
   };
+
+  const flashCards = useCallback((borderColor: string) => {
+    if (!gridRef.current) return;
+    const cards = gridRef.current.querySelectorAll("[data-card]");
+    if (cards.length === 0) return;
+    gsap.fromTo(
+      cards,
+      { borderColor },
+      { borderColor: "rgba(255,255,255,0.1)", duration: 0.8, ease: "power2.out", stagger: 0.03 }
+    );
+  }, []);
 
   const handleSaveAll = async () => {
     const invalid = days.find(d => (d.desde || "09:00") >= (d.hasta || "18:00") || !d.intervalo);
     if (invalid) {
         toast.error(`Error en el día ${invalid.dia}: El horario o intervalo es inválido.`);
+        flashCards("rgba(255,69,58,0.5)");
         return;
     }
 
@@ -78,14 +110,26 @@ export default function Configuracion() {
 
       await batch.commit();
       
-      // Update local state and UI
       toast.success("Toda la configuración ha sido guardada");
       setHasChanges(false);
+      flashCards("rgba(48,209,88,0.5)");
     } catch (error) {
       console.error(error);
       toast.error("Error al guardar la configuración");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveAllDown = () => {
+    if (saveBtnRef.current) {
+      gsap.to(saveBtnRef.current, { scale: 0.95, duration: 0.1 });
+    }
+  };
+
+  const handleSaveAllUp = () => {
+    if (saveBtnRef.current) {
+      gsap.to(saveBtnRef.current, { scale: 1, duration: 0.2, ease: "back.out(2)" });
     }
   };
 
@@ -106,6 +150,17 @@ export default function Configuracion() {
       await batch.commit();
       
       toast.success(`Configuración de ${day.dia} guardada`);
+
+      if (gridRef.current) {
+        const card = gridRef.current.querySelector(`[data-card-id="${day.id}"]`);
+        if (card) {
+          gsap.fromTo(
+            card,
+            { borderColor: "rgba(48,209,88,0.5)" },
+            { borderColor: "rgba(255,255,255,0.1)", duration: 0.8, ease: "power2.out" }
+          );
+        }
+      }
     } catch (error) {
       console.error(error);
       toast.error("Error al guardar");
@@ -135,43 +190,51 @@ export default function Configuracion() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
+    <div ref={pageRef} className="min-h-screen bg-background text-foreground pb-20">
       <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
               to="/"
+              data-header-stagger
               className="w-10 h-10 hover:bg-secondary/30 rounded-lg flex items-center justify-center transition-colors"
             >
               <ArrowLeft className="w-6 h-6" />
             </Link>
-            <h1 className="text-2xl font-bold">Configuración</h1>
+            <h1 data-header-stagger className="text-2xl font-bold">Configuración</h1>
           </div>
           
-          {hasChanges && (
-            <button
-              onClick={handleSaveAll}
-              className="bg-accent text-accent-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-accent/20 animate-in fade-in zoom-in duration-300"
-            >
-              <Save className="w-4 h-4" />
-              Guardar Todo
-            </button>
-          )}
+          <button
+            ref={saveBtnRef}
+            onClick={handleSaveAll}
+            onPointerDown={handleSaveAllDown}
+            onPointerUp={handleSaveAllUp}
+            onPointerLeave={handleSaveAllUp}
+            style={!hasChanges ? { scale: 0, opacity: 0 } : undefined}
+            className="bg-accent text-accent-foreground px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-accent/20"
+          >
+            <Save className="w-4 h-4" />
+            Guardar Todo
+          </button>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 space-y-8">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {isLoadingDays ? (
+          <ConfigSkeleton />
+        ) : (
+          <div ref={gridRef} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {days.map((day) => (
-            <DayConfigCard 
-                key={day.id}
-                day={day}
-                onUpdate={updateDayState}
-                onSave={handleSaveSingle}
-                onApplyToAll={(d) => setDayToCopy(d)}
-            />
+              <DayConfigCard 
+                  key={day.id}
+                  day={day}
+                  onUpdate={updateDayState}
+                  onSave={handleSaveSingle}
+                  onApplyToAll={(d) => setDayToCopy(d)}
+              />
             ))}
-        </div>
+          </div>
+        )}
       </div>
 
       <AlertDialog open={!!dayToCopy} onOpenChange={(open) => !open && setDayToCopy(null)}>

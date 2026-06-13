@@ -80,11 +80,10 @@ function initFirebase() {
 initFirebase();
 
 export const handler: Handler = async (event, context) => {
+  // Fail-closed: require a configured secret that matches the request header.
   const apiKey = event.headers['x-api-key'];
-  if (apiKey !== process.env.CRON_SECRET) {
-    if (process.env.CRON_SECRET) {
-        return { statusCode: 401, body: 'Unauthorized' };
-    }
+  if (!process.env.CRON_SECRET || apiKey !== process.env.CRON_SECRET) {
+    return { statusCode: 401, body: 'Unauthorized' };
   }
 
   // Ensure Firebase is ready
@@ -92,16 +91,11 @@ export const handler: Handler = async (event, context) => {
       // Try one more time? Or just fail gracefully
       initFirebase();
       if (!isFirebaseInitialized) {
-          const rawStart = (process.env.FIREBASE_SERVICE_ACCOUNT || '').substring(0, 20);
-          const errorMsg = (global as any).firebaseInitError || 'Unknown error';
+          // Log details server-side only; do not leak config/error specifics to the caller.
+          console.error('Firebase initialization failed.', (global as any).firebaseInitError || 'Unknown error');
           return {
               statusCode: 500,
-              body: JSON.stringify({ 
-                  success: false, 
-                  error: 'Firebase initialization failed.',
-                  debug: `Raw start: '${rawStart}'`,
-                  details: errorMsg
-              })
+              body: JSON.stringify({ success: false, error: 'Firebase initialization failed.' })
           };
       }
   }
@@ -143,39 +137,24 @@ export const handler: Handler = async (event, context) => {
 
       // Found a candidate!
       const email = data.clientEmail;
-      
-      // Start with the denormalized token
-      let fcmToken = data.fcmToken;
-      
-      // Variable to track if we need to fetch user data (lazy load)
-      let userDataFetchPromise: Promise<FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>> | null = null;
-      const fetchUserData = () => {
-          if (!userDataFetchPromise && email) {
-              userDataFetchPromise = db.collection('clientes').doc(email).get();
-          }
-          return userDataFetchPromise;
-      };
 
-      // If no token in appointment, try fetch immediately
-      if (!fcmToken) {
-          if (!email) {
-              console.log(`Skipping ${doc.id}: no clientEmail`);
-              continue;
-          }
-          console.log(`Token missing in appointment ${doc.id}, fetching profile...`);
-          const userDoc = await fetchUserData();
-          if (userDoc && userDoc.exists) {
-              fcmToken = userDoc.data()?.fcmToken;
-          }
+      if (!email) {
+          console.log(`Skipping ${doc.id}: no clientEmail`);
+          continue;
       }
+
+      // Always read the FCM token from the (private) client profile via Admin SDK.
+      // Tokens are intentionally NOT denormalized into the publicly-readable appointments.
+      const userDoc = await db.collection('clientes').doc(email).get();
+      const fcmToken = userDoc.exists ? userDoc.data()?.fcmToken : undefined;
 
       if (fcmToken) {
         // Prepare Notification Payload
         const appointmentTime = data.timestamp.toDate();
         const formattedTime = appointmentTime.toLocaleTimeString('es-AR', {
-              hour: '2-digit', 
-              minute:'2-digit', 
-              hour12: true, 
+              hour: '2-digit',
+              minute:'2-digit',
+              hour12: true,
               timeZone: 'America/Argentina/Buenos_Aires'
         });
 
@@ -189,59 +168,17 @@ export const handler: Handler = async (event, context) => {
             }
         };
 
-        // Send Notification with Failover Logic
         try {
           await admin.messaging().send({ token: fcmToken, ...messagePayload });
-          
+
           notificationsSent.push(email);
-          console.log(`Notification sent to ${email} (using ${data.fcmToken ? 'cached' : 'profile'} token)`);
-          
           batch.update(doc.ref, { notified: true });
           batchCount++;
-
         } catch (sendError: any) {
-          console.error(`Failed first attempt for ${email}:`, sendError.code || sendError.message);
-          
-          // CHECK FOR FAILOVER CONDITIONS
-          // Error codes: messaging/registration-token-not-registered, messaging/invalid-registration-token
-          const isInvalidToken = sendError.code === 'messaging/registration-token-not-registered' || 
-                                 sendError.code === 'messaging/invalid-registration-token';
-
-          if (isInvalidToken && data.fcmToken) {
-               console.log(`⚠️ Token in appointment is stale. Attempting failover for ${email}...`);
-               
-               // Try to get fresh token from profile
-               const userDoc = await fetchUserData();
-               if (userDoc && userDoc.exists) {
-                   const freshToken = userDoc.data()?.fcmToken;
-                   
-                   if (freshToken && freshToken !== fcmToken) {
-                       try {
-                           console.log(`🔄 Retrying with fresh profile token...`);
-                           await admin.messaging().send({ token: freshToken, ...messagePayload });
-                           
-                           notificationsSent.push(email);
-                           console.log(`✅ Failover success for ${email}`);
-                           
-                           // Update notified flag AND correct the stale token in the appointment
-                           batch.update(doc.ref, { 
-                               notified: true,
-                               fcmToken: freshToken // Self-healing
-                           });
-                           batchCount++;
-                       } catch (retryError) {
-                           console.error(`❌ Failover failed for ${email}`, retryError);
-                       }
-                   } else {
-                       console.log(`❌ No new token found in profile or it is same as stale token.`);
-                   }
-               } else {
-                   console.log(`❌ User profile not found for failover.`);
-               }
-          }
+          console.error(`Failed to send reminder for appointment ${doc.id}:`, sendError.code || sendError.message);
         }
       } else {
-          console.log(`No token found for ${email} (checked appointment and profile).`);
+          console.log(`No FCM token found in profile for appointment ${doc.id}.`);
       }
     }
 

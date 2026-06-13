@@ -27,9 +27,9 @@ export const validateEnv = () => {
 
   if (!result.success) {
     console.error("❌ Invalid environment variables:", result.error.format());
-    // Optionally throw error to stop app execution or show a fatal error UI
-    // throw new Error("Invalid configuration");
-  } else {
-    console.log("✅ Environment configuration valid");
+    // Fail fast: don't let the app boot with invalid/missing configuration.
+    throw new Error("Invalid environment configuration. Check VITE_* variables.");
   }
+
+  console.log("✅ Environment configuration valid");
 };

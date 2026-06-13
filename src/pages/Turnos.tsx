@@ -3,7 +3,6 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import moment from "moment";
 import { useTurnos } from "@/hooks/useTurnos";
-import AnimatedLayout from "@/components/AnimatedLayout";
 import { toast } from "sonner";
 import { Slot } from "@/types/turnos";
 
@@ -18,7 +17,7 @@ import RecurringBlockActionDialog from "@/components/turnos/dialogs/RecurringBlo
 
 export default function Turnos() {
   const navigate = useNavigate();
-  
+
   // Custom Hook for Logic
   const { 
     selectedDate, 
@@ -103,8 +102,7 @@ export default function Turnos() {
   };
 
   return (
-    <AnimatedLayout className="min-h-screen bg-background text-foreground">
-      {/* Header */}
+    <div className="min-h-screen bg-background text-foreground">
       <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-md mx-auto flex items-center gap-4">
           <Link
@@ -117,17 +115,17 @@ export default function Turnos() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-md mx-auto px-4 py-6 sm:px-6 space-y-6">
         
-        <DateSelector 
-            selectedDate={selectedDate} 
-            onDateChange={setSelectedDate} 
+        <DateSelector
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
             minDate={!isAdmin ? moment().format("YYYY-MM-DD") : undefined}
             maxDate={!isAdmin ? moment().add(6, 'days').format("YYYY-MM-DD") : undefined}
         />
 
         <TurnosList 
+            selectedDate={selectedDate}
             slots={slots}
             isAdmin={isAdmin}
             loading={loading}
@@ -191,6 +189,6 @@ export default function Turnos() {
         />
 
       </div>
-    </AnimatedLayout>
+    </div>
   );
 }

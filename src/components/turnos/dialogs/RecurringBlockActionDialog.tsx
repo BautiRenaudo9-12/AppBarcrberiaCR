@@ -82,7 +82,7 @@ export default function RecurringBlockActionDialog({
           <Button 
             onClick={handleConfirm} 
             disabled={loading}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-accent hover:bg-accent/90 text-white"
           >
             {loading ? "Procesando..." : "Confirmar"}
           </Button>

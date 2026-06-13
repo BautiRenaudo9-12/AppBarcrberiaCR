@@ -5,7 +5,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Turnos from "./pages/Turnos";
 import Historial from "./pages/Historial";
@@ -17,6 +16,7 @@ import Anuncios from "./pages/Anuncios";
 import NotFound from "./pages/NotFound";
 import { UIProvider } from "@/context/UIContext";
 import { UserProvider, useUser } from "@/context/UserContext";
+import { TransitionManager } from "@/components/TransitionManager";
 import InstallPrompt from "@/components/InstallPrompt";
 import ReloadPrompt from "@/components/ReloadPrompt";
 import NetworkStatus from "@/components/NetworkStatus";
@@ -63,8 +63,8 @@ const AppRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <TransitionManager>
+      <Routes location={location}>
         <Route path="/login" element={
           <PublicRoute>
             <Login />
@@ -127,10 +127,9 @@ const AppRoutes = () => {
             </AdminRoute>
           }
         />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </AnimatePresence>
+    </TransitionManager>
   );
 };
 

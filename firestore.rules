@@ -73,7 +73,10 @@ service cloud.firestore {
         allow write: if isAdmin();
         
         // Users need to update the document to reserve the slot.
-        allow update: if isSignedIn() && isValidReserveFormat();
+        // Must reserve under their OWN email (prevents hijacking/impersonating others).
+        allow update: if isSignedIn()
+                      && isValidReserveFormat()
+                      && request.resource.data.reserve.email == request.auth.token.email;
       }
     }
 

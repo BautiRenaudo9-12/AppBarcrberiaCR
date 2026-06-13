@@ -1,3 +1,5 @@
+import { useRef, useLayoutEffect } from "react";
+import { gsap } from "gsap";
 import { Announcement } from "@/services/announcements";
 
 interface HomeAnnouncementProps {
@@ -5,10 +7,26 @@ interface HomeAnnouncementProps {
 }
 
 export default function HomeAnnouncement({ announcement }: HomeAnnouncementProps) {
+    const cardRef = useRef<HTMLDivElement>(null);
+    const shimmerRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        if (!cardRef.current) return;
+
+        const ctx = gsap.context(() => {
+            gsap.fromTo(cardRef.current!, { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.55, ease: "back.out(1.4)" });
+
+            if (shimmerRef.current) {
+                gsap.fromTo(shimmerRef.current, { xPercent: -100 }, { xPercent: 100, duration: 0.8, delay: 0.6, ease: "power2.inOut" });
+            }
+        }, cardRef);
+
+        return () => ctx.revert();
+    }, []);
+
     return (
-        <div className="relative overflow-hidden bg-gradient-to-br from-white to-slate-100 text-slate-900 rounded-3xl p-6 shadow-xl border border-white/20 flex items-start gap-5 animate-in slide-in-from-left-full fade-in duration-700 ease-out delay-200 fill-mode-backwards group hover:scale-[1.02] transition-transform">
-            {/* Decorative background element */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+        <div ref={cardRef} className="relative overflow-hidden bg-gradient-to-br from-white to-slate-100 text-slate-900 rounded-3xl p-6 shadow-xl border border-white/20 flex items-start gap-5 group hover:scale-[1.02] transition-transform">
+            <div ref={shimmerRef} className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" style={{ transform: "translateX(-100%)" }} />
 
             <div className="relative text-4xl shrink-0 bg-white shadow-sm w-16 h-16 rounded-2xl flex items-center justify-center border border-slate-100">
                 {announcement.icono}

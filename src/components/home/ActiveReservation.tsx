@@ -1,22 +1,23 @@
 import { Link } from "react-router-dom";
 import moment from "moment";
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
+import { gsap } from "gsap";
 
 interface ActiveReservationProps {
-    reserve: any; // Using any to match existing loose typing, ideally define Reservation interface
+    reserve: any;
     isLoading: boolean;
     onCancel: () => void;
 }
 
 export default function ActiveReservation({ reserve, isLoading, onCancel }: ActiveReservationProps) {
-    
-    // Memoize date formatting to prevent recalculations on re-renders
+    const glowRef = useRef<HTMLDivElement>(null);
+    const cardRef = useRef<HTMLDivElement>(null);
+
     const { formattedDateCapitalized, formattedTime } = useMemo(() => {
         if (!reserve || !reserve.timestamp) return { formattedDateCapitalized: "", formattedTime: "" };
-        
-        // Safety check for toDate method in case of data corruption
+
         const dateObj = reserve.timestamp?.toDate ? reserve.timestamp.toDate() : null;
-        
+
         if (!dateObj) return { formattedDateCapitalized: "", formattedTime: "" };
 
         const formattedDate = moment(dateObj).format("dddd, D [de] MMMM");
@@ -24,6 +25,38 @@ export default function ActiveReservation({ reserve, isLoading, onCancel }: Acti
         const formattedDateCapitalized = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
         return { formattedDateCapitalized, formattedTime };
+    }, [reserve]);
+
+    useEffect(() => {
+        if (!reserve || !glowRef.current || !cardRef.current) return;
+
+        gsap.set(glowRef.current, { opacity: 0 });
+        const pulse = gsap.to(glowRef.current, { opacity: 0.15, duration: 1.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
+
+        const onEnter = () => {
+            pulse.kill();
+            gsap.to(glowRef.current!, { opacity: 0.5, duration: 0.3, ease: "power2.out" });
+        };
+        const onLeave = () => {
+            gsap.to(glowRef.current!, {
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.in",
+                onComplete: () => {
+                    gsap.to(glowRef.current!, { opacity: 0.15, duration: 1.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
+                },
+            });
+        };
+
+        cardRef.current.addEventListener("mouseenter", onEnter);
+        cardRef.current.addEventListener("mouseleave", onLeave);
+
+        return () => {
+            pulse.kill();
+            gsap.killTweensOf(glowRef.current!);
+            cardRef.current?.removeEventListener("mouseenter", onEnter);
+            cardRef.current?.removeEventListener("mouseleave", onLeave);
+        };
     }, [reserve]);
 
     if (isLoading) {
@@ -48,11 +81,9 @@ export default function ActiveReservation({ reserve, isLoading, onCancel }: Acti
     }
 
     return (
-        <div className="relative group">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-accent/30 to-accent/15 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div ref={cardRef} className="relative">
+            <div ref={glowRef} className="absolute inset-0 bg-gradient-to-r from-accent/30 to-accent/15 rounded-3xl blur-xl pointer-events-none" />
 
-            {/* Card */}
             <div className="relative bg-card border border-white/10 rounded-3xl p-5 space-y-4 z-10">
                 <div>
                     <p className="text-xs text-muted-foreground mb-2 font-medium">Tu próximo turno</p>
