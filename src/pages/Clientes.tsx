@@ -27,7 +27,6 @@ export default function Clientes() {
     isLoading: isSearchLoading 
   } = useClientsSearch(searchTerm);
 
-  const pageRef = useClientesAnimations();
   const searchInputRef = useSearchFocus();
 
   const searchTimeout = useRef<NodeJS.Timeout>();
@@ -47,6 +46,8 @@ export default function Clientes() {
     : (infiniteData?.pages.flatMap(page => page) || []);
 
   const isLoading = isSearchMode ? isSearchLoading : infiniteStatus === "pending";
+
+  const pageRef = useClientesAnimations(isLoading);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLDivElement) => {
@@ -86,7 +87,7 @@ export default function Clientes() {
             placeholder="Buscar por nombre (comienza con)..."
             value={inputValue}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full bg-secondary/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition-colors"
+            className="w-full bg-secondary/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-accent/30"
           />
         </div>
 

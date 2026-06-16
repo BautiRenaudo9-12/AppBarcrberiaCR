@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import moment from "moment";
 import { useMemo, useRef, useEffect } from "react";
 import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 
 interface ActiveReservationProps {
     reserve: any;
@@ -29,6 +30,11 @@ export default function ActiveReservation({ reserve, isLoading, onCancel }: Acti
 
     useEffect(() => {
         if (!reserve || !glowRef.current || !cardRef.current) return;
+
+        if (prefersReducedMotion()) {
+            gsap.set(glowRef.current, { opacity: 0.12 });
+            return;
+        }
 
         gsap.set(glowRef.current, { opacity: 0 });
         const pulse = gsap.to(glowRef.current, { opacity: 0.15, duration: 1.5, repeat: -1, yoyo: true, ease: "sine.inOut" });

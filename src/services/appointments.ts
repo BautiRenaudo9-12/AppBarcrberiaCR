@@ -169,7 +169,7 @@ export const createAppointment = async (
         const data = docSnap.data() as Appointment;
         // If it exists but is cancelled, we can overwrite.
         if (data.status !== 'cancelled') {
-             throw new Error("El turno acaba de ser ocupado por otra persona.");
+              throw new Error("El turno acaba de ser reservado por otra persona.");
         }
       }
       transaction.set(appointmentRef, newAppointment);
@@ -178,7 +178,7 @@ export const createAppointment = async (
     return true;
     } catch (error: any) {
       console.error("Error creating appointment:", error);
-      if (error.message.includes("ocupado")) {
+      if (error.message.includes("reservado")) {
           throw error; // Re-throw specific race condition error
       }
       throw new Error("No se pudo reservar el turno. Intente nuevamente.");

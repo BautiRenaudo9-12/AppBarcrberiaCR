@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 
 export function useCardHover() {
     const cardRef = useRef<HTMLDivElement>(null);
@@ -7,13 +8,16 @@ export function useCardHover() {
     useEffect(() => {
         const card = cardRef.current;
         if (!card) return;
+        if (prefersReducedMotion()) return;
 
+        // Sólo transform (GPU). La sombra la maneja CSS (transition-shadow) para
+        // evitar repaints por frame al animar box-shadow desde JS.
         const handleEnter = () => {
-            gsap.to(card, { y: -4, scale: 1.01, boxShadow: "0 8px 30px rgba(0,0,0,0.25)", duration: 0.3, ease: "power2.out" });
+            gsap.to(card, { y: -4, scale: 1.01, duration: 0.3, ease: "power2.out" });
         };
 
         const handleLeave = () => {
-            gsap.to(card, { y: 0, scale: 1, boxShadow: "0 0px 0px rgba(0,0,0,0)", duration: 0.3, ease: "power2.in" });
+            gsap.to(card, { y: 0, scale: 1, duration: 0.3, ease: "power2.in" });
         };
 
         card.addEventListener("mouseenter", handleEnter);

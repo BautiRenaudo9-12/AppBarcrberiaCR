@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Turnos from "./pages/Turnos";
+import ListaTurnos from "./pages/ListaTurnos";
 import Historial from "./pages/Historial";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
@@ -100,6 +101,14 @@ const AppRoutes = () => {
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lista-turnos"
+          element={
+            <AdminRoute>
+              <ListaTurnos />
+            </AdminRoute>
           }
         />
         <Route

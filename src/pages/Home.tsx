@@ -8,6 +8,7 @@ import { requestForToken } from "@/services/notifications";
 import { updateUserProfile } from "@/services/users";
 import { toast } from "sonner";
 import NotificationPrompt from "@/components/NotificationPrompt";
+import ReservationSuccess from "@/components/home/ReservationSuccess";
 import { useHomeAnimations } from "@/hooks/useHomeAnimations";
 
 // Custom Hooks
@@ -31,9 +32,10 @@ export default function Home() {
     const [isLoadingReserve, setIsLoadingReserve] = useState(true);
     const [announcement, setAnnouncement] = useState<Announcement | null>(null);
     const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     // Sync FCM Token
-    useFcmToken(user, userProfile?.fcmToken);
+    useFcmToken(user, userProfile?.fcmToken, userProfile?.notifEnabled !== false);
 
     // Initial Data Load (Announcements)
     useEffect(() => {
@@ -56,6 +58,11 @@ export default function Home() {
     // Handle Notification Prompt Logic
     const location = useLocation();
     useEffect(() => {
+        // Confirmación visual de la reserva (independiente del permiso de notificaciones).
+        if (location.state?.reservationSuccess) {
+            setShowSuccess(true);
+        }
+
         // 1. If explicit success state (just reserved)
         if (location.state?.reservationSuccess && Notification.permission !== "granted") {
             setShowNotifPrompt(true);
@@ -124,6 +131,11 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
+            {/* Reservation Success Overlay */}
+            {showSuccess && (
+                <ReservationSuccess onDone={() => setShowSuccess(false)} />
+            )}
+
             {/* Notification Prompt Overlay */}
             {showNotifPrompt && (
                 <NotificationPrompt

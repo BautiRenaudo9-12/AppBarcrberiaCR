@@ -1,6 +1,7 @@
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
 import { Announcement } from "@/services/announcements";
+import { prefersReducedMotion } from "@/lib/motion";
 
 interface HomeAnnouncementProps {
     announcement: Announcement;
@@ -12,6 +13,8 @@ export default function HomeAnnouncement({ announcement }: HomeAnnouncementProps
 
     useLayoutEffect(() => {
         if (!cardRef.current) return;
+
+        if (prefersReducedMotion()) return;
 
         const ctx = gsap.context(() => {
             gsap.fromTo(cardRef.current!, { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.55, ease: "back.out(1.4)" });

@@ -1,5 +1,6 @@
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
+import { prefersReducedMotion, isRouteTransitionRecent } from "@/lib/motion";
 
 type AnimateStyle = "slide" | "card" | "menu";
 
@@ -28,8 +29,12 @@ export function useHomeAnimations(baseDelay = 0.2) {
         const sections = container.querySelectorAll<HTMLElement>("[data-animate]");
         if (sections.length === 0) return;
 
+        if (prefersReducedMotion()) return;
+
+        const startDelay = isRouteTransitionRecent() ? 0 : baseDelay;
+
         const ctx = gsap.context(() => {
-            let cumulativeDelay = baseDelay;
+            let cumulativeDelay = startDelay;
 
             sections.forEach((section) => {
                 const style = (section.getAttribute("data-animate") || "menu") as AnimateStyle;

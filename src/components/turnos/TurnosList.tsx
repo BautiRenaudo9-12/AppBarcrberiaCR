@@ -1,5 +1,6 @@
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 import { Slot } from "@/types/turnos";
 import SlotCard from "./SlotCard";
 import TurnosSkeleton from "./TurnosSkeleton";
@@ -14,6 +15,7 @@ interface TurnosListProps {
   onUnblock: (slot: Slot) => void;
   onActivate: (slot: Slot) => void;
   onRecurringAction: (slot: Slot) => void;
+  onCancel: (slot: Slot) => void;
 }
 
 export default function TurnosList({
@@ -26,10 +28,17 @@ export default function TurnosList({
   onUnblock,
   onActivate,
   onRecurringAction,
+  onCancel,
 }: TurnosListProps) {
   const listRef = useRef<HTMLDivElement>(null);
+  const ctxRef = useRef<gsap.Context | null>(null);
   const lastAnimatedDateRef = useRef<string | null>(null);
   const wasLoadingRef = useRef(false);
+  const hasLoadedOnceRef = useRef(false);
+
+  // Revertir el contexto GSAP sólo al desmontar (no en cada cambio de deps),
+  // así un refresco de la misma fecha no interrumpe la animación en vuelo.
+  useLayoutEffect(() => () => ctxRef.current?.revert(), []);
 
   useLayoutEffect(() => {
     // Mientras carga sólo recordamos que hubo un ciclo de carga: la entrada
@@ -46,17 +55,26 @@ export default function TurnosList({
       return;
     }
 
-    const dateChanged = lastAnimatedDateRef.current !== selectedDate;
     const justLoaded = wasLoadingRef.current;
     wasLoadingRef.current = false;
-
-    // Sólo animamos la entrada cuando data fresca de una fecha distinta
-    // terminó de cargar. Los refrescos de la misma fecha (suscripciones,
-    // acciones admin) no re-disparan el stagger.
-    if (!dateChanged || !justLoaded) return;
+    const dateChanged = lastAnimatedDateRef.current !== selectedDate;
     lastAnimatedDateRef.current = selectedDate;
 
-    const ctx = gsap.context(() => {
+    // Primera carga al entrar a la página: la entrada la maneja TransitionManager
+    // (la página entra como bloque). No staggeamos las cards para no encimar.
+    if (!hasLoadedOnceRef.current) {
+      hasLoadedOnceRef.current = true;
+      return;
+    }
+
+    // Sólo animamos al cambiar de fecha con data fresca. Los refrescos de la
+    // misma fecha (suscripciones, acciones admin) no re-disparan el stagger.
+    if (!dateChanged || !justLoaded) return;
+
+    if (prefersReducedMotion()) return;
+
+    ctxRef.current?.revert();
+    ctxRef.current = gsap.context(() => {
       gsap.fromTo(
         children,
         { opacity: 0, y: 10 },
@@ -69,8 +87,6 @@ export default function TurnosList({
         }
       );
     }, listRef.current);
-
-    return () => ctx.revert();
   }, [selectedDate, slots, loading]);
 
   if (loading && slots.length === 0) {
@@ -106,6 +122,7 @@ export default function TurnosList({
             onUnblock={onUnblock}
             onActivate={onActivate}
             onRecurringAction={onRecurringAction}
+            onCancel={onCancel}
           />
         ))}
       </div>

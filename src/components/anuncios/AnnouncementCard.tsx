@@ -2,7 +2,9 @@ import { memo, useRef, useEffect, useState, useCallback } from "react";
 import { Trash2, Calendar } from "lucide-react";
 import { Announcement } from "@/services/announcements";
 import moment from "moment";
-import gsap from "gsap";
+import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
+import { useCardHover } from "@/hooks/useCardHover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,25 +26,31 @@ interface AnnouncementCardProps {
 }
 
 export const AnnouncementCard = memo(({ announcement, onDelete, isDeleting, innerRef, isNew }: AnnouncementCardProps) => {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const hoverRef = useCardHover();
   const badgeRef = useRef<HTMLDivElement>(null);
+  const iconRef = useRef<HTMLDivElement>(null);
   const [removing, setRemoving] = useState(false);
   const start = announcement.fechaInicio.toDate();
   const end = announcement.fechaFin.toDate();
   const isActive = new Date() >= start && new Date() <= end;
 
   useEffect(() => {
-    if (!cardRef.current) return;
+    if (!hoverRef.current) return;
+
+    if (prefersReducedMotion()) {
+      gsap.set(hoverRef.current, { opacity: 1, scale: 1, y: 0, clearProps: "boxShadow" });
+      return;
+    }
 
     if (isNew) {
       const ctx = gsap.context(() => {
         gsap.fromTo(
-          cardRef.current,
+          hoverRef.current,
           { opacity: 0, scale: 0.96, y: 8 },
           { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "power3.out" }
         );
         gsap.fromTo(
-          cardRef.current,
+          hoverRef.current,
           { boxShadow: "0 0 0 0px rgba(48,209,88,0)" },
           {
             boxShadow: "0 0 0 2px rgba(48,209,88,0.5)",
@@ -52,22 +60,26 @@ export const AnnouncementCard = memo(({ announcement, onDelete, isDeleting, inne
             ease: "power2.inOut",
           }
         );
-      }, cardRef);
+      }, hoverRef);
       return () => ctx.revert();
     }
 
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        cardRef.current,
+        hoverRef.current,
         { opacity: 0, y: 12 },
         { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }
       );
-    }, cardRef);
+    }, hoverRef);
     return () => ctx.revert();
   }, [isNew]);
 
   useEffect(() => {
     if (isActive && badgeRef.current) {
+      if (prefersReducedMotion()) {
+        gsap.set(badgeRef.current, { scale: 1, opacity: 1 });
+        return;
+      }
       const ctx = gsap.context(() => {
         gsap.fromTo(
           badgeRef.current,
@@ -80,19 +92,19 @@ export const AnnouncementCard = memo(({ announcement, onDelete, isDeleting, inne
   }, [isActive]);
 
   const handleDelete = useCallback(() => {
-    if (!cardRef.current) {
+    if (!hoverRef.current || prefersReducedMotion()) {
       onDelete(announcement.id!);
       return;
     }
     setRemoving(true);
-    gsap.to(cardRef.current, {
+    gsap.to(hoverRef.current, {
       opacity: 0,
       y: -8,
       scale: 0.97,
       duration: 0.25,
       ease: "power2.in",
       onComplete: () => {
-        gsap.to(cardRef.current, {
+        gsap.to(hoverRef.current, {
           height: 0,
           marginTop: 0,
           marginBottom: 0,
@@ -106,9 +118,19 @@ export const AnnouncementCard = memo(({ announcement, onDelete, isDeleting, inne
     });
   }, [onDelete, announcement.id]);
 
+  const handleCardEnter = useCallback(() => {
+    if (prefersReducedMotion()) return;
+    if (iconRef.current) gsap.to(iconRef.current, { scale: 1.15, duration: 0.3, ease: "back.out(2)" });
+  }, []);
+
+  const handleCardLeave = useCallback(() => {
+    if (prefersReducedMotion()) return;
+    if (iconRef.current) gsap.to(iconRef.current, { scale: 1, duration: 0.25, ease: "power2.out" });
+  }, []);
+
   const setRefs = useCallback(
     (node: HTMLDivElement) => {
-      (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      (hoverRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
       if (typeof innerRef === "function") {
         innerRef(node);
       } else if (innerRef) {
@@ -122,7 +144,7 @@ export const AnnouncementCard = memo(({ announcement, onDelete, isDeleting, inne
     return (
       <div
         ref={setRefs}
-        className="bg-card border border-white/10 rounded-3xl overflow-hidden"
+        className="bg-card border border-white/10 rounded-2xl overflow-hidden"
         style={{ opacity: 0 }}
       />
     );
@@ -131,30 +153,29 @@ export const AnnouncementCard = memo(({ announcement, onDelete, isDeleting, inne
   return (
     <div
       ref={setRefs}
-      className="bg-card border border-white/10 rounded-3xl p-5 flex items-start gap-4 group hover:border-white/20 transition-colors relative overflow-hidden"
+      data-announcement-card
+      onMouseEnter={handleCardEnter}
+      onMouseLeave={handleCardLeave}
+      className="bg-card border border-white/10 rounded-2xl p-3 flex items-center gap-3 group hover:border-white/20 transition-colors relative overflow-hidden"
     >
       {isActive && (
         <div
           ref={badgeRef}
-          className="absolute top-0 right-0 bg-accent text-accent-foreground text-[10px] font-bold px-3 py-1 rounded-bl-xl"
+          className="absolute top-0 right-0 bg-accent text-accent-foreground text-[10px] font-bold px-2 py-0.5 rounded-bl-xl"
           style={{ transform: "scale(0)", opacity: 0 }}
         >
           ACTIVO
         </div>
       )}
-      <div className="text-3xl shrink-0 bg-secondary/30 w-14 h-14 rounded-2xl flex items-center justify-center">
+      <div ref={iconRef} className="text-xl shrink-0 bg-secondary/30 w-10 h-10 rounded-xl flex items-center justify-center">
         {announcement.icono}
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-lg leading-tight mb-1">{announcement.texto}</h3>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
+        <h3 className="font-semibold text-sm leading-tight">{announcement.texto}</h3>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-1">
           <span className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />
-            Desde: {moment(start).format("DD/MM/YYYY HH:mm")}
-          </span>
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            Hasta: {moment(end).format("DD/MM/YYYY HH:mm")}
+            {moment(start).format("DD/MM/YYYY HH:mm")} → {moment(end).format("DD/MM/YYYY HH:mm")}
           </span>
         </div>
       </div>
@@ -162,11 +183,11 @@ export const AnnouncementCard = memo(({ announcement, onDelete, isDeleting, inne
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <button
-            className="p-2 hover:bg-destructive/20 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
+            className="p-1.5 hover:bg-destructive/20 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
             title="Eliminar anuncio"
             disabled={isDeleting}
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </AlertDialogTrigger>
         <AlertDialogContent className="bg-card border-white/10 text-foreground">

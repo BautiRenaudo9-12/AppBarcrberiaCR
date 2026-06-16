@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 
 export default function Configuracion() {
   const [days, setDays] = useState<DayConfig[]>([]);
@@ -28,7 +29,7 @@ export default function Configuracion() {
   const [dayToCopy, setDayToCopy] = useState<DayConfig | null>(null);
   const [isLoadingDays, setIsLoadingDays] = useState(true);
   const { setLoading } = useUI();
-  const pageRef = useConfigAnimations();
+  const pageRef = useConfigAnimations(isLoadingDays);
   const saveBtnRef = useRef<HTMLButtonElement>(null);
   const prevHasChanges = useRef(false);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -40,6 +41,12 @@ export default function Configuracion() {
   useEffect(() => {
     if (!saveBtnRef.current) return;
 
+    if (prefersReducedMotion()) {
+      gsap.set(saveBtnRef.current, hasChanges ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 });
+      prevHasChanges.current = hasChanges;
+      return;
+    }
+
     if (hasChanges && !prevHasChanges.current) {
       gsap.fromTo(saveBtnRef.current, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
     } else if (!hasChanges && prevHasChanges.current) {
@@ -49,7 +56,8 @@ export default function Configuracion() {
   }, [hasChanges]);
 
   const loadDays = async () => {
-    setLoading(true);
+    // Sin overlay global en la entrada: el ConfigSkeleton (isLoadingDays) cubre el
+    // loading in-place, consistente con el resto de las páginas.
     try {
       const snap = await getDays();
       const loadedDays = snap.docs.map(d => {
@@ -70,7 +78,6 @@ export default function Configuracion() {
       console.error(error);
       toast.error("Error al cargar configuraciones");
     } finally {
-      setLoading(false);
       setIsLoadingDays(false);
     }
   };
@@ -122,6 +129,7 @@ export default function Configuracion() {
   };
 
   const handleSaveAllDown = () => {
+    if (prefersReducedMotion()) return;
     if (saveBtnRef.current) {
       gsap.to(saveBtnRef.current, { scale: 0.95, duration: 0.1 });
     }
@@ -190,18 +198,17 @@ export default function Configuracion() {
   };
 
   return (
-    <div ref={pageRef} className="min-h-screen bg-background text-foreground pb-20">
+    <div ref={pageRef} className="min-h-screen bg-background text-foreground">
       <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
               to="/"
-              data-header-stagger
               className="w-10 h-10 hover:bg-secondary/30 rounded-lg flex items-center justify-center transition-colors"
             >
               <ArrowLeft className="w-6 h-6" />
             </Link>
-            <h1 data-header-stagger className="text-2xl font-bold">Configuración</h1>
+            <h1 className="text-2xl font-bold">Configuración</h1>
           </div>
           
           <button
@@ -219,7 +226,7 @@ export default function Configuracion() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 pb-20 sm:px-6 space-y-8">
         {isLoadingDays ? (
           <ConfigSkeleton />
         ) : (

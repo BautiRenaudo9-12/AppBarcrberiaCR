@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Calendar, History, Settings, Users, Megaphone } from "lucide-react";
+import { Calendar, CalendarCheck, History, Settings, Users, Megaphone } from "lucide-react";
 import { useMenuHover } from "@/hooks/useMenuHover";
 
 interface HomeMenuProps {
@@ -49,6 +49,21 @@ export default function HomeMenu({ isAdmin }: HomeMenuProps) {
                 {/* Admin Section */}
                 {isAdmin && (
                     <>
+                        <Link
+                            to="/lista-turnos"
+                            data-menu-item
+                            className="w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left"
+                        >
+                            <div data-menu-icon className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center group-hover:bg-accent/30 transition-colors">
+                                <CalendarCheck className="w-6 h-6 text-accent" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-medium">Lista de Turnos</p>
+                                <p className="text-xs text-muted-foreground font-medium">Turnos reservados por fecha</p>
+                            </div>
+                            <span data-menu-arrow className="text-muted-foreground font-medium">→</span>
+                        </Link>
+
                         <Link
                             to="/configuracion"
                             data-menu-item

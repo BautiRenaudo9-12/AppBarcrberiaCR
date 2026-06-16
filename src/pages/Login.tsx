@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { signIn, signUp, _setUserProperties } from "@/services/auth";
 import { useUI } from "@/context/UIContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { createSearchKeywords } from "@/lib/keywords";
@@ -15,6 +17,33 @@ export default function Login() {
   const [phone, setPhone] = useState("");
   const { setLoading } = useUI();
   const navigate = useNavigate();
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
+
+  // Entrada al montar.
+  useLayoutEffect(() => {
+    if (!containerRef.current || prefersReducedMotion()) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo("[data-login-head]", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" });
+      gsap.fromTo("[data-login-card]", { opacity: 0, y: 16, scale: 0.98 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, delay: 0.1, ease: "power3.out" });
+      gsap.fromTo("[data-login-field]", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.07, delay: 0.25, ease: "power3.out" });
+    }, containerRef);
+    return () => ctx.revert();
+  }, []);
+
+  // Re-stagger de los campos al alternar entre login y registro.
+  useLayoutEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!containerRef.current || prefersReducedMotion()) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo("[data-login-field]", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.05, ease: "power2.out" });
+    }, containerRef);
+    return () => ctx.revert();
+  }, [isLogin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,21 +92,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Background Effects */}
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
+        <div data-login-head className="text-center">
           <h1 className="text-3xl font-bold tracking-tight">Barberia CR</h1>
           <p className="text-muted-foreground mt-2">
             {isLogin ? "Inicia sesión para continuar" : "Crea tu cuenta para reservar"}
           </p>
         </div>
 
-        <div className="bg-card border border-white/10 rounded-3xl p-8 shadow-xl">
+        <div data-login-card className="bg-card border border-white/10 rounded-3xl p-8 shadow-xl">
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <>
-                <div className="space-y-2">
+                <div data-login-field className="space-y-2">
                   <label className="text-sm font-medium leading-none">Nombre Completo</label>
                   <input
                     type="text"
@@ -88,7 +117,7 @@ export default function Login() {
                     placeholder="Juan Pérez"
                   />
                 </div>
-                <div className="space-y-2">
+                <div data-login-field className="space-y-2">
                   <label className="text-sm font-medium leading-none">Teléfono</label>
                   <input
                     type="tel"
@@ -102,7 +131,7 @@ export default function Login() {
               </>
             )}
             
-            <div className="space-y-2">
+            <div data-login-field className="space-y-2">
               <label className="text-sm font-medium leading-none">Email</label>
               <input
                 type="email"
@@ -114,7 +143,7 @@ export default function Login() {
               />
             </div>
             
-            <div className="space-y-2">
+            <div data-login-field className="space-y-2">
               <label className="text-sm font-medium leading-none">Contraseña</label>
               <input
                 type="password"
@@ -128,6 +157,7 @@ export default function Login() {
 
             <button
               type="submit"
+              data-login-field
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90 h-12 rounded-xl font-medium transition-colors mt-6"
             >
               {isLogin ? "Ingresar" : "Registrarse"}

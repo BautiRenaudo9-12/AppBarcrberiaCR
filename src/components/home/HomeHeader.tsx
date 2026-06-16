@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "firebase/auth";
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
+import { prefersReducedMotion, isRouteTransitionRecent } from "@/lib/motion";
 
 interface HomeHeaderProps {
     user: User | null;
@@ -19,11 +20,13 @@ export default function HomeHeader({ user }: HomeHeaderProps) {
     useLayoutEffect(() => {
         if (!headerRef.current) return;
 
+        if (prefersReducedMotion()) return;
+
         const ctx = gsap.context(() => {
             const staggerEls = headerRef.current!.querySelectorAll("[data-header-stagger]");
             const avatarEl = headerRef.current!.querySelector("[data-header-avatar]");
 
-            const tl = gsap.timeline({ delay: 0.1 });
+            const tl = gsap.timeline({ delay: isRouteTransitionRecent() ? 0 : 0.1 });
 
             tl.fromTo(headerRef.current!, { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" });
             tl.fromTo(staggerEls, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.3, stagger: 0.05, ease: "power3.out" }, "-=0.15");

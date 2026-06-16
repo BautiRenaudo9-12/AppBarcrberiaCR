@@ -2,6 +2,7 @@ import { memo, useRef, useCallback } from "react";
 import { User, Mail, Phone, History } from "lucide-react";
 import { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 import { useCardHover } from "@/hooks/useCardHover";
 
 interface ClientData {
@@ -24,7 +25,7 @@ export const ClientCard = memo(({ client, innerRef }: ClientCardProps) => {
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const handleBtnClick = useCallback(() => {
-    if (!btnRef.current) return;
+    if (!btnRef.current || prefersReducedMotion()) return;
     gsap.fromTo(btnRef.current, { scale: 1 }, { scale: 1.05, duration: 0.15, yoyo: true, repeat: 1, ease: "power2.inOut" });
   }, []);
 
@@ -38,10 +39,12 @@ export const ClientCard = memo(({ client, innerRef }: ClientCardProps) => {
   }, [cardRef, innerRef]);
 
   const handleCardEnter = useCallback(() => {
+    if (prefersReducedMotion()) return;
     if (iconRef.current) gsap.to(iconRef.current, { scale: 1.15, duration: 0.3, ease: "back.out(2)" });
   }, []);
 
   const handleCardLeave = useCallback(() => {
+    if (prefersReducedMotion()) return;
     if (iconRef.current) gsap.to(iconRef.current, { scale: 1, duration: 0.25, ease: "power2.out" });
   }, []);
 
@@ -51,7 +54,7 @@ export const ClientCard = memo(({ client, innerRef }: ClientCardProps) => {
       data-client-card
       onMouseEnter={handleCardEnter}
       onMouseLeave={handleCardLeave}
-      className="bg-card border border-white/10 rounded-2xl p-5 group flex flex-col gap-4"
+      className="bg-card border border-white/10 rounded-2xl p-5 group flex flex-col gap-4 transition-shadow duration-300 hover:shadow-lg hover:shadow-black/30"
     >
       <div className="flex justify-between items-start">
         <div>

@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Calendar } from "lucide-react";
-import { useEffect, useRef, useState, useLayoutEffect } from "react";
+import { useEffect, useState } from "react";
 import { getHistory } from "@/services/users";
-import { gsap } from "gsap";
+import { useCounter } from "@/hooks/useCounter";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import moment from "moment";
 import HistorialSkeleton from "@/components/historial/HistorialSkeleton";
 import { DocumentData } from "firebase/firestore";
@@ -10,10 +11,8 @@ import { DocumentData } from "firebase/firestore";
 export default function Historial() {
   const [visits, setVisits] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
-  const listRef = useRef<HTMLDivElement>(null);
-  const countRef = useRef<HTMLParagraphElement>(null);
-  const hasAnimatedList = useRef(false);
-  const prevLengthRef = useRef(0);
+  const countRef = useCounter(visits.length, 0.8);
+  const listRef = useScrollReveal<HTMLDivElement>(!loading && visits.length > 0);
 
   useEffect(() => {
     getHistory().then((snap) => {
@@ -21,55 +20,6 @@ export default function Historial() {
       setLoading(false);
     });
   }, []);
-
-  useEffect(() => {
-    if (!countRef.current || visits.length === 0) return;
-
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        countRef.current,
-        { textContent: 0 },
-        {
-          textContent: visits.length,
-          duration: 0.8,
-          ease: "power2.out",
-          snap: { textContent: 1 },
-        }
-      );
-    }, countRef.current);
-
-    return () => ctx.revert();
-  }, [visits.length]);
-
-  useLayoutEffect(() => {
-    if (!listRef.current || loading) return;
-
-    const cards = Array.from(listRef.current.children);
-    if (cards.length === 0) return;
-
-    const isUpdate = prevLengthRef.current > 0;
-    prevLengthRef.current = cards.length;
-
-    if (hasAnimatedList.current && !isUpdate) return;
-    hasAnimatedList.current = true;
-
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        cards,
-        { opacity: 0, y: 12 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.3,
-          stagger: 0.04,
-          delay: 0.05,
-          ease: "power2.out",
-        }
-      );
-    }, listRef.current);
-
-    return () => ctx.revert();
-  }, [visits, loading]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -88,8 +38,8 @@ export default function Historial() {
       <div className="max-w-md mx-auto px-4 py-6 sm:px-6 space-y-6">
         <div className="bg-accent/15 border border-accent/30 rounded-2xl px-4 py-3 text-center">
           <p className="text-xs text-muted-foreground font-medium mb-1">Total de visitas</p>
-          <p ref={countRef} className="text-3xl font-bold text-accent">
-            {visits.length}
+          <p className="text-3xl font-bold text-accent">
+            <span ref={countRef}>{visits.length}</span>
           </p>
         </div>
 

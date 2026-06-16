@@ -4,10 +4,15 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { requestForToken } from "@/services/notifications";
 
-export function useFcmToken(user: User | null, dbToken?: string) {
+export function useFcmToken(user: User | null, dbToken?: string, enabled: boolean = true) {
     useEffect(() => {
         if (!user || !user.email) {
             console.log("ℹ️ [useFcmToken] No user or email, skipping token sync.");
+            return;
+        }
+
+        if (!enabled) {
+            console.log("ℹ️ [useFcmToken] User opted out of notifications, skipping token sync.");
             return;
         }
 
@@ -43,5 +48,5 @@ export function useFcmToken(user: User | null, dbToken?: string) {
         };
 
         syncToken();
-    }, [user, dbToken]);
+    }, [user, dbToken, enabled]);
 }

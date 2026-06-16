@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback } from "react";
 import { Clock, CalendarDays, Save, Copy } from "lucide-react";
 import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 import { DayConfig } from "@/types/config";
 import { useCardHover } from "@/hooks/useCardHover";
 
@@ -23,8 +24,8 @@ export function DayConfigCard({ day, onUpdate, onSave, onApplyToAll }: DayConfig
 
   useEffect(() => {
     if (isInvalidRange && !prevInvalid.current) {
-      if (cardRef.current) {
-        gsap.fromTo(cardRef.current, { x: 0 }, { x: [-4, 4, -3, 3, -1, 0], duration: 0.35, ease: "power2.out" });
+      if (cardRef.current && !prefersReducedMotion()) {
+        gsap.to(cardRef.current, { keyframes: { x: [-4, 4, -3, 3, -1, 0] }, duration: 0.35, ease: "power2.out" });
       }
     }
     prevInvalid.current = isInvalidRange;
@@ -37,7 +38,7 @@ export function DayConfigCard({ day, onUpdate, onSave, onApplyToAll }: DayConfig
 
   const handleToggle = useCallback(() => {
     if (!toggleRef.current) return;
-    if (day.activo !== false) {
+    if (day.activo !== false && !prefersReducedMotion()) {
       gsap.fromTo(toggleRef.current, { scale: 1 }, { scale: 1.2, duration: 0.15, ease: "power2.out", yoyo: true, repeat: 1 });
     }
     onUpdate(day.id, "activo", !(day.activo !== false));
@@ -54,18 +55,22 @@ export function DayConfigCard({ day, onUpdate, onSave, onApplyToAll }: DayConfig
 
   const handleSaveClick = useCallback(() => {
     if (!saveBtnRef.current) return;
-    gsap.fromTo(saveBtnRef.current, { scale: 1 }, { scale: 1.05, duration: 0.15, yoyo: true, repeat: 1, ease: "power2.inOut" });
+    if (!prefersReducedMotion()) {
+      gsap.fromTo(saveBtnRef.current, { scale: 1 }, { scale: 1.05, duration: 0.15, yoyo: true, repeat: 1, ease: "power2.inOut" });
+    }
     onSave(day);
   }, [day, onSave]);
 
   const handleCopyClick = useCallback(() => {
     if (!copyBtnRef.current) return;
-    gsap.fromTo(copyBtnRef.current, { scale: 1 }, { scale: 1.15, duration: 0.15, yoyo: true, repeat: 1, ease: "back.out(2)" });
+    if (!prefersReducedMotion()) {
+      gsap.fromTo(copyBtnRef.current, { scale: 1 }, { scale: 1.15, duration: 0.15, yoyo: true, repeat: 1, ease: "back.out(2)" });
+    }
     onApplyToAll?.(day);
   }, [day, onApplyToAll]);
 
   return (
-    <div data-card data-card-id={day.id} ref={cardRef} className="bg-card border border-white/10 rounded-3xl overflow-hidden shadow-sm group">
+    <div data-card data-card-id={day.id} ref={cardRef} className="bg-card border border-white/10 rounded-3xl overflow-hidden shadow-sm group transition-shadow duration-300 hover:shadow-lg hover:shadow-black/30">
       <div className="bg-white/5 px-5 py-4 flex justify-between items-center border-b border-white/5">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center text-accent">

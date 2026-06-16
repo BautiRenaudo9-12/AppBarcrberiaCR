@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Bell, X, AlertCircle } from "lucide-react";
 import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 import { requestForToken, showNotification } from "@/services/notifications";
 
 interface NotificationPromptProps {
@@ -23,6 +24,8 @@ export default function NotificationPrompt({ onDismiss, onSuccess }: Notificatio
 
     useLayoutEffect(() => {
         if (!isVisible || !promptRef.current) return;
+
+        if (prefersReducedMotion()) return;
 
         const ctx = gsap.context(() => {
             gsap.fromTo(promptRef.current!, { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "back.out(1.7)" });

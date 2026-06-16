@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
 
 export function useMenuHover() {
     const menuRef = useRef<HTMLDivElement>(null);
@@ -7,6 +8,7 @@ export function useMenuHover() {
     useEffect(() => {
         const menu = menuRef.current;
         if (!menu) return;
+        if (prefersReducedMotion()) return;
 
         const items = menu.querySelectorAll("[data-menu-item]");
 

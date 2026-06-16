@@ -2,7 +2,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import gsap from "gsap";
+import { usePressScale } from "@/hooks/usePressScale";
+import { useAnunciosAnimations } from "@/hooks/useAnunciosAnimations";
 import { useAnnouncementsInfinite, useCreateAnnouncement, useDeleteAnnouncement } from "@/hooks/useAnnouncements";
 import { AnnouncementCard } from "@/components/anuncios/AnnouncementCard";
 
@@ -11,7 +12,7 @@ export default function Anuncios() {
   const [annIcon, setAnnIcon] = useState("📣");
   const [annStart, setAnnStart] = useState("");
   const [annEnd, setAnnEnd] = useState("");
-  const publishBtnRef = useRef<HTMLButtonElement>(null);
+  const { ref: publishBtnRef, ...publishPress } = usePressScale(0.97);
   const [newlyCreatedId, setNewlyCreatedId] = useState<string | null>(null);
   const prevIdsRef = useRef<Set<string>>(new Set());
 
@@ -22,6 +23,8 @@ export default function Anuncios() {
     isFetchingNextPage,
     isLoading: isListLoading,
   } = useAnnouncementsInfinite();
+
+  const pageRef = useAnunciosAnimations();
 
   const createMutation = useCreateAnnouncement();
   const deleteMutation = useDeleteAnnouncement();
@@ -99,94 +102,77 @@ export default function Anuncios() {
     });
   };
 
-  const handlePublishDown = () => {
-    if (publishBtnRef.current) {
-      gsap.to(publishBtnRef.current, { scale: 0.97, duration: 0.1 });
-    }
-  };
-
-  const handlePublishUp = () => {
-    if (publishBtnRef.current) {
-      gsap.to(publishBtnRef.current, {
-        scale: 1,
-        duration: 0.2,
-        ease: "back.out(2)",
-      });
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
+    <div ref={pageRef} className="min-h-screen bg-background text-foreground">
+      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-3 sm:px-6">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <Link
             to="/"
+            data-header-stagger
             className="w-10 h-10 hover:bg-secondary/30 rounded-lg flex items-center justify-center transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-2xl font-bold">Gestión de Anuncios</h1>
+          <h1 data-header-stagger className="text-xl font-bold">Gestión de Anuncios</h1>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-8 sm:px-6 space-y-8">
-        <div className="bg-card border border-white/10 rounded-3xl p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-accent/20 rounded-xl flex items-center justify-center text-accent">
-              <Plus className="w-6 h-6" />
+      <div className="max-w-3xl mx-auto px-4 py-4 sm:px-6 space-y-5">
+        <div data-form className="bg-card border border-white/10 rounded-3xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center text-accent">
+              <Plus className="w-4 h-4" />
             </div>
-            <h2 className="text-xl font-bold">Nuevo Anuncio</h2>
+            <h2 className="text-base font-bold">Nuevo Anuncio</h2>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1 sm:col-span-2">
               <label className="text-sm font-medium">Texto del Anuncio</label>
               <input
                 type="text"
                 value={annText}
                 onChange={(e) => setAnnText(e.target.value)}
                 placeholder="Ej: ¡Descuento de verano!"
-                className="w-full bg-secondary/20 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-accent outline-none"
+                className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm font-medium">Emoji / Icono</label>
               <input
                 type="text"
                 value={annIcon}
                 onChange={(e) => setAnnIcon(e.target.value)}
                 placeholder="📣"
-                className="w-full bg-secondary/20 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-accent outline-none"
+                className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
               />
             </div>
-            <div className="space-y-2">{/* Empty for layout */}</div>
-            <div className="space-y-2">
+            <div className="space-y-1"/>
+            <div className="space-y-1">
               <label className="text-sm font-medium">Fecha Inicio</label>
               <input
                 type="datetime-local"
                 value={annStart}
                 onChange={(e) => setAnnStart(e.target.value)}
-                className="w-full bg-secondary/20 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-accent outline-none"
+                className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm font-medium">Fecha Fin</label>
               <input
                 type="datetime-local"
                 value={annEnd}
                 onChange={(e) => setAnnEnd(e.target.value)}
-                className="w-full bg-secondary/20 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-accent outline-none"
+                className="w-full bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
               />
             </div>
-            <div className="sm:col-span-2 pt-2">
+            <div className="sm:col-span-2">
               <button
                 ref={publishBtnRef}
                 onClick={handlePublishAnnouncement}
-                onPointerDown={handlePublishDown}
-                onPointerUp={handlePublishUp}
-                onPointerLeave={handlePublishUp}
+                {...publishPress}
                 disabled={createMutation.isPending}
-                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-3 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-2 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {createMutation.isPending ? (
                   <>
@@ -201,11 +187,11 @@ export default function Anuncios() {
           </div>
         </div>
 
-        <div className="pb-10">
-          <h2 className="text-xl font-bold mb-4 px-1">Anuncios Creados</h2>
-          <div className="space-y-4">
+        <div data-grid className="pb-10">
+          <h2 className="text-base font-bold mb-3 px-1">Anuncios Creados</h2>
+          <div className="space-y-2">
             {announcements.length === 0 && !isListLoading ? (
-              <div className="text-center py-8 text-muted-foreground bg-card/30 rounded-3xl border border-white/5 animate-in fade-in-0 zoom-in-95 duration-300">
+              <div className="text-center py-6 text-muted-foreground bg-card/30 rounded-2xl border border-white/5 animate-in fade-in-0 zoom-in-95 duration-300">
                 No hay anuncios registrados.
               </div>
             ) : (

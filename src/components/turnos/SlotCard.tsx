@@ -3,16 +3,21 @@ import { Clock, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slot } from "@/types/turnos";
 import { Switch } from "@/components/ui/switch";
-import gsap from "gsap";
+import { gsap } from "gsap";
+import { prefersReducedMotion } from "@/lib/motion";
+import { usePressScale } from "@/hooks/usePressScale";
 
 interface SlotCardProps {
   slot: Slot;
   isAdmin: boolean;
-  onReserve: (slot: Slot) => void;
-  onBlock: (slot: Slot) => void;
-  onUnblock: (slot: Slot) => void;
-  onActivate: (slot: Slot) => void;
-  onRecurringAction: (slot: Slot) => void;
+  onReserve?: (slot: Slot) => void;
+  onBlock?: (slot: Slot) => void;
+  onUnblock?: (slot: Slot) => void;
+  onActivate?: (slot: Slot) => void;
+  onRecurringAction?: (slot: Slot) => void;
+  onCancel: (slot: Slot) => void;
+  /** Modo "solo cancelar": oculta el switch de bloqueo y el botón Reservar. */
+  cancelOnly?: boolean;
 }
 
 function SlotCard({
@@ -23,9 +28,12 @@ function SlotCard({
   onUnblock,
   onActivate,
   onRecurringAction,
+  onCancel,
+  cancelOnly = false,
 }: SlotCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const reserveBtnRef = useRef<HTMLButtonElement>(null);
+  const { ref: reserveBtnRef, ...reservePress } = usePressScale(0.93);
+  const { ref: cancelBtnRef, ...cancelPress } = usePressScale(0.93);
   const prevStatusRef = useRef(slot.status);
   const isFirstRender = useRef(true);
 
@@ -37,6 +45,8 @@ function SlotCard({
 
     if (prevStatusRef.current !== slot.status && cardRef.current) {
       prevStatusRef.current = slot.status;
+
+      if (prefersReducedMotion()) return;
 
       gsap.fromTo(
         cardRef.current,
@@ -51,28 +61,12 @@ function SlotCard({
   const handleToggle = (checked: boolean) => {
     if (checked) {
       if (slot.blockedRule?.type === "recurring") {
-        onRecurringAction(slot);
+        onRecurringAction?.(slot);
       } else {
-        onUnblock(slot);
+        onUnblock?.(slot);
       }
     } else {
-      onBlock(slot);
-    }
-  };
-
-  const handleReserveDown = () => {
-    if (reserveBtnRef.current) {
-      gsap.to(reserveBtnRef.current, { scale: 0.93, duration: 0.1 });
-    }
-  };
-
-  const handleReserveUp = () => {
-    if (reserveBtnRef.current) {
-      gsap.to(reserveBtnRef.current, {
-        scale: 1,
-        duration: 0.2,
-        ease: "back.out(2)",
-      });
+      onBlock?.(slot);
     }
   };
 
@@ -139,7 +133,7 @@ function SlotCard({
       </div>
 
       <div className="flex items-center gap-4 ml-auto">
-        {isAdmin && (
+        {isAdmin && !cancelOnly && (
           <Switch
             checked={isAvailable}
             onCheckedChange={handleToggle}
@@ -147,15 +141,13 @@ function SlotCard({
           />
         )}
 
-        {(slot.status === "free" || (isAdmin && slot.status === "blocked")) && (
+        {!cancelOnly && (slot.status === "free" || (isAdmin && slot.status === "blocked")) && (
           <button
             ref={reserveBtnRef}
-            onClick={() => onReserve(slot)}
-            onPointerDown={handleReserveDown}
-            onPointerUp={handleReserveUp}
-            onPointerLeave={handleReserveUp}
+            onClick={() => onReserve?.(slot)}
+            {...reservePress}
             className={cn(
-              "rounded-full font-medium transition-colors bg-accent/30 text-white hover:bg-accent",
+              "rounded-full font-medium transition-colors bg-accent/30 text-white hover:bg-accent min-w-[5.5rem] text-center",
               isAdmin ? "px-3 py-1 text-xs" : "px-6 py-2 text-sm"
             )}
           >
@@ -164,9 +156,14 @@ function SlotCard({
         )}
 
         {isAdmin && slot.status === "reserved" && (
-          <div className="px-3 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
-            Ocupado
-          </div>
+          <button
+            ref={cancelBtnRef}
+            onClick={() => onCancel(slot)}
+            {...cancelPress}
+            className="rounded-full font-medium transition-colors bg-destructive/30 text-white hover:bg-destructive min-w-[5.5rem] text-center px-3 py-1 text-xs"
+          >
+            Cancelar
+          </button>
         )}
       </div>
     </div>

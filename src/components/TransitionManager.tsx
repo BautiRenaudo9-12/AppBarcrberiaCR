@@ -1,14 +1,16 @@
 import { useRef, useState, useEffect, useLayoutEffect, ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { gsap } from "gsap";
+import { prefersReducedMotion, markRouteTransition } from "@/lib/motion";
 
 const routeDepth: Record<string, number> = {
   "/login": 0,
   "/": 1,
   "/turnos": 2,
+  "/lista-turnos": 2,
   "/historial": 2,
   "/profile": 2,
-  "/configuracion": 3,
+  "/configuracion": 2,
   "/clientes": 3,
   "/admin-anuncios": 3,
 };
@@ -36,6 +38,7 @@ export function TransitionManager({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
+      if (prefersReducedMotion()) return;
       const ctx = gsap.context(() => {
         gsap.fromTo(
           containerRef.current,
@@ -55,6 +58,14 @@ export function TransitionManager({ children }: { children: ReactNode }) {
     directionRef.current = getDirection(prevPathname.current, location.pathname);
     const dir = directionRef.current;
 
+    // Movimiento reducido: cambiamos de página sin animar, sólo reset de scroll.
+    if (prefersReducedMotion()) {
+      prevPathname.current = location.pathname;
+      setDisplayChildren(children);
+      window.scrollTo(0, 0);
+      return;
+    }
+
     if (exitAnimRef.current) {
       exitAnimRef.current.kill();
     }
@@ -71,12 +82,19 @@ export function TransitionManager({ children }: { children: ReactNode }) {
         pendingChildren.current = children;
         needsEntrance.current = true;
         prevPathname.current = location.pathname;
+        // Marcamos antes de montar la página nueva: sus hooks de entrada
+        // (useLayoutEffect del hijo) corren antes que el de este contenedor,
+        // así que la marca debe quedar lista de antemano.
+        markRouteTransition();
         setDisplayChildren(children);
       },
     });
 
     return () => {
       exitAnimRef.current?.kill();
+      // Reset defensivo: si la salida se interrumpe por una navegación rápida,
+      // evitamos que el scroll quede bloqueado.
+      document.body.style.overflow = "";
     };
   }, [location.pathname]);
 
@@ -111,7 +129,10 @@ export function TransitionManager({ children }: { children: ReactNode }) {
     }, containerRef);
     ctxRef.current = ctx;
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      document.body.style.overflow = "";
+    };
   }, [displayChildren]);
 
   return (

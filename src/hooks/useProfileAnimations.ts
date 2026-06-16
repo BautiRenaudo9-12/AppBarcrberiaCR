@@ -1,5 +1,6 @@
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
+import { prefersReducedMotion, isRouteTransitionRecent } from "@/lib/motion";
 
 export function useProfileAnimations() {
     const pageRef = useRef<HTMLDivElement>(null);
@@ -7,6 +8,8 @@ export function useProfileAnimations() {
     useLayoutEffect(() => {
         const page = pageRef.current;
         if (!page) return;
+
+        if (prefersReducedMotion()) return;
 
         const ctx = gsap.context(() => {
             const headerItems = page!.querySelectorAll("[data-header-stagger]");
@@ -16,7 +19,7 @@ export function useProfileAnimations() {
             const profileRole = page!.querySelector("[data-profile-role]");
             const sections = page!.querySelectorAll("[data-section]");
 
-            const tl = gsap.timeline({ delay: 0.15 });
+            const tl = gsap.timeline({ delay: isRouteTransitionRecent() ? 0 : 0.15 });
 
             tl.fromTo(headerItems, { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, stagger: 0.06, ease: "power3.out" });
 
@@ -49,11 +52,16 @@ export function useProfileAnimations() {
                     tl.fromTo(card, { opacity: 0, y: 16, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" }, `-=${0.1}`);
                 }
 
-                if (items.length > 0) {
-                    tl.fromTo(items, { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.25, stagger: 0.04, ease: "power3.out" }, `-=${0.15}`);
-                }
-            });
-        }, page);
+            if (items.length > 0) {
+                tl.fromTo(items, { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.25, stagger: 0.04, ease: "power3.out" }, `-=${0.15}`);
+            }
+        });
+
+        const logoutBtn = page!.querySelector("[data-logout-btn]");
+        if (logoutBtn) {
+            tl.fromTo(logoutBtn, { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" }, `-=${0.1}`);
+        }
+    }, page);
 
         return () => ctx.revert();
     }, []);

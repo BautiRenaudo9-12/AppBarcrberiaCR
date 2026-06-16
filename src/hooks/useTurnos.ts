@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback } from "react";
 import moment from "moment";
 import { toast } from "sonner";
 import { Slot } from "@/types/turnos";
 import { useUser } from "@/context/UserContext";
 import { getDayConfig, arrayDias } from "@/services/reservations";
 import { generateVirtualSlots } from "@/lib/slots";
-import { getAppointmentsByDate, createAppointment } from "@/services/appointments";
+import { getAppointmentsByDate, createAppointment, cancelAppointment } from "@/services/appointments";
 import {
     subscribeToBlockedSlots,
     subscribeToExceptions,
@@ -132,6 +132,14 @@ export function useTurnos() {
         }
     }, [selectedDate, isAdmin, allBlockedRules, allExceptions, subscriptionsReady]);
 
+    // Al cambiar de fecha, limpiamos los slots y marcamos cargando (antes del paint)
+    // para mostrar el skeleton mientras llega la data de la nueva fecha. Los refrescos
+    // de la misma fecha (suscripciones/acciones) no pasan por acá, así no parpadea.
+    useLayoutEffect(() => {
+        setSlots([]);
+        setLoading(true);
+    }, [selectedDate]);
+
     // Reload when dependencies change
     useEffect(() => {
         loadSlots();
@@ -220,6 +228,22 @@ export function useTurnos() {
         }
     };
 
+    const cancelReservation = async (appointmentId: string) => {
+        setLoading(true);
+        try {
+            await cancelAppointment(appointmentId);
+            toast.success("Reserva cancelada");
+            await loadSlots();
+            return true;
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al cancelar la reserva");
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const activateException = async (time: string) => {
         setLoading(true);
         try {
@@ -249,6 +273,7 @@ export function useTurnos() {
         blockSlot,
         unblockSlot,
         activateException,
+        cancelReservation,
         refresh: loadSlots
     };
 }

@@ -14,6 +14,7 @@ import BlockDialog from "@/components/turnos/dialogs/BlockDialog";
 import UnblockDialog from "@/components/turnos/dialogs/UnblockDialog";
 import ActivateExceptionDialog from "@/components/turnos/dialogs/ActivateExceptionDialog";
 import RecurringBlockActionDialog from "@/components/turnos/dialogs/RecurringBlockActionDialog";
+import CancelDialog from "@/components/turnos/dialogs/CancelDialog";
 
 export default function Turnos() {
   const navigate = useNavigate();
@@ -26,9 +27,10 @@ export default function Turnos() {
     loading, 
     isAdmin, 
     reserveAppointment, 
-    blockSlot, 
-    unblockSlot, 
-    activateException 
+    blockSlot,
+    unblockSlot,
+    activateException,
+    cancelReservation
   } = useTurnos();
 
   // Dialog UI State
@@ -42,6 +44,7 @@ export default function Turnos() {
   const [slotToUnblock, setSlotToUnblock] = useState<Slot | null>(null); // Unblock Dialog
   const [slotToActivate, setSlotToActivate] = useState<Slot | null>(null); // Activate Dialog
   const [slotToRecurringAction, setSlotToRecurringAction] = useState<Slot | null>(null); // Recurring Choice Dialog
+  const [slotToCancel, setSlotToCancel] = useState<Slot | null>(null); // Cancel Reservation Dialog
 
   // --- UI Handlers (Connects Dialogs to Hook) ---
 
@@ -101,6 +104,12 @@ export default function Turnos() {
       if (success) setSlotToRecurringAction(null);
   };
 
+  const onConfirmCancel = async () => {
+      if (!slotToCancel?.appointment?.id) return;
+      const success = await cancelReservation(slotToCancel.appointment.id);
+      if (success) setSlotToCancel(null);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
@@ -134,6 +143,7 @@ export default function Turnos() {
             onUnblock={setSlotToUnblock}
             onActivate={setSlotToActivate}
             onRecurringAction={setSlotToRecurringAction}
+            onCancel={setSlotToCancel}
         />
 
         {/* --- DIALOGS --- */}
@@ -179,13 +189,22 @@ export default function Turnos() {
             slotTime={slotToActivate?.time}
         />
         
-        <RecurringBlockActionDialog 
+        <RecurringBlockActionDialog
             open={!!slotToRecurringAction}
             onClose={() => setSlotToRecurringAction(null)}
             onActivateException={onRecurringActivate}
             onDeleteRule={onRecurringDelete}
             loading={loading}
             slotTime={slotToRecurringAction?.time}
+        />
+
+        <CancelDialog
+            open={!!slotToCancel}
+            onClose={() => setSlotToCancel(null)}
+            onConfirm={onConfirmCancel}
+            loading={loading}
+            slotTime={slotToCancel?.time}
+            clientName={slotToCancel?.appointment?.clientName}
         />
 
       </div>
