@@ -38,7 +38,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const { setLoading } = useUI();
 
   useEffect(() => {
-    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+    const adminEmails: string[] = JSON.parse(import.meta.env.VITE_ADMIN_EMAILS || "[]");
     // Only set loading if we don't have cached data to show
     if (!userProfile && !isAdmin) {
       setLoading(true);
@@ -51,8 +51,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         
         // Calculate Admin Status
         const normalizedUser = currentUser.email?.trim().toLowerCase();
-        const normalizedEnv = adminEmail?.trim().toLowerCase();
-        const adminStatus = normalizedUser === normalizedEnv || normalizedUser === "renaudobautista@gmail.com";
+        const adminStatus = adminEmails.map(e => e.trim().toLowerCase()).includes(normalizedUser || "");
         
         setIsAdmin(adminStatus);
         localStorage.setItem("IS_ADMIN", String(adminStatus));

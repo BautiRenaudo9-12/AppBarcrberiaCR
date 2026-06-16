@@ -18,8 +18,8 @@ React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (
 - **Firestore** (modelo real):
   - `clientes/{email}` — el ID del doc es el **email**, no un uid. Campo `reserve` con la reserva activa; subcolección `history/{reserveId}`.
   - `turnos/{dia}/turnos/{turnoId}` — `{dia}` es el nombre del día en español en minúsculas. La fecha se mapea con `arrayDias` (`["Domingo","Lunes",...]`) usando `moment(...).format("d")`. El doc `turnos/{dia}` guarda la config del día.
-- **Auth**: `firebase/auth` + `onAuthStateChanged` en `src/context/UserContext.tsx`. **Admin se decide por email** comparando con `VITE_ADMIN_EMAIL` en el cliente (ver memoria `admin-auth-risk`); la seguridad real depende de `firestore.rules`.
-- **Config/env**: variables `VITE_*` en `.env` → `import.meta.env`, validadas con Zod en `src/lib/env.ts` (`VITE_ADMIN_EMAIL`, `VITE_VAPID_KEY`, `VITE_FIREBASE_CONFIG`).
+- **Auth**: `firebase/auth` + `onAuthStateChanged` en `src/context/UserContext.tsx`. **Admin se decide por email** comparando con `VITE_ADMIN_EMAILS` (array JSON) en el cliente (ver memoria `admin-auth-risk`); la seguridad real depende de `firestore.rules`.
+- **Config/env**: variables `VITE_*` en `.env` → `import.meta.env`, validadas con Zod en `src/lib/env.ts` (`VITE_ADMIN_EMAILS`, `VITE_VAPID_KEY`, `VITE_FIREBASE_CONFIG`).
 - **Firebase init**: `src/lib/firebase.ts` (alias `@/` → `src/`).
 - **Despliegue doble**: Firebase Hosting (hosting estático) + Netlify (`netlify/functions/*` para `check-upcoming-appointments` y `push-notification`).
 

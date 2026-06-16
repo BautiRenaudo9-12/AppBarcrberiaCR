@@ -9,10 +9,11 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Hardcoded admin email matching VITE_ADMIN_EMAIL
+      // Hardcoded admin emails matching VITE_ADMIN_EMAILS
       // You can add more emails here or use a collection based approach in the future
       return isSignedIn() && (
-        request.auth.token.email == 'renaudobautista@gmail.com'
+        request.auth.token.email == 'renaudobautista@gmail.com' ||
+        request.auth.token.email == 'barberiaclaudiorenaudo@gmail.com'
       );
     }
     
