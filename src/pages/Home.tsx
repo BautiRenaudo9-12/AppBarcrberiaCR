@@ -35,7 +35,7 @@ export default function Home() {
     const [showSuccess, setShowSuccess] = useState(false);
 
     // Sync FCM Token
-    useFcmToken(user, userProfile?.fcmToken, userProfile?.notifEnabled !== false);
+    useFcmToken(user, userProfile?.fcmToken, userProfile?.notifEnabled !== false, isAdmin);
 
     // Initial Data Load (Announcements)
     useEffect(() => {

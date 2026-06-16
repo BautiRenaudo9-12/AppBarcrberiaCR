@@ -294,6 +294,7 @@ export default function Profile() {
         onClose={() => setNotifOpen(false)}
         email={displayProfile?.email || ""}
         enabled={notifEnabled}
+        isAdmin={isAdmin}
         onChanged={handleNotifChanged}
       />
     </div>

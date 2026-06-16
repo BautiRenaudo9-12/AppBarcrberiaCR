@@ -20,6 +20,7 @@ interface NotificationsDialogProps {
   onClose: () => void;
   email: string;
   enabled: boolean;
+  isAdmin?: boolean;
   onChanged: (data: { fcmToken: string | null; notifEnabled: boolean }) => void;
 }
 
@@ -28,6 +29,7 @@ export default function NotificationsDialog({
   onClose,
   email,
   enabled,
+  isAdmin = false,
   onChanged,
 }: NotificationsDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -48,6 +50,12 @@ export default function NotificationsDialog({
   const enable = async () => {
     setLoading(true);
     try {
+      if (isAdmin) {
+        await updateUserProfile(email, { fcmToken: null, notifEnabled: true });
+        onChanged({ fcmToken: null, notifEnabled: true });
+        toast.info("Los administradores no reciben recordatorios de turnos");
+        return;
+      }
       const token = await requestForToken();
       if (token) {
         await updateUserProfile(email, { fcmToken: token, notifEnabled: true });

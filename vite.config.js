@@ -9,27 +9,51 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       injectRegister: 'auto',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['logo.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'App Barberia CR',
+        id: '/',
+        name: 'Barberia CR',
         short_name: 'BarberiaCR',
-        description: 'Agenda tu turno en Barberia CR',
-        theme_color: '#ffffff',
+        description: 'Agenda tu turno en Barberia CR: reserva, gestiona y consulta el historial de tus cortes.',
+        lang: 'es',
+        dir: 'ltr',
+        theme_color: '#3E3E3E',
+        background_color: '#3E3E3E',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        orientation: 'portrait',
+        categories: ['lifestyle', 'business'],
         icons: [
           {
             src: '/pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: '/pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/maskable-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ],
-        start_url: '/',
-        display: 'standalone',
-        background_color: '#ffffff'
+        screenshots: [
+          { src: '/screenshots/home-mobile.png', sizes: '1080x1920', type: 'image/png', form_factor: 'narrow', label: 'Inicio' },
+          { src: '/screenshots/turnos-mobile.png', sizes: '1080x1920', type: 'image/png', form_factor: 'narrow', label: 'Reservar turno' },
+          { src: '/screenshots/historial-mobile.png', sizes: '1080x1920', type: 'image/png', form_factor: 'narrow', label: 'Historial' },
+          { src: '/screenshots/login-mobile.png', sizes: '1080x1920', type: 'image/png', form_factor: 'narrow', label: 'Iniciar sesión' },
+          { src: '/screenshots/home-desktop.png', sizes: '1920x1080', type: 'image/png', form_factor: 'wide', label: 'Inicio' },
+          { src: '/screenshots/turnos-desktop.png', sizes: '1920x1080', type: 'image/png', form_factor: 'wide', label: 'Reservar turno' },
+          { src: '/screenshots/historial-desktop.png', sizes: '1920x1080', type: 'image/png', form_factor: 'wide', label: 'Historial' },
+          { src: '/screenshots/login-desktop.png', sizes: '1920x1080', type: 'image/png', form_factor: 'wide', label: 'Iniciar sesión' }
+        ]
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],

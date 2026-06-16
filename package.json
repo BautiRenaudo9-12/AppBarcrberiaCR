@@ -10,6 +10,8 @@
     "deploy": "Xcopy dist firebase-public /E /H /C /I",
     "postdeploy": "firebase deploy",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "generate:pwa-assets": "node scripts/generate-pwa-assets.mjs",
+    "screenshots": "vite build && node scripts/capture-screenshots.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -61,8 +63,10 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.1",
     "lucide-react": "^0.562.0",
+    "playwright": "^1.61.0",
     "postcss": "^8.5.6",
     "react-hook-form": "^7.70.0",
+    "sharp": "^0.35.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
