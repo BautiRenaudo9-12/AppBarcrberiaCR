@@ -23,8 +23,9 @@ export default function HomeMenu({ isAdmin }: HomeMenuProps) {
                     <Link
                         to="/turnos"
                         data-menu-item
-                        className="flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group"
+                        className="relative flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group overflow-hidden"
                     >
+                        <div data-shimmer className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none opacity-0" />
                         <div data-menu-icon className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center group-hover:bg-accent/30 transition-colors">
                             <Calendar className="w-6 h-6 text-accent" />
                         </div>
@@ -41,8 +42,9 @@ export default function HomeMenu({ isAdmin }: HomeMenuProps) {
                     <Link
                         to="/historial"
                         data-menu-item
-                        className="flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group"
+                        className="relative flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group overflow-hidden"
                     >
+                        <div data-shimmer className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none opacity-0" />
                         <div data-menu-icon className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center group-hover:bg-accent/30 transition-colors">
                             <History className="w-6 h-6 text-accent" />
                         </div>
@@ -60,8 +62,9 @@ export default function HomeMenu({ isAdmin }: HomeMenuProps) {
                         <Link
                             to="/lista-turnos"
                             data-menu-item
-                            className="w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left"
+                            className="relative w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left overflow-hidden"
                         >
+                            <div data-shimmer className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none opacity-0" />
                             <div data-menu-icon className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center group-hover:bg-accent/30 transition-colors">
                                 <CalendarCheck className="w-6 h-6 text-accent" />
                             </div>
@@ -75,8 +78,9 @@ export default function HomeMenu({ isAdmin }: HomeMenuProps) {
                         <Link
                             to="/configuracion"
                             data-menu-item
-                            className="w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left"
+                            className="relative w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left overflow-hidden"
                         >
+                            <div data-shimmer className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none opacity-0" />
                             <div data-menu-icon className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center group-hover:bg-accent/30 transition-colors">
                                 <Settings className="w-6 h-6 text-accent" />
                             </div>
@@ -90,8 +94,9 @@ export default function HomeMenu({ isAdmin }: HomeMenuProps) {
                         <Link
                             to="/admin-anuncios"
                             data-menu-item
-                            className="w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left"
+                            className="relative w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left overflow-hidden"
                         >
+                            <div data-shimmer className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none opacity-0" />
                             <div data-menu-icon className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center group-hover:bg-accent/30 transition-colors">
                                 <Megaphone className="w-6 h-6 text-accent" />
                             </div>
@@ -105,8 +110,9 @@ export default function HomeMenu({ isAdmin }: HomeMenuProps) {
                         <Link
                             to="/clientes"
                             data-menu-item
-                            className="w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left"
+                            className="relative w-full flex items-center gap-4 px-5 py-4 hover:bg-secondary/30 transition-colors group text-left overflow-hidden"
                         >
+                            <div data-shimmer className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none opacity-0" />
                             <div data-menu-icon className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center group-hover:bg-accent/30 transition-colors">
                                 <Users className="w-6 h-6 text-accent" />
                             </div>

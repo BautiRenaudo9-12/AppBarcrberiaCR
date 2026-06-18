@@ -9,25 +9,19 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Hardcoded admin emails matching VITE_ADMIN_EMAILS
-      // You can add more emails here or use a collection based approach in the future
+      // Admins "semilla" hardcodeados (deben coincidir con VITE_ADMIN_EMAILS en el cliente).
+      // Se pueden agregar más admins sin editar reglas creando un doc en `admins/{email}`
+      // desde la consola de Firebase. Los hardcodeados quedan como fallback para no
+      // arriesgar un lockout si la colección no existe.
       return isSignedIn() && (
         request.auth.token.email == 'renaudobautista@gmail.com' ||
-        request.auth.token.email == 'barberiaclaudiorenaudo@gmail.com'
+        request.auth.token.email == 'barberiaclaudiorenaudo@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
       );
     }
-    
+
     function isOwner(email) {
       return isSignedIn() && request.auth.token.email == email;
-    }
-    
-    function isValidReserveFormat() {
-      let incoming = request.resource.data;
-      return incoming.reserve is map
-          && incoming.reserve.keys().hasAll(['email', 'name', 'time'])
-          && incoming.reserve.email is string
-          && incoming.reserve.name is string
-          && incoming.reserve.time is timestamp;
     }
 
     // --- Rules ---
@@ -70,14 +64,9 @@ service cloud.firestore {
       
       match /turnos/{turnoId} {
         allow read: if isSignedIn();
-        // Admin has full control
+        // Solo admin escribe la config de slots. El flujo de reserva de clientes ya no
+        // toca `turnos`: vive en la colección `appointments`.
         allow write: if isAdmin();
-        
-        // Users need to update the document to reserve the slot.
-        // Must reserve under their OWN email (prevents hijacking/impersonating others).
-        allow update: if isSignedIn()
-                      && isValidReserveFormat()
-                      && request.resource.data.reserve.email == request.auth.token.email;
       }
     }
 
@@ -114,6 +103,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // Admins: lista opcional de admins adicionales (ver isAdmin()). Se gestiona desde la
+    // consola de Firebase; el cliente nunca escribe acá.
+    match /admins/{email} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Default: Deny all
     match /{document=**} {
       allow read, write: if false;

@@ -1,6 +1,6 @@
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
-import { prefersReducedMotion, isRouteTransitionRecent, shouldPlayHomeEntrance, markHomeEntrancePlayed } from "@/lib/motion";
+import { prefersReducedMotion, isRouteTransitionRecent, shouldPlayHomeEntrance, markHomeEntrancePlayed, resetHomeEntrancePlayed } from "@/lib/motion";
 
 type AnimateStyle = "slide" | "card" | "menu";
 
@@ -45,13 +45,41 @@ export function useHomeAnimations(baseDelay = 0.2) {
                 const sectionDelay = cumulativeDelay;
 
                 if (style === "menu") {
-                    const items = section.querySelectorAll("[data-menu-item]");
+                    const items = section.querySelectorAll<HTMLElement>("[data-menu-item]");
                     if (items.length > 0) {
-                        gsap.fromTo(
-                            items,
-                            { opacity: 0, y: 20 },
-                            { opacity: 1, y: 0, duration: 0.4, stagger: 0.07, delay: sectionDelay, ease: "power3.out" }
+                        const tl = gsap.timeline({ delay: sectionDelay });
+
+                        tl.fromTo(
+                            section,
+                            { opacity: 0, scale: 0.96 },
+                            { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }
                         );
+
+                        tl.fromTo(
+                            items,
+                            { opacity: 0, x: -15, scale: 0.95 },
+                            { opacity: 1, x: 0, scale: 1, duration: 0.5, stagger: 0.06, ease: "back.out(1.4)" },
+                            "-=0.2"
+                        );
+
+                        const icons = section.querySelectorAll<HTMLElement>("[data-menu-icon]");
+                        tl.fromTo(
+                            icons,
+                            { scale: 0.8 },
+                            { scale: 1, duration: 0.6, stagger: 0.06, ease: "elastic.out(1, 0.5)" },
+                            "-=0.4"
+                        );
+
+                        items.forEach((item, i) => {
+                            const shimmer = item.querySelector<HTMLElement>("[data-shimmer]");
+                            if (shimmer) {
+                                gsap.fromTo(
+                                    shimmer,
+                                    { xPercent: -100, opacity: 0 },
+                                    { xPercent: 100, opacity: 0.08, duration: 0.6, delay: sectionDelay + 0.3 + i * 0.06, ease: "power1.inOut", onComplete: () => { gsap.set(shimmer, { opacity: 0 }); } }
+                                );
+                            }
+                        });
                     }
                 } else {
                     gsap.fromTo(section, config.from, { ...config.to, delay: sectionDelay });
@@ -61,7 +89,10 @@ export function useHomeAnimations(baseDelay = 0.2) {
             });
         }, container);
 
-        return () => ctx.revert();
+        return () => {
+            ctx.revert();
+            resetHomeEntrancePlayed();
+        };
     }, []);
 
     return containerRef;

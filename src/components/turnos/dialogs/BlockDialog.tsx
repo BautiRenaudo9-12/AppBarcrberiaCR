@@ -103,7 +103,11 @@ export default function BlockDialog({
 
         <DialogFooter className="gap-3 sm:gap-0">
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={loading || (!isException && blockMode === "weeks" && blockWeeks < 1)}
+          >
             {loading ? "Procesando..." : (isException ? "Re-Bloquear" : "Bloquear Horario")}
           </Button>
         </DialogFooter>

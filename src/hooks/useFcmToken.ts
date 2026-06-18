@@ -25,7 +25,17 @@ export function useFcmToken(user: User | null, dbToken?: string, enabled: boolea
         }
 
         if (!enabled) {
-            console.log("ℹ️ [useFcmToken] User opted out of notifications, skipping token sync.");
+            // El usuario desactivó las notificaciones: además de no sincronizar, hay que
+            // limpiar el token de Firestore para que el cron de recordatorios deje de
+            // enviarle push (de lo contrario el opt-out no se respeta del lado del servidor).
+            if (dbToken) {
+                updateDoc(doc(db, "clientes", user.email!), { fcmToken: null })
+                    .then(() => {
+                        localStorage.removeItem("fcmToken");
+                        console.log("✅ [useFcmToken] Cleared FCM token after opt-out");
+                    })
+                    .catch((err) => console.error("❌ [useFcmToken] Error clearing token on opt-out:", err));
+            }
             return;
         }
 

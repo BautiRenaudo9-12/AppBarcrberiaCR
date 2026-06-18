@@ -31,10 +31,12 @@ export interface Appointment {
 export const getAppointmentsByDate = async (dateStr: string) => {
   try {
     // dateStr format: YYYY-MM-DD
+    // Usamos `in` en vez de `!= "cancelled"`: es más barato, no excluye docs sin el campo
+    // status, y los estados válidos son finitos y conocidos.
     const q = query(
       collection(db, "appointments"),
       where("date", "==", dateStr),
-      where("status", "!=", "cancelled")
+      where("status", "in", ["confirmed", "blocked", "completed"])
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
@@ -133,6 +135,10 @@ export const createAppointment = async (
     // Un cliente no puede tener más de un turno activo a la vez. Defensa en profundidad:
     // el guard de /turnos ya bloquea el acceso, pero esto cubre pestañas viejas o reservas
     // creadas en otra sesión. Los admins (force=true) quedan exentos.
+    // LIMITACIÓN CONOCIDA: este chequeo NO es atómico con la creación y firestore.rules
+    // tampoco lo impone (solo valida clientEmail == token.email). Dos reservas simultáneas
+    // de slots distintos podrían colarse. Cerrarlo del todo requeriría una Cloud Function;
+    // se acepta como caso borde de baja frecuencia.
     const existing = await getUserActiveAppointment(clientEmail);
     if (existing) {
       throw new Error("Ya tenés un turno reservado. Cancelalo para reservar otro.");
@@ -181,6 +187,15 @@ export const createAppointment = async (
         }
       }
       transaction.set(appointmentRef, newAppointment);
+
+      // Historial del cliente: cada reserva suma una entrada (se resta al cancelar, ver
+      // cancelAppointment). Atómico con la creación del turno. Solo para reservas de
+      // clientes reales: las que hace el admin (force) van con su propio email y no
+      // corresponden a una cuenta de cliente.
+      if (!force) {
+        const historyRef = doc(db, "clientes", clientEmail, "history", docId);
+        transaction.set(historyRef, { time: timestamp, id: docId });
+      }
     });
 
     return true;
@@ -193,14 +208,24 @@ export const createAppointment = async (
     }
   };
   
-  // Cancel/Delete appointment
+  // Cancel/Delete appointment. Hard delete para liberar el slot. Además resta la entrada
+  // del historial del cliente (el id de la entrada coincide con el del turno). Leemos el
+  // turno primero para saber a qué cliente pertenece, así sirve tanto para la cancelación
+  // del propio cliente como para la del admin sobre la reserva de un cliente.
   export const cancelAppointment = async (appointmentId: string) => {
-      // We can either hard delete or soft delete (status=cancelled).
-      // Soft delete is better for history.
-      // But for this refactor, let's just delete to keep it simple or align with legacy "removeReserve".
-      // Actually, legacy removed the data from the slot.
-      // Let's hard delete for now to match "freeing up" logic simply.
-      await deleteDoc(doc(db, "appointments", appointmentId));
+      const appointmentRef = doc(db, "appointments", appointmentId);
+      const snap = await getDoc(appointmentRef);
+      const clientEmail = snap.exists() ? (snap.data() as Appointment).clientEmail : null;
+
+      await deleteDoc(appointmentRef);
+
+      if (clientEmail) {
+          try {
+              await deleteDoc(doc(db, "clientes", clientEmail, "history", appointmentId));
+          } catch (e) {
+              console.error("No se pudo restar la entrada del historial al cancelar:", e);
+          }
+      }
   };
 
 export const getUserActiveAppointment = async (userEmail: string) => {

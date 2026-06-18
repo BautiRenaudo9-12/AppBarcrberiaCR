@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getHistory } from "@/services/users";
 import { useCounter } from "@/hooks/useCounter";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { toast } from "sonner";
 import moment from "moment";
 import HistorialSkeleton from "@/components/historial/HistorialSkeleton";
 import { DocumentData } from "firebase/firestore";
@@ -16,10 +17,21 @@ export default function Historial() {
   const listRef = useScrollReveal<HTMLDivElement>(!loading && visits.length > 0);
 
   useEffect(() => {
-    getHistory().then((snap) => {
-      setVisits(snap.docs);
-      setLoading(false);
-    });
+    let isMounted = true;
+    getHistory()
+      .then((snap) => {
+        if (isMounted) setVisits(snap.docs);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (isMounted) toast.error("No se pudo cargar el historial");
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
@@ -73,7 +85,7 @@ export default function Historial() {
                         <p className="font-semibold text-sm capitalize">{formattedDate}</p>
                         <p className="text-xs text-muted-foreground font-medium">{formattedTime}</p>
                         <div className="mt-2 space-y-1">
-                          <p className="text-sm">Turno completado</p>
+                          <p className="text-sm">Turno reservado</p>
                         </div>
                       </div>
                     </div>

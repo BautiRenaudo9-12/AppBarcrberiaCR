@@ -161,9 +161,9 @@ export default function Turnos() {
             setClientName={setClientName}
         />
 
-        <BlockDialog 
+        <BlockDialog
             open={!!slotToBlock}
-            onClose={() => setSlotToBlock(null)}
+            onClose={() => { setSlotToBlock(null); setBlockMode('day'); setBlockWeeks(4); }}
             onConfirm={onConfirmBlock}
             loading={loading}
             selectedDate={selectedDate}

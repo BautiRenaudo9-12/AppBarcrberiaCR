@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { toast } from "sonner";
 import { auth } from "@/lib/firebase";
@@ -20,6 +20,17 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Lee y parsea un valor JSON de localStorage de forma segura: si está corrupto
+// (p. ej. editado a mano) devuelve null en vez de tirar y romper el montaje de la app.
+const safeParse = (key: string) => {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {
@@ -36,10 +47,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return localStorage.getItem("IS_ADMIN") === "true";
   });
   
-  const [userProfile, setUserProfile] = useState(() => {
-    const stored = localStorage.getItem("USER_INFO");
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [userProfile, setUserProfile] = useState(() => safeParse("USER_INFO"));
 
   const [isSigned, setIsSigned] = useState<boolean | null>(null); // null = checking
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
@@ -128,22 +136,29 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, [isSigned, isAdmin, user?.email]);
 
   // Sync userProfile state with LocalStorage manually if needed (e.g. after profile update)
-  const updateUserProfile = (profile: any) => {
+  const updateUserProfile = useCallback((profile: any) => {
       setUserProfile(profile);
       if (profile) {
           localStorage.setItem("USER_INFO", JSON.stringify(profile));
       } else {
           localStorage.removeItem("USER_INFO");
       }
-  };
+  }, []);
 
   // El usuario (no admin) ya autenticado pero sin teléfono debe completarlo
   // antes de poder usar la app (paso obligatorio del login con Google).
   const needsPhone =
     isSigned === true && !isAdmin && !!userProfile && !String(userProfile.nro || "").trim();
 
+  // Memoizamos el value para no re-renderizar a todos los consumidores de useUser
+  // en cada render del provider.
+  const value = useMemo<UserContextType>(
+    () => ({ user, isSigned, isAdmin, userProfile, setUserProfile: updateUserProfile, needsPhone, activeAppointment, isLoadingAppointment }),
+    [user, isSigned, isAdmin, userProfile, updateUserProfile, needsPhone, activeAppointment, isLoadingAppointment]
+  );
+
   return (
-    <UserContext.Provider value={{ user, isSigned, isAdmin, userProfile, setUserProfile: updateUserProfile, needsPhone, activeAppointment, isLoadingAppointment }}>
+    <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );

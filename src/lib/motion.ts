@@ -39,3 +39,7 @@ export function shouldPlayHomeEntrance(): boolean {
 export function markHomeEntrancePlayed() {
   homeEntrancePlayed = true;
 }
+
+export function resetHomeEntrancePlayed() {
+  homeEntrancePlayed = false;
+}
