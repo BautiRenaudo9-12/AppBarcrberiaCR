@@ -29,7 +29,19 @@ export function useHomeAnimations(baseDelay = 0.2) {
         const sections = container.querySelectorAll<HTMLElement>("[data-animate]");
         if (sections.length === 0) return;
 
-        if (prefersReducedMotion()) return;
+        // Con "movimiento reducido" no animamos desplazamientos/escala (pueden molestar a
+        // personas sensibles al movimiento), pero un fade de opacidad es seguro y mantiene
+        // una entrada sutil. Es independiente del gate de "una vez por sesión".
+        if (prefersReducedMotion()) {
+            const ctx = gsap.context(() => {
+                gsap.fromTo(
+                    sections,
+                    { opacity: 0 },
+                    { opacity: 1, duration: 0.4, stagger: 0.05, ease: "power1.out" }
+                );
+            }, container);
+            return () => ctx.revert();
+        }
 
         if (!shouldPlayHomeEntrance()) return;
         markHomeEntrancePlayed();

@@ -23,7 +23,14 @@ export default function HomeHeader({ user }: HomeHeaderProps) {
     useLayoutEffect(() => {
         if (!headerRef.current) return;
 
-        if (prefersReducedMotion()) return;
+        // Movimiento reducido: solo fade de opacidad (sin desplazamientos/scale).
+        if (prefersReducedMotion()) {
+            const ctx = gsap.context(() => {
+                const els = headerRef.current!.querySelectorAll("[data-header-stagger], [data-header-avatar]");
+                gsap.fromTo(els, { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.05, ease: "power1.out" });
+            }, headerRef);
+            return () => ctx.revert();
+        }
 
         if (!shouldPlayHomeEntrance()) return;
         markHomeEntrancePlayed();
