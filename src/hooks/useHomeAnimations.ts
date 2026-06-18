@@ -1,6 +1,6 @@
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
-import { prefersReducedMotion, isRouteTransitionRecent } from "@/lib/motion";
+import { prefersReducedMotion, isRouteTransitionRecent, shouldPlayHomeEntrance, markHomeEntrancePlayed } from "@/lib/motion";
 
 type AnimateStyle = "slide" | "card" | "menu";
 
@@ -30,6 +30,9 @@ export function useHomeAnimations(baseDelay = 0.2) {
         if (sections.length === 0) return;
 
         if (prefersReducedMotion()) return;
+
+        if (!shouldPlayHomeEntrance()) return;
+        markHomeEntrancePlayed();
 
         const startDelay = isRouteTransitionRecent() ? 0 : baseDelay;
 

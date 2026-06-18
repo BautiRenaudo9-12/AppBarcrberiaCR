@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { gsap } from "gsap";
 import { prefersReducedMotion } from "@/lib/motion";
+import PageTitle from "@/components/PageTitle";
 
 export default function Configuracion() {
   const [days, setDays] = useState<DayConfig[]>([]);
@@ -208,7 +209,7 @@ export default function Configuracion() {
             >
               <ArrowLeft className="w-6 h-6" />
             </Link>
-            <h1 className="text-2xl font-bold">Configuración</h1>
+            <PageTitle className="text-2xl font-bold">Configuración</PageTitle>
           </div>
           
           <button

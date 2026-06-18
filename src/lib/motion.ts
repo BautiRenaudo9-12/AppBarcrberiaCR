@@ -24,3 +24,18 @@ export function markRouteTransition() {
 export function isRouteTransitionRecent(windowMs = 450): boolean {
   return Date.now() - lastTransitionAt < windowMs;
 }
+
+// --- Entrance animations de Home (mobile: una sola vez) ----------------------
+// En mobile (<=768px) las animaciones de entrada de Home se ejecutan solo la
+// primera vez que el componente se monta durante la sesión. En desktop siempre.
+let homeEntrancePlayed = false;
+
+export function shouldPlayHomeEntrance(): boolean {
+  if (typeof window === "undefined") return true;
+  if (window.innerWidth > 768) return true;
+  return !homeEntrancePlayed;
+}
+
+export function markHomeEntrancePlayed() {
+  homeEntrancePlayed = true;
+}

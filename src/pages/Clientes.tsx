@@ -7,6 +7,7 @@ import { useCounter } from "@/hooks/useCounter";
 import { ClientCard } from "@/components/clientes/ClientCard";
 import { ClientesSkeleton } from "@/components/clientes/ClientesSkeleton";
 import { useClientsInfinite, useClientsSearch, useClientsCount } from "@/hooks/useClients";
+import PageTitle from "@/components/PageTitle";
 
 export default function Clientes() {
   const [inputValue, setInputValue] = useState("");
@@ -71,12 +72,11 @@ export default function Clientes() {
         <div className="max-w-5xl mx-auto flex items-center gap-4">
           <Link
             to="/"
-            data-header-stagger
             className="w-10 h-10 hover:bg-secondary/30 rounded-lg flex items-center justify-center transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 data-header-stagger className="text-2xl font-bold">Clientes</h1>
+          <PageTitle className="text-2xl font-bold">Clientes</PageTitle>
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import DateSelector from "@/components/turnos/DateSelector";
 import SlotCard from "@/components/turnos/SlotCard";
 import TurnosSkeleton from "@/components/turnos/TurnosSkeleton";
 import CancelDialog from "@/components/turnos/dialogs/CancelDialog";
+import PageTitle from "@/components/PageTitle";
 
 export default function ListaTurnos() {
   const { selectedDate, setSelectedDate, slots, loading, cancelReservation } = useTurnos();
@@ -39,7 +40,7 @@ export default function ListaTurnos() {
           >
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-2xl font-bold">Lista de Turnos</h1>
+          <PageTitle className="text-2xl font-bold">Lista de Turnos</PageTitle>
         </div>
       </div>
 

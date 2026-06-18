@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "firebase/auth";
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
-import { prefersReducedMotion, isRouteTransitionRecent } from "@/lib/motion";
+import { prefersReducedMotion, isRouteTransitionRecent, shouldPlayHomeEntrance, markHomeEntrancePlayed } from "@/lib/motion";
 
 interface HomeHeaderProps {
     user: User | null;
@@ -21,6 +21,9 @@ export default function HomeHeader({ user }: HomeHeaderProps) {
         if (!headerRef.current) return;
 
         if (prefersReducedMotion()) return;
+
+        if (!shouldPlayHomeEntrance()) return;
+        markHomeEntrancePlayed();
 
         const ctx = gsap.context(() => {
             const staggerEls = headerRef.current!.querySelectorAll("[data-header-stagger]");

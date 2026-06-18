@@ -6,6 +6,7 @@ import { usePressScale } from "@/hooks/usePressScale";
 import { useAnunciosAnimations } from "@/hooks/useAnunciosAnimations";
 import { useAnnouncementsInfinite, useCreateAnnouncement, useDeleteAnnouncement } from "@/hooks/useAnnouncements";
 import { AnnouncementCard } from "@/components/anuncios/AnnouncementCard";
+import PageTitle from "@/components/PageTitle";
 
 export default function Anuncios() {
   const [annText, setAnnText] = useState("");
@@ -109,12 +110,11 @@ export default function Anuncios() {
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <Link
             to="/"
-            data-header-stagger
             className="w-10 h-10 hover:bg-secondary/30 rounded-lg flex items-center justify-center transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 data-header-stagger className="text-xl font-bold">Gestión de Anuncios</h1>
+          <PageTitle className="text-xl font-bold">Gestión de Anuncios</PageTitle>
         </div>
       </div>
 

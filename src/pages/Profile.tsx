@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import PageTitle from "@/components/PageTitle";
 
 export default function Profile() {
   const { isAdmin, userProfile, setUserProfile } = useUser();
@@ -161,12 +162,11 @@ export default function Profile() {
         <div className="max-w-md mx-auto flex items-center gap-4">
           <Link
             to="/"
-            data-header-stagger
             className="w-10 h-10 hover:bg-secondary/30 rounded-lg flex items-center justify-center transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 data-header-stagger className="text-2xl font-bold">Mi Perfil</h1>
+          <PageTitle className="text-2xl font-bold">Mi Perfil</PageTitle>
         </div>
       </div>
 

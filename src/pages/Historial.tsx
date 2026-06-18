@@ -7,6 +7,7 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 import moment from "moment";
 import HistorialSkeleton from "@/components/historial/HistorialSkeleton";
 import { DocumentData } from "firebase/firestore";
+import PageTitle from "@/components/PageTitle";
 
 export default function Historial() {
   const [visits, setVisits] = useState<DocumentData[]>([]);
@@ -31,7 +32,7 @@ export default function Historial() {
           >
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-2xl font-bold">Historial</h1>
+          <PageTitle className="text-2xl font-bold">Historial</PageTitle>
         </div>
       </div>
 

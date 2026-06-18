@@ -118,7 +118,7 @@ function SlotCard({
             )}
 
             {slot.status === "reserved" && (
-              <p className="text-xs font-medium text-accent truncate">
+              <p className="text-sm font-medium text-accent truncate">
                 {isAdmin ? slot.appointment?.clientName || "Cliente" : "Reservado"}
               </p>
             )}

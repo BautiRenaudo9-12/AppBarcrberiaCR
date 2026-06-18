@@ -15,6 +15,7 @@ import UnblockDialog from "@/components/turnos/dialogs/UnblockDialog";
 import ActivateExceptionDialog from "@/components/turnos/dialogs/ActivateExceptionDialog";
 import RecurringBlockActionDialog from "@/components/turnos/dialogs/RecurringBlockActionDialog";
 import CancelDialog from "@/components/turnos/dialogs/CancelDialog";
+import PageTitle from "@/components/PageTitle";
 
 export default function Turnos() {
   const navigate = useNavigate();
@@ -120,7 +121,7 @@ export default function Turnos() {
           >
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-2xl font-bold">Reservar Turno</h1>
+          <PageTitle className="text-2xl font-bold">Reservar Turno</PageTitle>
         </div>
       </div>
 
