@@ -11,9 +11,12 @@ import {
   where,
   QueryDocumentSnapshot, 
   DocumentData,
-  getCountFromServer
+  getCountFromServer,
+  setDoc
 } from "firebase/firestore";
+import type { User } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
+import { createSearchKeywords } from "@/lib/keywords";
 
 export const getUserInfo = async () => {
   const stored = localStorage.getItem("USER_INFO");
@@ -22,7 +25,9 @@ export const getUserInfo = async () => {
     return {
       name: userInfo.name,
       email: userInfo.email,
-      nro: userInfo.nro
+      nro: userInfo.nro,
+      photoURL: userInfo.photoURL,
+      fcmToken: userInfo.fcmToken,
     };
   }
 
@@ -31,20 +36,63 @@ export const getUserInfo = async () => {
   const docSnap = await getDoc(doc(db, "clientes", auth.currentUser.email));
   if (docSnap.exists()) {
     const data = docSnap.data();
-    localStorage.setItem("USER_INFO", JSON.stringify({
+    const info = {
       name: data.name,
       email: data.email,
       nro: data.nro,
-      fcmToken: data.fcmToken
-    }));
-    return {
-      name: data.name,
-      email: data.email,
-      nro: data.nro,
+      photoURL: data.photoURL,
       fcmToken: data.fcmToken
     };
+    localStorage.setItem("USER_INFO", JSON.stringify(info));
+    return info;
   }
   return null;
+};
+
+// Asegura que exista el doc `clientes/{email}` tras un login (esp. con Google,
+// que no provee teléfono). Crea el perfil si falta y hace backfill de `photoURL`
+// / `keywords` si ya existe. Devuelve el perfil y cachea USER_INFO.
+export const ensureClientProfile = async (user: User) => {
+  const email = user.email;
+  if (!email) return null;
+
+  const ref = doc(db, "clientes", email);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    const name = user.displayName || "";
+    const profile = {
+      email,
+      name,
+      nro: "",
+      photoURL: user.photoURL || "",
+      keywords: createSearchKeywords(name, email, ""),
+    };
+    await setDoc(ref, profile);
+    const info = { name, email, nro: "", photoURL: profile.photoURL, fcmToken: undefined };
+    localStorage.setItem("USER_INFO", JSON.stringify(info));
+    return info;
+  }
+
+  const data = snap.data();
+
+  // Backfill no destructivo de campos derivados del proveedor.
+  const patch: DocumentData = {};
+  if (!data.photoURL && user.photoURL) patch.photoURL = user.photoURL;
+  if (!data.keywords) patch.keywords = createSearchKeywords(data.name || "", email, data.nro || "");
+  if (Object.keys(patch).length > 0) {
+    await setDoc(ref, patch, { merge: true });
+  }
+
+  const info = {
+    name: data.name,
+    email,
+    nro: data.nro,
+    photoURL: data.photoURL || user.photoURL || "",
+    fcmToken: data.fcmToken,
+  };
+  localStorage.setItem("USER_INFO", JSON.stringify(info));
+  return info;
 };
 
 // Legacy

@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { toast } from "sonner";
 import { auth } from "@/lib/firebase";
+import { ensureClientProfile } from "@/services/users";
+import { getGoogleRedirectResult } from "@/services/auth";
 import { useUI } from "./UIContext";
 
 interface UserContextType {
@@ -9,6 +12,7 @@ interface UserContextType {
   isSigned: boolean | null;
   userProfile: any;
   setUserProfile: (profile: any) => void;
+  needsPhone: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -37,29 +41,48 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [isSigned, setIsSigned] = useState<boolean | null>(null); // null = checking
   const { setLoading } = useUI();
 
+  // Resuelve el resultado del login con Google (signInWithRedirect) al volver.
+  // El alta del doc la maneja onAuthStateChanged; acá solo capturamos errores.
+  useEffect(() => {
+    getGoogleRedirectResult().catch((error: any) => {
+      if (error?.code === "auth/account-exists-with-different-credential") {
+        toast.error("Ya existe una cuenta con ese correo. Ingresá con tu contraseña.");
+      } else if (error) {
+        toast.error("No se pudo iniciar sesión con Google. Intentá de nuevo.");
+      }
+    });
+  }, []);
+
   useEffect(() => {
     const adminEmails: string[] = JSON.parse(import.meta.env.VITE_ADMIN_EMAILS || "[]");
     // Only set loading if we don't have cached data to show
     if (!userProfile && !isAdmin) {
       setLoading(true);
     }
-    
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         setIsSigned(true);
-        
+
         // Calculate Admin Status
         const normalizedUser = currentUser.email?.trim().toLowerCase();
         const adminStatus = adminEmails.map(e => e.trim().toLowerCase()).includes(normalizedUser || "");
-        
+
         setIsAdmin(adminStatus);
         localStorage.setItem("IS_ADMIN", String(adminStatus));
-        
-        // Note: User Profile (USER_INFO) is usually fetched by the Profile page or Login.
-        // If we want to ensure it's here, we could fetch it, but existing logic does it on demand.
-        // We just ensure the context state reflects what's in LS.
-        
+
+        // Aseguramos el doc clientes/{email} (crea el perfil para usuarios nuevos
+        // de Google, que llegan sin teléfono). Se omite para admins para no crear
+        // un doc de cliente para el barbero.
+        if (!adminStatus) {
+          ensureClientProfile(currentUser)
+            .then((profile) => {
+              if (profile) updateUserProfile(profile);
+            })
+            .catch((err) => console.error("Error ensuring client profile:", err));
+        }
+
       } else {
         setUser(null);
         setIsSigned(false);
@@ -90,8 +113,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
   };
 
+  // El usuario (no admin) ya autenticado pero sin teléfono debe completarlo
+  // antes de poder usar la app (paso obligatorio del login con Google).
+  const needsPhone =
+    isSigned === true && !isAdmin && !!userProfile && !String(userProfile.nro || "").trim();
+
   return (
-    <UserContext.Provider value={{ user, isSigned, isAdmin, userProfile, setUserProfile: updateUserProfile }}>
+    <UserContext.Provider value={{ user, isSigned, isAdmin, userProfile, setUserProfile: updateUserProfile, needsPhone }}>
       {children}
     </UserContext.Provider>
   );

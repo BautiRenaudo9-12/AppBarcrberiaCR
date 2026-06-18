@@ -24,11 +24,11 @@ export function useClientesAnimations(isLoading?: boolean) {
             const gridEl = page.querySelector("[data-grid]");
             const cards = gridEl ? gridEl.querySelectorAll("[data-client-card]") : [];
 
-            const tl = gsap.timeline({ delay: hasAnimated.current || isRouteTransitionRecent() ? 0 : 0.15 });
+            const tl = gsap.timeline({ delay: hasAnimated.current ? 0 : 0.15 });
 
-            // El chrome (header/search/stats) anima una sola vez; las cards animan
-            // cuando llega la data (y vuelven a staggerear en cada búsqueda).
-            if (!hasAnimated.current) {
+            const skipChrome = hasAnimated.current || isRouteTransitionRecent();
+
+            if (!skipChrome) {
                 tl.fromTo(headerItems, { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, stagger: 0.06, ease: "power3.out" });
 
                 if (searchEl) {

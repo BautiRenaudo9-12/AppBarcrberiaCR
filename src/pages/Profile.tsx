@@ -174,8 +174,18 @@ export default function Profile() {
       <div className="max-w-md mx-auto px-4 py-4 sm:px-6 space-y-4">
         {/* Avatar Section */}
         <div className="flex flex-col items-center gap-2">
-          <div data-avatar-circle className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center">
-            <span data-avatar-text className="text-2xl font-bold text-accent">{initials}</span>
+          <div data-avatar-circle className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center overflow-hidden">
+            {displayProfile?.photoURL ? (
+              <img
+                data-avatar-img
+                src={displayProfile.photoURL}
+                alt={displayProfile?.name || "Avatar"}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span data-avatar-text className="text-2xl font-bold text-accent">{initials}</span>
+            )}
           </div>
           <div className="text-center">
             <h2 data-profile-name className="text-lg font-bold">{displayProfile?.name || "Cargando..."}</h2>

@@ -1,15 +1,18 @@
-import { useRef, useEffect } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { gsap } from "gsap";
 
 export function useCounter(target: number, duration = 1) {
-    const countRef = useRef<HTMLSpanElement>(null);
+    const countRef = useRef<HTMLSpanElement | null>(null);
     const objRef = useRef({ val: 0 });
+    const tweenRef = useRef<gsap.core.Tween | null>(null);
 
-    useEffect(() => {
+    const animate = useCallback(() => {
         if (!countRef.current || target === 0) return;
 
+        if (tweenRef.current) tweenRef.current.kill();
+
         objRef.current.val = 0;
-        gsap.to(objRef.current, {
+        tweenRef.current = gsap.to(objRef.current, {
             val: target,
             duration,
             snap: { val: 1 },
@@ -22,5 +25,14 @@ export function useCounter(target: number, duration = 1) {
         });
     }, [target, duration]);
 
-    return countRef;
+    const setRef = useCallback((node: HTMLSpanElement | null) => {
+        countRef.current = node;
+        if (node) animate();
+    }, [animate]);
+
+    useEffect(() => {
+        animate();
+    }, [animate]);
+
+    return setRef;
 }

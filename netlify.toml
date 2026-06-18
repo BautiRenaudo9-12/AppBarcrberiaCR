@@ -12,6 +12,21 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Proxy "first-party" del handler de Firebase Auth para que signInWithRedirect
+# funcione en este dominio de Netlify (authDomain apunta acá, no a firebaseapp.com).
+# Debe ir ANTES del catch-all SPA.
+[[redirects]]
+  from = "/__/auth/*"
+  to = "https://react-appbarberiacr.firebaseapp.com/__/auth/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/__/firebase/*"
+  to = "https://react-appbarberiacr.firebaseapp.com/__/firebase/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

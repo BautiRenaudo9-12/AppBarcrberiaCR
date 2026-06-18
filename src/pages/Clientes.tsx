@@ -5,11 +5,13 @@ import { useClientesAnimations } from "@/hooks/useClientesAnimations";
 import { useSearchFocus } from "@/hooks/useSearchFocus";
 import { useCounter } from "@/hooks/useCounter";
 import { ClientCard } from "@/components/clientes/ClientCard";
+import { ClientesSkeleton } from "@/components/clientes/ClientesSkeleton";
 import { useClientsInfinite, useClientsSearch, useClientsCount } from "@/hooks/useClients";
 
 export default function Clientes() {
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: totalCount = 0 } = useClientsCount();
   const countRef = useCounter(totalCount);
@@ -58,14 +60,14 @@ export default function Clientes() {
       if (entries[0].isIntersecting && hasNextPage && !isSearchMode) {
         fetchNextPage();
       }
-    }, { rootMargin: "200px" });
+    }, { rootMargin: "200px", root: scrollContainerRef.current });
     
     if (node) observer.current.observe(node);
   }, [isLoading, isFetchingNextPage, hasNextPage, isSearchMode, fetchNextPage]);
 
   return (
-    <div ref={pageRef} className="min-h-screen bg-background text-foreground">
-      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
+    <div ref={pageRef} className="h-dvh bg-background text-foreground flex flex-col">
+      <div className="bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-5xl mx-auto flex items-center gap-4">
           <Link
             to="/"
@@ -78,7 +80,7 @@ export default function Clientes() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 space-y-6">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto max-w-5xl mx-auto px-4 py-8 sm:px-6 space-y-6 w-full">
         <div data-search className="relative">
           <Search data-search-icon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
@@ -91,42 +93,48 @@ export default function Clientes() {
           />
         </div>
 
-        <div data-stats className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-           <div className="bg-card border border-white/10 p-4 rounded-xl flex items-center gap-3">
-              <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center text-accent">
-                 <User className="w-5 h-5" />
-              </div>
-              <div>
-                 <p className="text-sm text-muted-foreground">Total Clientes</p>
-                 <p className="text-xl font-bold"><span ref={countRef}>{totalCount}</span></p>
-              </div>
-           </div>
-        </div>
-
-        <div data-grid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
-          {clients.length === 0 && !isLoading ? (
-            <div data-empty className="col-span-full h-32 flex items-center justify-center text-muted-foreground border border-white/5 rounded-2xl bg-card/30">
-              No se encontraron clientes.
+        {isLoading ? (
+          <ClientesSkeleton />
+        ) : (
+          <>
+            <div data-stats className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+               <div className="bg-card border border-white/10 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center text-accent">
+                     <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                     <p className="text-sm text-muted-foreground">Total Clientes</p>
+                     <p className="text-xl font-bold"><span ref={countRef}>{totalCount}</span></p>
+                  </div>
+               </div>
             </div>
-          ) : (
-            clients.map((client, index) => {
-                const isLast = index === clients.length - 1;
-                return (
-                    <ClientCard 
-                        key={client.id} 
-                        client={client} 
-                        innerRef={isLast ? lastElementRef : null} 
-                    />
-                );
-            })
-          )}
-          
-          {(isLoading || isFetchingNextPage) && (
-             <div className="col-span-full flex justify-center py-4">
-                <Loader2 className="w-6 h-6 animate-spin text-accent" />
-             </div>
-          )}
-        </div>
+
+            <div data-grid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
+              {clients.length === 0 ? (
+                <div data-empty className="col-span-full h-32 flex items-center justify-center text-muted-foreground border border-white/5 rounded-2xl bg-card/30">
+                  No se encontraron clientes.
+                </div>
+              ) : (
+                clients.map((client, index) => {
+                    const isLast = index === clients.length - 1;
+                    return (
+                        <ClientCard 
+                            key={client.id} 
+                            client={client} 
+                            innerRef={isLast ? lastElementRef : null} 
+                        />
+                    );
+                })
+              )}
+              
+              {isFetchingNextPage && (
+                 <div className="col-span-full flex justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-accent" />
+                 </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -30,8 +30,8 @@ export default function ListaTurnos() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
+    <div className="h-dvh bg-background text-foreground flex flex-col">
+      <div className="bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-md mx-auto flex items-center gap-4">
           <Link
             to="/"
@@ -43,7 +43,7 @@ export default function ListaTurnos() {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 py-6 sm:px-6 space-y-6">
+      <div className="flex-1 overflow-y-auto max-w-md mx-auto px-4 py-6 sm:px-6 space-y-6 w-full">
         <DateSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
 
         {loading && reservedSlots.length === 0 ? (

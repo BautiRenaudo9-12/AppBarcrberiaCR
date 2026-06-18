@@ -14,6 +14,8 @@ export default function ReservationSuccess({ onDone }: ReservationSuccessProps) 
     const overlayRef = useRef<HTMLDivElement>(null);
     const circleRef = useRef<SVGCircleElement>(null);
     const checkRef = useRef<SVGPathElement>(null);
+    const onDoneRef = useRef(onDone);
+    onDoneRef.current = onDone;
 
     useLayoutEffect(() => {
         const overlay = overlayRef.current;
@@ -21,7 +23,7 @@ export default function ReservationSuccess({ onDone }: ReservationSuccessProps) 
 
         if (prefersReducedMotion()) {
             gsap.set(overlay, { opacity: 1 });
-            const t = setTimeout(onDone, 1500);
+            const t = setTimeout(() => onDoneRef.current(), 1500);
             return () => clearTimeout(t);
         }
 
@@ -55,12 +57,11 @@ export default function ReservationSuccess({ onDone }: ReservationSuccessProps) 
                 "-=0.1"
             );
 
-            // Sostener y salir.
-            tl.to(overlay, { opacity: 0, duration: 0.3, ease: "power2.in", delay: 0.9, onComplete: onDone });
+            tl.to(overlay, { opacity: 0, duration: 0.3, ease: "power2.in", delay: 0.9, onComplete: () => onDoneRef.current() });
         }, overlay);
 
         return () => ctx.revert();
-    }, [onDone]);
+    }, []);
 
     return (
         <div

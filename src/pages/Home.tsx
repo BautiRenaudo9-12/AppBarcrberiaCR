@@ -58,21 +58,18 @@ export default function Home() {
     // Handle Notification Prompt Logic
     const location = useLocation();
     useEffect(() => {
-        // Confirmación visual de la reserva (independiente del permiso de notificaciones).
         if (location.state?.reservationSuccess) {
             setShowSuccess(true);
-        }
-
-        // 1. If explicit success state (just reserved)
-        if (location.state?.reservationSuccess && Notification.permission !== "granted") {
-            setShowNotifPrompt(true);
             window.history.replaceState({}, document.title);
+
+            if (Notification.permission !== "granted") {
+                setShowNotifPrompt(true);
+            }
             return;
         }
 
-        // 2. Proactive check for new users
+        // Proactive check for new users
         if (Notification.permission === "default" && !localStorage.getItem("NOTIF_PROMPT_DISMISSED")) {
-             // Wait a bit before showing to not overwhelm immediately
              const timer = setTimeout(() => {
                  setShowNotifPrompt(true);
              }, 3000);

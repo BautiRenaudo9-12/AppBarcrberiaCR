@@ -198,8 +198,8 @@ export default function Configuracion() {
   };
 
   return (
-    <div ref={pageRef} className="min-h-screen bg-background text-foreground">
-      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
+    <div ref={pageRef} className="h-dvh bg-background text-foreground flex flex-col">
+      <div className="bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
@@ -226,7 +226,7 @@ export default function Configuracion() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 pb-20 sm:px-6 space-y-8">
+      <div className="flex-1 overflow-y-auto max-w-5xl mx-auto px-4 py-8 pb-20 sm:px-6 space-y-8 w-full">
         {isLoadingDays ? (
           <ConfigSkeleton />
         ) : (

@@ -15,6 +15,7 @@ export default function Anuncios() {
   const { ref: publishBtnRef, ...publishPress } = usePressScale(0.97);
   const [newlyCreatedId, setNewlyCreatedId] = useState<string | null>(null);
   const prevIdsRef = useRef<Set<string>>(new Set());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const {
     data,
@@ -57,7 +58,7 @@ export default function Anuncios() {
             fetchNextPage();
           }
         },
-        { rootMargin: "200px" }
+        { rootMargin: "200px", root: scrollContainerRef.current }
       );
 
       if (node) observer.current.observe(node);
@@ -103,8 +104,8 @@ export default function Anuncios() {
   };
 
   return (
-    <div ref={pageRef} className="min-h-screen bg-background text-foreground">
-      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-3 sm:px-6">
+    <div ref={pageRef} className="h-dvh bg-background text-foreground flex flex-col">
+      <div className="bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-3 sm:px-6">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <Link
             to="/"
@@ -117,7 +118,7 @@ export default function Anuncios() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-4 sm:px-6 space-y-5">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto max-w-3xl mx-auto px-4 py-4 sm:px-6 space-y-5 w-full">
         <div data-form className="bg-card border border-white/10 rounded-3xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center text-accent">
