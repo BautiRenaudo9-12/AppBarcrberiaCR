@@ -91,7 +91,10 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         cleanupOutdatedCaches: true,
-        navigateFallbackDenylist: [/^\/api\//],
+        // Firebase Auth (`/__/auth/*`) y `/api/*` deben llegar a la red (proxy de
+        // Netlify / functions), no al index.html del SPA: si no, el SW devuelve el
+        // index cacheado y el handler de OAuth termina en la página 404 del SPA.
+        navigateFallbackDenylist: [/^\/api\//, /^\/__\//],
         importScripts: ['push-sw.js']
       }
     })
