@@ -22,8 +22,39 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
+        display_override: ['standalone', 'minimal-ui'],
         orientation: 'portrait',
         categories: ['lifestyle', 'business'],
+        prefer_related_applications: false,
+        launch_handler: {
+          client_mode: 'navigate-existing'
+        },
+        edge_side_panel: {
+          preferred_width: 400
+        },
+        shortcuts: [
+          {
+            name: 'Reservar turno',
+            short_name: 'Reservar',
+            description: 'Agendá un nuevo turno',
+            url: '/turnos',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }]
+          },
+          {
+            name: 'Mi historial',
+            short_name: 'Historial',
+            description: 'Consultá tus cortes anteriores',
+            url: '/historial',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }]
+          },
+          {
+            name: 'Mi perfil',
+            short_name: 'Perfil',
+            description: 'Gestioná tu cuenta',
+            url: '/profile',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }]
+          }
+        ],
         icons: [
           {
             src: '/pwa-192x192.png',

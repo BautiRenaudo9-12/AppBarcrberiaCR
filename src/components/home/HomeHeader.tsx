@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "firebase/auth";
-import { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useState, useEffect } from "react";
 import { gsap } from "gsap";
 import { prefersReducedMotion, isRouteTransitionRecent, shouldPlayHomeEntrance, markHomeEntrancePlayed } from "@/lib/motion";
+import { Download } from "lucide-react";
 
 interface HomeHeaderProps {
     user: User | null;
@@ -16,6 +17,45 @@ export default function HomeHeader({ user }: HomeHeaderProps) {
         : "U";
 
     const headerRef = useRef<HTMLDivElement>(null);
+
+    const [installPrompt, setInstallPrompt] = useState<any>(null);
+    const [showInstall, setShowInstall] = useState(false);
+    const [isIOS, setIsIOS] = useState(false);
+
+    useEffect(() => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || (window.navigator as any).standalone
+            || document.referrer.includes('android-app://');
+
+        if (isStandalone) return;
+
+        const userAgent = window.navigator.userAgent.toLowerCase();
+        const ios = /iphone|ipad|ipod/.test(userAgent);
+        setIsIOS(ios);
+
+        const handler = (e: any) => {
+            e.preventDefault();
+            setInstallPrompt(e);
+            setShowInstall(true);
+        };
+
+        if (ios) {
+            setShowInstall(true);
+        }
+
+        window.addEventListener("beforeinstallprompt", handler);
+        return () => window.removeEventListener("beforeinstallprompt", handler);
+    }, []);
+
+    const handleInstall = async () => {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        const { outcome } = await installPrompt.userChoice;
+        if (outcome === "accepted") {
+            setInstallPrompt(null);
+            setShowInstall(false);
+        }
+    };
 
     useLayoutEffect(() => {
         if (!headerRef.current) return;
@@ -54,14 +94,26 @@ export default function HomeHeader({ user }: HomeHeaderProps) {
                         <h1 data-header-stagger className="text-2xl font-bold tracking-tight">Barberia CR</h1>
                     </div>
                 </div>
-                <Link to="/profile">
-                    <Avatar data-header-avatar className="h-10 w-10 border-2 border-accent/20 transition-transform hover:scale-105">
-                        <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || "Usuario"} />
-                        <AvatarFallback className="bg-accent/20 text-accent font-semibold text-sm">
-                            {initials}
-                        </AvatarFallback>
-                    </Avatar>
-                </Link>
+                <div className="flex items-center gap-2">
+                    {showInstall && (
+                        <button
+                            data-header-stagger
+                            onClick={handleInstall}
+                            className="p-2 hover:bg-secondary/50 rounded-full transition-colors animate-bounce"
+                            aria-label="Instalar app"
+                        >
+                            <Download className="w-5 h-5 text-green-500" />
+                        </button>
+                    )}
+                    <Link to="/profile">
+                        <Avatar data-header-avatar className="h-10 w-10 border-2 border-accent/20 transition-transform hover:scale-105">
+                            <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || "Usuario"} />
+                            <AvatarFallback className="bg-accent/20 text-accent font-semibold text-sm">
+                                {initials}
+                            </AvatarFallback>
+                        </Avatar>
+                    </Link>
+                </div>
             </div>
         </div>
     );
