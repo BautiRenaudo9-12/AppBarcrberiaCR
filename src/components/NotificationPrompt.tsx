@@ -43,18 +43,19 @@ export default function NotificationPrompt({ onDismiss, onSuccess }: Notificatio
         setLoading(true);
 
         try {
-            const token = await requestForToken();
+            const result = await requestForToken();
 
-            if (token) {
+            if (result.status === "success") {
                 showNotification({ text: "¡Notificaciones activadas!" });
                 setIsVisible(false);
                 setTimeout(onSuccess, 500);
-            } else {
-                if (Notification.permission === "denied") {
-                    setIsBlocked(true);
-                    showNotification({ text: "⚠️ Desbloquea las notificaciones desde el candado 🔒 de la URL", duration: 4000 });
-                }
+            } else if (result.status === "denied") {
+                setIsBlocked(true);
+                showNotification({ text: "⚠️ Desbloquea las notificaciones desde el candado 🔒 de la URL", duration: 4000 });
+            } else if (result.status === "unsupported") {
+                showNotification({ text: "Tu navegador no admite notificaciones en este dispositivo.", duration: 4000 });
             }
+            // status "dismissed" / "error": no hacemos nada, el cartel queda visible para reintentar.
         } catch (e) {
             console.error(e);
         } finally {

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { auth } from "@/lib/firebase";
 import { ensureClientProfile } from "@/services/users";
 import { getGoogleRedirectResult } from "@/services/auth";
+import { subscribeToUserActiveAppointment, Appointment } from "@/services/appointments";
 import { useUI } from "./UIContext";
 
 interface UserContextType {
@@ -13,6 +14,8 @@ interface UserContextType {
   userProfile: any;
   setUserProfile: (profile: any) => void;
   needsPhone: boolean;
+  activeAppointment: Appointment | null;
+  isLoadingAppointment: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -39,6 +42,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const [isSigned, setIsSigned] = useState<boolean | null>(null); // null = checking
+  const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
+  const [isLoadingAppointment, setIsLoadingAppointment] = useState(true);
   const { setLoading } = useUI();
 
   // Resuelve el resultado del login con Google (signInWithRedirect) al volver.
@@ -103,6 +108,25 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [setLoading]);
 
+  // Suscripción al turno activo del cliente (única fuente de verdad para el guard de
+  // /turnos, el menú del home y el widget de reserva). Los admins no se suscriben: pueden
+  // reservar para varios clientes y no deben quedar bloqueados.
+  useEffect(() => {
+    if (isSigned !== true || isAdmin || !user?.email) {
+      setActiveAppointment(null);
+      setIsLoadingAppointment(false);
+      return;
+    }
+
+    setIsLoadingAppointment(true);
+    const unsubscribe = subscribeToUserActiveAppointment(user.email, (app) => {
+      setActiveAppointment(app);
+      setIsLoadingAppointment(false);
+    });
+
+    return () => unsubscribe();
+  }, [isSigned, isAdmin, user?.email]);
+
   // Sync userProfile state with LocalStorage manually if needed (e.g. after profile update)
   const updateUserProfile = (profile: any) => {
       setUserProfile(profile);
@@ -119,7 +143,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     isSigned === true && !isAdmin && !!userProfile && !String(userProfile.nro || "").trim();
 
   return (
-    <UserContext.Provider value={{ user, isSigned, isAdmin, userProfile, setUserProfile: updateUserProfile, needsPhone }}>
+    <UserContext.Provider value={{ user, isSigned, isAdmin, userProfile, setUserProfile: updateUserProfile, needsPhone, activeAppointment, isLoadingAppointment }}>
       {children}
     </UserContext.Provider>
   );

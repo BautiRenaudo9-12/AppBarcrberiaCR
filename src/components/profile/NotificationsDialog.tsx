@@ -56,17 +56,20 @@ export default function NotificationsDialog({
         toast.info("Los administradores no reciben recordatorios de turnos");
         return;
       }
-      const token = await requestForToken();
-      if (token) {
-        await updateUserProfile(email, { fcmToken: token, notifEnabled: true });
-        localStorage.setItem("fcmToken", token);
-        onChanged({ fcmToken: token, notifEnabled: true });
+      const result = await requestForToken();
+      if (result.status === "success") {
+        await updateUserProfile(email, { fcmToken: result.token!, notifEnabled: true });
+        localStorage.setItem("fcmToken", result.token!);
+        onChanged({ fcmToken: result.token!, notifEnabled: true });
         toast.success("Notificaciones activadas correctamente");
-      } else if (Notification.permission === "denied") {
+      } else if (result.status === "denied") {
         toast.error("Permiso denegado. Habilitalas desde el navegador.");
-      } else {
+      } else if (result.status === "unsupported") {
+        toast.error("Tu navegador no admite notificaciones en este dispositivo.");
+      } else if (result.status === "error") {
         toast.error("No se pudo activar. Intentá nuevamente.");
       }
+      // status "dismissed": el usuario cerró el cartel de permiso; no mostramos error.
     } catch (error) {
       console.error(error);
       toast.error("Error al activar notificaciones");

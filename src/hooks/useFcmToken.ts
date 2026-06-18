@@ -32,7 +32,8 @@ export function useFcmToken(user: User | null, dbToken?: string, enabled: boolea
         const syncToken = async () => {
             console.log("🔄 [useFcmToken] Starting token sync for", user.email);
             try {
-                const token = await requestForToken();
+                const result = await requestForToken();
+                const token = result.status === "success" ? result.token! : null;
                 if (token) {
                     const storedToken = localStorage.getItem('fcmToken');
                     

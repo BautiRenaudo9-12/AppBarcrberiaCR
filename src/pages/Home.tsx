@@ -2,12 +2,13 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { useUI } from "@/context/UIContext";
-import { subscribeToUserActiveAppointment, cancelAppointment } from "@/services/appointments";
+import { cancelAppointment } from "@/services/appointments";
 import { getActiveAnnouncement, Announcement } from "@/services/announcements";
 import { requestForToken } from "@/services/notifications";
 import { updateUserProfile } from "@/services/users";
 import { toast } from "sonner";
 import NotificationPrompt from "@/components/NotificationPrompt";
+import ReminderOptInDialog from "@/components/home/ReminderOptInDialog";
 import ReservationSuccess from "@/components/home/ReservationSuccess";
 import { useHomeAnimations } from "@/hooks/useHomeAnimations";
 
@@ -21,18 +22,41 @@ import HomeAnnouncement from "@/components/home/HomeAnnouncement";
 import ActiveReservation from "@/components/home/ActiveReservation";
 import CancelReservationDialog from "@/components/home/CancelReservationDialog";
 
+// Cada cuánto, como máximo, volvemos a ofrecer activar los recordatorios tras reservar.
+const REMINDER_PROMPT_KEY = "NOTIF_REMINDER_LAST_ASKED";
+const REMINDER_THROTTLE_MS = 60 * 24 * 60 * 60 * 1000; // ~2 meses
+
 export default function Home() {
-    const { user, isAdmin, userProfile } = useUser();
+    const { user, isAdmin, userProfile, setUserProfile, activeAppointment: reserve, isLoadingAppointment: isLoadingReserve } = useUser();
     const { setLoading } = useUI();
     const contentRef = useHomeAnimations();
-    
+
     // Local State
     const [showCancelDialog, setShowCancelDialog] = useState(false);
-    const [reserve, setReserve] = useState<any>(null);
-    const [isLoadingReserve, setIsLoadingReserve] = useState(true);
     const [announcement, setAnnouncement] = useState<Announcement | null>(null);
     const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+    const [showReminderDialog, setShowReminderDialog] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+
+    // ¿Conviene ofrecer activar recordatorios? Solo si no están realmente activas
+    // (token + flag + permiso granted), no están bloqueadas en el navegador, y no
+    // se ofreció en los últimos ~2 meses (throttle por dispositivo en localStorage).
+    const shouldOfferReminder = () => {
+        if (isAdmin || !user?.email) return false;
+
+        const blocked =
+            typeof Notification !== "undefined" && Notification.permission === "denied";
+        const active =
+            !!userProfile?.fcmToken &&
+            userProfile?.notifEnabled !== false &&
+            !blocked &&
+            typeof Notification !== "undefined" &&
+            Notification.permission === "granted";
+        if (active || blocked) return false;
+
+        const lastAsked = Number(localStorage.getItem(REMINDER_PROMPT_KEY) || 0);
+        return Date.now() - lastAsked > REMINDER_THROTTLE_MS;
+    };
 
     // Sync FCM Token
     useFcmToken(user, userProfile?.fcmToken, userProfile?.notifEnabled !== false, isAdmin);
@@ -42,29 +66,14 @@ export default function Home() {
         getActiveAnnouncement().then(setAnnouncement);
     }, []);
 
-    // Active Appointment Subscription
-    useEffect(() => {
-        if (!user || !user.email) return;
-
-        setIsLoadingReserve(true);
-        const unsubscribe = subscribeToUserActiveAppointment(user.email, (app) => {
-            setReserve(app);
-            setIsLoadingReserve(false);
-        });
-
-        return () => unsubscribe();
-    }, [user]);
-
     // Handle Notification Prompt Logic
     const location = useLocation();
     useEffect(() => {
         if (location.state?.reservationSuccess) {
             setShowSuccess(true);
             window.history.replaceState({}, document.title);
-
-            if (Notification.permission !== "granted") {
-                setShowNotifPrompt(true);
-            }
+            // El modal de recordatorios se abre al terminar la animación de éxito
+            // (ver onDone de ReservationSuccess), no encima de ella.
             return;
         }
 
@@ -82,9 +91,10 @@ export default function Home() {
         if (user && user.email) {
             try {
                 // Ensure we have the token and it's synced
-                const token = await requestForToken();
-                if (token) {
-                    await updateUserProfile(user.email, { fcmToken: token });
+                const result = await requestForToken();
+                if (result.status === "success") {
+                    await updateUserProfile(user.email, { fcmToken: result.token!, notifEnabled: true });
+                    setUserProfile({ ...userProfile, fcmToken: result.token!, notifEnabled: true });
                 }
             } catch (e) {
                 console.error("Error syncing token after prompt success", e);
@@ -117,7 +127,7 @@ export default function Home() {
         try {
             await cancelAppointment(reserve.id);
             toast.success("Reserva cancelada");
-            setReserve(null);
+            // El contexto se actualiza solo por la suscripción a turnos activos.
             setShowCancelDialog(false);
         } catch (error) {
             toast.error("Error al cancelar");
@@ -130,7 +140,15 @@ export default function Home() {
         <div className="min-h-screen bg-background text-foreground flex flex-col">
             {/* Reservation Success Overlay */}
             {showSuccess && (
-                <ReservationSuccess onDone={() => setShowSuccess(false)} />
+                <ReservationSuccess
+                    onDone={() => {
+                        setShowSuccess(false);
+                        if (shouldOfferReminder()) {
+                            localStorage.setItem(REMINDER_PROMPT_KEY, String(Date.now()));
+                            setShowReminderDialog(true);
+                        }
+                    }}
+                />
             )}
 
             {/* Notification Prompt Overlay */}
@@ -138,6 +156,18 @@ export default function Home() {
                 <NotificationPrompt
                     onDismiss={handleNotifDismiss}
                     onSuccess={handleNotifSuccess}
+                />
+            )}
+
+            {/* Recordatorios post-reserva (modal centrado, máx. cada 2 meses) */}
+            {user?.email && (
+                <ReminderOptInDialog
+                    open={showReminderDialog}
+                    onClose={() => setShowReminderDialog(false)}
+                    email={user.email}
+                    onEnabled={({ fcmToken, notifEnabled }) =>
+                        setUserProfile({ ...userProfile, fcmToken, notifEnabled })
+                    }
                 />
             )}
 

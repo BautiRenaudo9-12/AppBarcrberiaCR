@@ -42,6 +42,21 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
+// Bloquea /turnos a los clientes que ya tienen un turno activo (deben cancelarlo antes de
+// reservar otro). Los admins pasan siempre. Redirige en silencio al home, donde el cliente
+// ve su turno y puede cancelarlo.
+const NoActiveReservationRoute = ({ children }: { children: JSX.Element }) => {
+  const { isSigned, isAdmin, activeAppointment, isLoadingAppointment } = useUser();
+
+  if (isSigned === null) return <LoadingSpinner />;
+  if (isSigned === false) return <Navigate to="/login" replace />;
+  if (isAdmin) return children;
+  if (isLoadingAppointment) return <LoadingSpinner />;
+  if (activeAppointment) return <Navigate to="/" replace />;
+
+  return children;
+};
+
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
   const { isSigned, isAdmin } = useUser();
 
@@ -83,9 +98,9 @@ const AppRoutes = () => {
         <Route
           path="/turnos"
           element={
-            <ProtectedRoute>
+            <NoActiveReservationRoute>
               <Turnos />
-            </ProtectedRoute>
+            </NoActiveReservationRoute>
           }
         />
         <Route

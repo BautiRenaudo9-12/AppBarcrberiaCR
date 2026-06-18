@@ -129,6 +129,14 @@ export const createAppointment = async (
     if (!isAvailable) {
       throw new Error("El turno ya no está disponible.");
     }
+
+    // Un cliente no puede tener más de un turno activo a la vez. Defensa en profundidad:
+    // el guard de /turnos ya bloquea el acceso, pero esto cubre pestañas viejas o reservas
+    // creadas en otra sesión. Los admins (force=true) quedan exentos.
+    const existing = await getUserActiveAppointment(clientEmail);
+    if (existing) {
+      throw new Error("Ya tenés un turno reservado. Cancelalo para reservar otro.");
+    }
   }
 
   const dateTimeStr = `${dateStr}T${timeStr}:00`;

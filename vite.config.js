@@ -9,6 +9,14 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       injectRegister: 'auto',
+      // Registra el Service Worker también en `npm run dev` para poder probar el
+      // push de FCM en local (sin esto, navigator.serviceWorker.ready nunca resuelve
+      // y el opt-in cae en "unsupported"). type 'classic' porque push-sw.js usa importScripts.
+      devOptions: {
+        enabled: true,
+        type: 'classic',
+        navigateFallback: 'index.html',
+      },
       includeAssets: ['logo.png', 'apple-touch-icon.png'],
       manifest: {
         id: '/',
