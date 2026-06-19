@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
+import moment from "moment";
+import "moment/locale/es";
 import App from "./App";
 import { validateEnv } from "@/lib/env";
+
+moment.locale("es");
 
 validateEnv();
 

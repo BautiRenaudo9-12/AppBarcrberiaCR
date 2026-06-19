@@ -24,7 +24,7 @@ export interface Appointment {
   clientEmail: string;
   clientName: string;
   status: "confirmed" | "cancelled" | "completed" | "blocked";
-  createdAd: Timestamp;
+  createdAt: Timestamp;
 }
 
 // Fetch appointments for a specific date range (or single date)
@@ -145,8 +145,10 @@ export const createAppointment = async (
     }
   }
 
-  const dateTimeStr = `${dateStr}T${timeStr}:00`;
-  const timestamp = Timestamp.fromDate(new Date(dateTimeStr));
+  // Argentina es UTC-03:00 todo el año (sin DST). Anclamos el offset para que el instante
+  // guardado represente la hora-pared elegida sin importar la zona del dispositivo, y así
+  // coincida con cómo el cron formatea/notifica (America/Argentina/Buenos_Aires).
+  const timestamp = Timestamp.fromDate(new Date(`${dateStr}T${timeStr}:00-03:00`));
 
   // 2. Deterministic ID to prevent Race Conditions (Double Booking)
   // ID format: "2026-01-16_10-00"
@@ -161,7 +163,7 @@ export const createAppointment = async (
     clientEmail,
     clientName,
     status: "confirmed",
-    createdAd: Timestamp.now()
+    createdAt: Timestamp.now()
   };
 
   try {

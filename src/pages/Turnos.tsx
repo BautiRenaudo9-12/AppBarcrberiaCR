@@ -135,7 +135,6 @@ export default function Turnos() {
         />
 
         <TurnosList 
-            selectedDate={selectedDate}
             slots={slots}
             isAdmin={isAdmin}
             loading={loading}

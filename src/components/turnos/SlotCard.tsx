@@ -1,10 +1,8 @@
-import { memo, useRef, useEffect } from "react";
+import { memo } from "react";
 import { Clock, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slot } from "@/types/turnos";
 import { Switch } from "@/components/ui/switch";
-import { gsap } from "gsap";
-import { prefersReducedMotion } from "@/lib/motion";
 import { usePressScale } from "@/hooks/usePressScale";
 
 interface SlotCardProps {
@@ -31,30 +29,8 @@ function SlotCard({
   onCancel,
   cancelOnly = false,
 }: SlotCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
   const { ref: reserveBtnRef, ...reservePress } = usePressScale(0.93);
   const { ref: cancelBtnRef, ...cancelPress } = usePressScale(0.93);
-  const prevStatusRef = useRef(slot.status);
-  const isFirstRender = useRef(true);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
-    if (prevStatusRef.current !== slot.status && cardRef.current) {
-      prevStatusRef.current = slot.status;
-
-      if (prefersReducedMotion()) return;
-
-      gsap.fromTo(
-        cardRef.current,
-        { scale: 1.03 },
-        { scale: 1, duration: 0.4, ease: "back.out(1.7)" }
-      );
-    }
-  }, [slot.status]);
 
   const isAvailable = slot.status !== "blocked";
 
@@ -72,7 +48,6 @@ function SlotCard({
 
   return (
     <div
-      ref={cardRef}
       className={cn(
         "bg-card border border-white/10 rounded-xl p-3 flex items-center justify-between transition-all duration-200",
         slot.status === "blocked" &&
@@ -82,7 +57,7 @@ function SlotCard({
         slot.status === "free" && !slot.isException && "hover:border-white/20"
       )}
     >
-      <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <div
           className={cn(
             "w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
@@ -112,7 +87,7 @@ function SlotCard({
           >
             {slot.time}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             {slot.isException && isAdmin && (
               <span className="text-xs font-semibold text-accent">Sobreturno</span>
             )}
