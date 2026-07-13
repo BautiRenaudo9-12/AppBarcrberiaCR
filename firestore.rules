@@ -103,6 +103,23 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // Lista de espera: el cliente gestiona (crea/lee/borra) solo sus propias entradas;
+    // el admin puede leer todo. `lastNotifiedAt` lo escribe el server (Admin SDK, saltea
+    // reglas), por eso no habilitamos update desde el cliente.
+    match /waitlist/{entryId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.clientEmail == request.auth.token.email);
+      allow create: if isSignedIn() && request.resource.data.clientEmail == request.auth.token.email;
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.clientEmail == request.auth.token.email);
+    }
+
+    // Config global (ej. `config/booking`: rango máximo de días para reservar).
+    // Lectura para cualquier usuario logueado (el cliente la necesita para el selector
+    // de fecha); escritura solo admin.
+    match /config/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // Admins: lista opcional de admins adicionales (ver isAdmin()). Se gestiona desde la
     // consola de Firebase; el cliente nunca escribe acá.
     match /admins/{email} {

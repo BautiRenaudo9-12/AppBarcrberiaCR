@@ -16,7 +16,7 @@ import {
 } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
-import { createSearchKeywords } from "@/lib/keywords";
+import { createSearchKeywords, searchTokens } from "@/lib/keywords";
 
 export const getUserInfo = async () => {
   const stored = localStorage.getItem("USER_INFO");
@@ -132,78 +132,31 @@ export const getClientsCount = async () => {
     }
 };
 
+// B\u00fasqueda unificada (nombre + email + tel\u00e9fono) sobre el \u00edndice `keywords`. Normaliza el
+// t\u00e9rmino (trim, min\u00fasculas, sin tildes) en `searchTokens`, hace UN `array-contains-any` (OR)
+// y filtra el AND multi-palabra en el cliente: cada token del t\u00e9rmino debe estar en el doc.
 export const searchClientes = async (term: string) => {
-  if (!term) return { docs: [] };
+  const tokens = searchTokens(term);
+  if (tokens.length === 0) return { docs: [] };
 
-  const termLower = term.toLowerCase();
-  const termCapitalized = term.charAt(0).toUpperCase() + term.slice(1).toLowerCase(); // "juan" -> "Juan"
-
-  // Limit per query to avoid exploding reads
-  const QUERY_LIMIT = 10;
-
-  // 1. Search by Email (prefix, usually lowercase)
-  const qEmail = query(
+  const q = query(
     collection(db, "clientes"),
-    where("email", ">=", termLower),
-    where("email", "<=", termLower + "\uf8ff"),
-    limit(QUERY_LIMIT)
+    where("keywords", "array-contains-any", tokens),
+    limit(30)
   );
 
-  // 2. Search by Phone (prefix)
-  const qPhone = query(
-    collection(db, "clientes"),
-    where("nro", ">=", term),
-    where("nro", "<=", term + "\uf8ff"),
-    limit(QUERY_LIMIT)
-  );
+  const snap = await getDocs(q);
 
-  // 3. Search by Name (Try exact casing entered + Capitalized version)
-  // This is a workaround for Firestore's lack of case-insensitive search
-  const qNameOriginal = query(
-    collection(db, "clientes"),
-    where("name", ">=", term),
-    where("name", "<=", term + "\uf8ff"),
-    limit(QUERY_LIMIT)
-  );
-
-  // 4. Search by Keywords (Suffix matches like "tista" -> "Bautista")
-  const qKeywords = query(
-    collection(db, "clientes"),
-    where("keywords", "array-contains", termLower),
-    limit(QUERY_LIMIT)
-  );
-
-  // Only run capitalized query if it's different from original (e.g. user typed "juan", we try "Juan")
-  const queries = [getDocs(qEmail), getDocs(qPhone), getDocs(qNameOriginal), getDocs(qKeywords)];
-  
-  if (term !== termCapitalized) {
-      const qNameCap = query(
-        collection(db, "clientes"),
-        where("name", ">=", termCapitalized),
-        where("name", "<=", termCapitalized + "\uf8ff"),
-        limit(QUERY_LIMIT)
-      );
-      queries.push(getDocs(qNameCap));
-  }
-
-  // Execute in parallel
-  const snapshots = await Promise.all(queries);
-
-  // Merge and Deduplicate
-  const uniqueDocs = new Map();
-  snapshots.forEach(snap => {
-      snap.docs.forEach(doc => {
-          uniqueDocs.set(doc.id, doc);
-      });
+  const docs = snap.docs.filter((doc) => {
+    const kws: string[] = doc.data().keywords || [];
+    const kwSet = new Set(kws);
+    return tokens.every((t) => kwSet.has(t));
   });
 
-  const docs = Array.from(uniqueDocs.values());
-  
-  // Sort by name client-side since we have a small mixed batch
   docs.sort((a, b) => {
-      const nameA = a.data().name || "";
-      const nameB = b.data().name || "";
-      return nameA.localeCompare(nameB);
+    const nameA = a.data().name || "";
+    const nameB = b.data().name || "";
+    return nameA.localeCompare(nameB);
   });
 
   return { docs };

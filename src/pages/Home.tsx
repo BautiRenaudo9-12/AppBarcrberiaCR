@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { useUI } from "@/context/UIContext";
 import { cancelAppointment } from "@/services/appointments";
+import { notifyWaitlist } from "@/services/waitlist";
 import { getActiveAnnouncement, Announcement } from "@/services/announcements";
 import { requestForToken } from "@/services/notifications";
 import { updateUserProfile } from "@/services/users";
@@ -126,6 +127,8 @@ export default function Home() {
         setLoading(true);
         try {
             await cancelAppointment(reserve.id);
+            // Se liberó el turno: avisamos a la lista de espera de ese día (best-effort).
+            notifyWaitlist(reserve.date);
             toast.success("Reserva cancelada");
             // El contexto se actualiza solo por la suscripción a turnos activos.
             setShowCancelDialog(false);

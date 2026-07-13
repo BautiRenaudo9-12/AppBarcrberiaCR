@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import moment from "moment";
 import { toast } from "sonner";
 import { Slot } from "@/types/turnos";
@@ -6,6 +7,7 @@ import { useUser } from "@/context/UserContext";
 import { getDayConfig, arrayDias } from "@/services/reservations";
 import { generateVirtualSlots } from "@/lib/slots";
 import { getAppointmentsByDate, createAppointment, cancelAppointment } from "@/services/appointments";
+import { clearMyWaitlist, notifyWaitlist } from "@/services/waitlist";
 import {
     subscribeToBlockedSlots,
     subscribeToExceptions,
@@ -21,11 +23,23 @@ import {
 
 export function useTurnos() {
     const { user, isAdmin } = useUser();
-    
+
+    // Fecha inicial: si venimos de un deep-link del aviso de lista de espera (?date=YYYY-MM-DD)
+    // la preseleccionamos; si no, hoy.
+    const [searchParams] = useSearchParams();
+    const paramDate = searchParams.get("date");
+    const initialDate =
+        paramDate && /^\d{4}-\d{2}-\d{2}$/.test(paramDate)
+            ? paramDate
+            : moment().format("YYYY-MM-DD");
+
     // Data State
-    const [selectedDate, setSelectedDate] = useState(moment().format("YYYY-MM-DD"));
+    const [selectedDate, setSelectedDate] = useState(initialDate);
     const [slots, setSlots] = useState<Slot[]>([]);
     const [loading, setLoading] = useState(false);
+    // ¿El día seleccionado es un día laborable con horarios configurados? (para decidir si
+    // ofrecer la lista de espera cuando no quedan turnos libres).
+    const [dayActive, setDayActive] = useState(false);
     
     // Internal subscriptions state
     const [allBlockedRules, setAllBlockedRules] = useState<BlockedSlot[]>([]);
@@ -79,6 +93,7 @@ export function useTurnos() {
 
             if (!config || !config.activo) {
                 setSlots([]);
+                setDayActive(false);
                 return;
             }
 
@@ -87,6 +102,9 @@ export function useTurnos() {
                 config.hasta || "18:00",
                 config.intervalo || 30
             );
+
+            // Día laborable con al menos un horario configurado.
+            setDayActive(virtualSlots.length > 0);
 
             const appointments = await getAppointmentsByDate(selectedDate);
             const now = moment();
@@ -164,6 +182,13 @@ export function useTurnos() {
                 finalClientName,
                 isAdmin // Force if admin
             );
+            // Al reservar, el cliente sale de todas sus listas de espera (ya no debe recibir
+            // avisos). Best-effort: no bloquea la confirmación si falla.
+            if (!isAdmin && user.email) {
+                clearMyWaitlist(user.email).catch((e) =>
+                    console.error("No se pudo limpiar la lista de espera:", e)
+                );
+            }
             toast.success("Reserva confirmada");
             if (isAdmin) await loadSlots();
             return true;
@@ -232,6 +257,10 @@ export function useTurnos() {
         setLoading(true);
         try {
             await cancelAppointment(appointmentId);
+            // Se liberó el turno: avisamos a la lista de espera de ese día (best-effort).
+            // El ID es determinista "YYYY-MM-DD_HH-mm", así que la fecha sale del prefijo.
+            const freedDate = appointmentId.split("_")[0];
+            notifyWaitlist(freedDate);
             toast.success("Reserva cancelada");
             await loadSlots();
             return true;
@@ -265,6 +294,7 @@ export function useTurnos() {
         setSelectedDate,
         slots,
         loading,
+        dayActive,
         isAdmin,
         user, // Exposed for convenience
         

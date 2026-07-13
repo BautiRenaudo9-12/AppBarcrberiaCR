@@ -86,7 +86,7 @@ export default function Clientes() {
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Buscar por nombre (comienza con)..."
+            placeholder="Buscar por nombre, email o teléfono..."
             value={inputValue}
             onChange={(e) => handleSearch(e.target.value)}
             className="w-full bg-secondary/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-accent/30"

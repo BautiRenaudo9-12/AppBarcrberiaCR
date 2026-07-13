@@ -1,8 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, CalendarRange } from "lucide-react";
 import { useConfigAnimations } from "@/hooks/useConfigAnimations";
 import { getDays } from "@/services/reservations";
+import { updateBookingConfig } from "@/services/config";
+import { useBookingConfig } from "@/hooks/useBookingConfig";
+import { useQueryClient } from "@tanstack/react-query";
 import { doc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
@@ -34,6 +37,38 @@ export default function Configuracion() {
   const saveBtnRef = useRef<HTMLButtonElement>(null);
   const prevHasChanges = useRef(false);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  // Rango máximo de días de reserva (config global).
+  const queryClient = useQueryClient();
+  const { data: bookingConfig } = useBookingConfig();
+  const [maxDaysInput, setMaxDaysInput] = useState<string>("");
+  const [savingMaxDays, setSavingMaxDays] = useState(false);
+
+  useEffect(() => {
+    if (bookingConfig) setMaxDaysInput(String(bookingConfig.maxDays));
+  }, [bookingConfig]);
+
+  const maxDaysChanged =
+    bookingConfig != null && maxDaysInput !== "" && Number(maxDaysInput) !== bookingConfig.maxDays;
+
+  const handleSaveMaxDays = async () => {
+    const value = Number(maxDaysInput);
+    if (!Number.isFinite(value) || value < 1 || value > 60) {
+      toast.error("El rango debe ser un número entre 1 y 60 días.");
+      return;
+    }
+    setSavingMaxDays(true);
+    try {
+      await updateBookingConfig(value);
+      await queryClient.invalidateQueries({ queryKey: ["config", "booking"] });
+      toast.success("Rango de reserva actualizado");
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo guardar el rango de reserva.");
+    } finally {
+      setSavingMaxDays(false);
+    }
+  };
 
   useEffect(() => {
     loadDays();
@@ -228,6 +263,39 @@ export default function Configuracion() {
       </div>
 
       <div className="flex-1 overflow-y-auto max-w-5xl mx-auto px-4 py-8 pb-20 sm:px-6 space-y-8 w-full">
+        {/* Ventana de reserva: rango máximo de días hacia adelante */}
+        <div className="bg-card border border-white/10 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center text-accent shrink-0">
+              <CalendarRange className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-semibold">Ventana de reserva</p>
+              <p className="text-xs text-muted-foreground">
+                Cuántos días hacia adelante puede reservar un cliente (además de hoy).
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={60}
+              value={maxDaysInput}
+              onChange={(e) => setMaxDaysInput(e.target.value)}
+              className="w-20 bg-secondary/20 border border-white/10 rounded-xl px-3 py-2 text-center text-foreground outline-none focus:ring-2 focus:ring-accent/30"
+            />
+            <span className="text-sm text-muted-foreground">días</span>
+            <button
+              onClick={handleSaveMaxDays}
+              disabled={!maxDaysChanged || savingMaxDays}
+              className="bg-accent text-accent-foreground px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            >
+              {savingMaxDays ? "..." : "Guardar"}
+            </button>
+          </div>
+        </div>
+
         {isLoadingDays ? (
           <ConfigSkeleton />
         ) : (

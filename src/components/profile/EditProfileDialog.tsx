@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateUserProfile } from "@/services/users";
+import { createSearchKeywords } from "@/lib/keywords";
 import { toast } from "sonner";
 
 interface EditProfileDialogProps {
@@ -51,7 +52,10 @@ export default function EditProfileDialog({
     if (!isValid || !email) return;
     setLoading(true);
     try {
-      await updateUserProfile(email, { name: trimmedName, nro: trimmedNro });
+      // Regeneramos keywords para que el índice de búsqueda no quede viejo al cambiar
+      // nombre o teléfono.
+      const keywords = createSearchKeywords(trimmedName, email, trimmedNro);
+      await updateUserProfile(email, { name: trimmedName, nro: trimmedNro, keywords });
       onSaved({ name: trimmedName, nro: trimmedNro });
       toast.success("Perfil actualizado");
       onClose();

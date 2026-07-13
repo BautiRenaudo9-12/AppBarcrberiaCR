@@ -6,3 +6,12 @@ export interface DayConfig {
   intervalo?: number;
   activo?: boolean;
 }
+
+// Config global de reservas (doc `config/booking`).
+export interface BookingConfig {
+  // Cuántos días hacia adelante (además de hoy) puede reservar un cliente.
+  maxDays: number;
+}
+
+// Ventana de reserva por defecto si el doc no existe (equivale al hardcode histórico).
+export const DEFAULT_MAX_DAYS = 6;

@@ -51,7 +51,7 @@ function SlotCard({
       className={cn(
         "bg-card border border-white/10 rounded-xl p-3 flex items-center justify-between transition-all duration-200",
         slot.status === "blocked" &&
-          "opacity-60 bg-secondary/10 border-dashed border-destructive/30",
+          "bg-secondary/10 border-dashed border-destructive/40",
         slot.status === "reserved" && "hover:border-white/20",
         slot.isException && isAdmin && "border-accent/30 hover:border-accent/50",
         slot.status === "free" && !slot.isException && "hover:border-white/20"
@@ -112,7 +112,8 @@ function SlotCard({
           <Switch
             checked={isAvailable}
             onCheckedChange={handleToggle}
-            className="data-[state=checked]:bg-accent"
+            aria-label={isAvailable ? "Bloquear horario" : "Desbloquear horario"}
+            className="data-[state=checked]:bg-accent data-[state=unchecked]:bg-destructive/70"
           />
         )}
 

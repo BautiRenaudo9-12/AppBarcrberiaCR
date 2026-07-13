@@ -3,12 +3,14 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import moment from "moment";
 import { useTurnos } from "@/hooks/useTurnos";
+import { useBookingConfig } from "@/hooks/useBookingConfig";
 import { toast } from "sonner";
 import { Slot } from "@/types/turnos";
 
 // Components
 import DateSelector from "@/components/turnos/DateSelector";
 import TurnosList from "@/components/turnos/TurnosList";
+import WaitlistCard from "@/components/turnos/WaitlistCard";
 import ReserveDialog from "@/components/turnos/dialogs/ReserveDialog";
 import BlockDialog from "@/components/turnos/dialogs/BlockDialog";
 import UnblockDialog from "@/components/turnos/dialogs/UnblockDialog";
@@ -24,15 +26,19 @@ export default function Turnos() {
   const { 
     selectedDate, 
     setSelectedDate, 
-    slots, 
-    loading, 
-    isAdmin, 
-    reserveAppointment, 
+    slots,
+    loading,
+    dayActive,
+    isAdmin,
+    reserveAppointment,
     blockSlot,
     unblockSlot,
     activateException,
     cancelReservation
   } = useTurnos();
+
+  const { data: bookingConfig } = useBookingConfig();
+  const maxDays = bookingConfig?.maxDays ?? 6;
 
   // Dialog UI State
   const [selectedTurno, setSelectedTurno] = useState<Slot | null>(null); // Reserve Dialog
@@ -131,20 +137,26 @@ export default function Turnos() {
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             minDate={!isAdmin ? moment().format("YYYY-MM-DD") : undefined}
-            maxDate={!isAdmin ? moment().add(6, 'days').format("YYYY-MM-DD") : undefined}
+            maxDate={!isAdmin ? moment().add(maxDays, 'days').format("YYYY-MM-DD") : undefined}
         />
 
-        <TurnosList 
-            slots={slots}
-            isAdmin={isAdmin}
-            loading={loading}
-            onReserve={setSelectedTurno}
-            onBlock={setSlotToBlock}
-            onUnblock={setSlotToUnblock}
-            onActivate={setSlotToActivate}
-            onRecurringAction={setSlotToRecurringAction}
-            onCancel={setSlotToCancel}
-        />
+        {/* Cliente en un día laborable sin turnos libres: ofrecemos la lista de espera en
+            lugar del mensaje de "no hay turnos". */}
+        {!isAdmin && !loading && dayActive && slots.length === 0 ? (
+            <WaitlistCard date={selectedDate} />
+        ) : (
+            <TurnosList
+                slots={slots}
+                isAdmin={isAdmin}
+                loading={loading}
+                onReserve={setSelectedTurno}
+                onBlock={setSlotToBlock}
+                onUnblock={setSlotToUnblock}
+                onActivate={setSlotToActivate}
+                onRecurringAction={setSlotToRecurringAction}
+                onCancel={setSlotToCancel}
+            />
+        )}
 
         {/* --- DIALOGS --- */}
         

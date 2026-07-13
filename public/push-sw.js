@@ -42,6 +42,20 @@ messaging.onBackgroundMessage((payload) => {
       return self.registration.showNotification(notificationTitle, notificationOptions);
     }
 
+    // 1b. Aviso de lista de espera: se liberó un turno de un día en el que el cliente espera.
+    if (payload.data && payload.data.type === 'waitlist_slot') {
+      return self.registration.showNotification(payload.data.title || '¡Se liberó un turno!', {
+        body: payload.data.body,
+        icon: '/pwa-192x192.png',
+        badge: '/masked-icon.svg',
+        vibrate: [200, 100, 200],
+        tag: 'waitlist-slot-' + (payload.data.date || ''),
+        renotify: true,
+        requireInteraction: true,
+        data: payload.data // incluye url: /turnos?date=... para el notificationclick
+      });
+    }
+
     // 2. FALLBACK: Si llega cualquier otro mensaje data-only
     if (payload.data) {
         const title = payload.data.title || payload.notification?.title || 'Notificación';
