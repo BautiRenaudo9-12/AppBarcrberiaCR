@@ -41,6 +41,22 @@ export function ClosuresCard() {
     return () => unsub();
   }, []);
 
+  // Selección del rango, totalmente controlada (ignoramos el cálculo interno de
+  // react-day-picker y sólo usamos el día clickeado, 2do arg de onSelect):
+  //  - sin inicio, o con un rango ya completo → un click arranca de nuevo desde ese día
+  //    (así reelegir la fecha inicial es un solo click, sin "deshacer" el rango previo);
+  //  - con inicio pero sin fin → ese click cierra el rango (ordenando inicio/fin).
+  const handleRangeSelect = (_next: DateRange | undefined, selectedDay: Date) => {
+    setRange((prev) => {
+      if (!prev?.from || (prev.from && prev.to)) {
+        return { from: selectedDay, to: undefined };
+      }
+      return selectedDay < prev.from
+        ? { from: selectedDay, to: prev.from }
+        : { from: prev.from, to: selectedDay };
+    });
+  };
+
   const handleAdd = async () => {
     if (!range?.from) {
       toast.error("Elegí al menos una fecha de inicio.");
@@ -107,10 +123,15 @@ export function ClosuresCard() {
             <Calendar
               mode="range"
               selected={range}
-              onSelect={setRange}
+              onSelect={handleRangeSelect}
               defaultMonth={range?.from}
               locale={es}
               showOutsideDays={false}
+              classNames={{
+                // "Hoy" sin relleno verde: solo borde (cuando no está seleccionado; al
+                // entrar en el rango, las clases de selección lo pintan igual).
+                today: "border border-accent/70 text-foreground rounded-md",
+              }}
             />
           </PopoverContent>
         </Popover>

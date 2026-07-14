@@ -101,18 +101,6 @@ function SlotCard({
               </p>
             )}
 
-            {isAdmin && slot.status === "reserved" && (
-              slot.appointment?.clientConfirmed ? (
-                <span className="text-[10px] font-semibold bg-[#30D158]/15 text-[#30D158] px-1.5 py-0.5 rounded shrink-0">
-                  ✓ Confirmó
-                </span>
-              ) : (
-                <span className="text-[10px] font-medium bg-white/5 text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
-                  Sin confirmar
-                </span>
-              )
-            )}
-
             {slot.blockedRule?.type === "recurring" && !slot.isException && (
               <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 rounded">
                 Recurrente
