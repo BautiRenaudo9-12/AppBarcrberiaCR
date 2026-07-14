@@ -1,8 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import moment from "moment";
 import { Slot } from "@/types/turnos";
 import { useTurnos } from "@/hooks/useTurnos";
+import { getClientsPhones } from "@/services/users";
+import { toWhatsappNumber } from "@/lib/countries";
 import DateSelector from "@/components/turnos/DateSelector";
 import SlotCard from "@/components/turnos/SlotCard";
 import TurnosSkeleton from "@/components/turnos/TurnosSkeleton";
@@ -13,6 +16,8 @@ export default function ListaTurnos() {
   const { selectedDate, setSelectedDate, slots, loading, cancelReservation } = useTurnos();
   const [slotToCancel, setSlotToCancel] = useState<Slot | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  // Mapa email -> teléfono, para el botón de WhatsApp de cada turno reservado.
+  const [phones, setPhones] = useState<Record<string, string>>({});
 
   const reservedSlots = useMemo(
     () =>
@@ -21,6 +26,37 @@ export default function ListaTurnos() {
         .sort((a, b) => a.time.localeCompare(b.time)),
     [slots]
   );
+
+  // Trae los teléfonos de los clientes con turno en la fecha seleccionada.
+  useEffect(() => {
+    const emails = reservedSlots
+      .map((s) => s.appointment?.clientEmail)
+      .filter((e): e is string => !!e);
+    if (emails.length === 0) {
+      setPhones({});
+      return;
+    }
+    let cancelled = false;
+    getClientsPhones(emails)
+      .then((map) => {
+        if (!cancelled) setPhones(map);
+      })
+      .catch((e) => console.error("No se pudieron traer los teléfonos:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [reservedSlots]);
+
+  // Arma el link de WhatsApp para un turno (o undefined si el cliente no tiene teléfono).
+  const buildWhatsappHref = (slot: Slot): string | undefined => {
+    const email = slot.appointment?.clientEmail;
+    const number = toWhatsappNumber(email ? phones[email] : undefined);
+    if (!number) return undefined;
+    const prettyDate = moment(selectedDate).format("DD/MM");
+    const name = slot.appointment?.clientName || "";
+    const msg = `Hola ${name}, te escribimos de la barbería por tu turno del ${prettyDate} a las ${slot.time}.`;
+    return `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
+  };
 
   const onConfirmCancel = async () => {
     if (!slotToCancel?.appointment?.id) return;
@@ -62,6 +98,7 @@ export default function ListaTurnos() {
                 isAdmin
                 cancelOnly
                 onCancel={setSlotToCancel}
+                whatsappHref={buildWhatsappHref(slot)}
               />
             ))}
           </div>

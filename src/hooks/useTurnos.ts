@@ -20,6 +20,7 @@ import {
     BlockedSlot,
     SlotException
 } from "@/services/blocks";
+import { subscribeToClosures, isDateInClosure, Closure } from "@/services/closures";
 
 export function useTurnos() {
     const { user, isAdmin } = useUser();
@@ -40,19 +41,23 @@ export function useTurnos() {
     // ¿El día seleccionado es un día laborable con horarios configurados? (para decidir si
     // ofrecer la lista de espera cuando no quedan turnos libres).
     const [dayActive, setDayActive] = useState(false);
-    
+    // ¿El día cae dentro de un cierre por rango (vacaciones)?
+    const [closed, setClosed] = useState(false);
+
     // Internal subscriptions state
     const [allBlockedRules, setAllBlockedRules] = useState<BlockedSlot[]>([]);
     const [allExceptions, setAllExceptions] = useState<SlotException[]>([]);
+    const [allClosures, setAllClosures] = useState<Closure[]>([]);
     const [subscriptionsReady, setSubscriptionsReady] = useState(false);
 
     // Subscriptions
     useEffect(() => {
         let blocksLoaded = false;
         let exceptionsLoaded = false;
+        let closuresLoaded = false;
 
         const checkReady = () => {
-            if (blocksLoaded && exceptionsLoaded) {
+            if (blocksLoaded && exceptionsLoaded && closuresLoaded) {
                 setSubscriptionsReady(true);
             }
         };
@@ -69,7 +74,13 @@ export function useTurnos() {
             checkReady();
         });
 
-        return () => { unsubBlock(); unsubExc(); };
+        const unsubClosures = subscribeToClosures((data) => {
+            setAllClosures(data);
+            closuresLoaded = true;
+            checkReady();
+        });
+
+        return () => { unsubBlock(); unsubExc(); unsubClosures(); };
     }, []);
 
     // Load Logic
@@ -82,6 +93,15 @@ export function useTurnos() {
 
         setLoading(true);
         try {
+            // Cierre por rango (vacaciones): el día está cerrado, no se genera ningún slot.
+            if (isDateInClosure(selectedDate, allClosures)) {
+                setSlots([]);
+                setDayActive(false);
+                setClosed(true);
+                return;
+            }
+            setClosed(false);
+
             const dateMoment = moment(selectedDate);
             const rawDayName = arrayDias[Number(dateMoment.format("d"))].toLowerCase();
             // Normalizar el nombre del día (quitar tildes para coincidir con IDs de Firestore)
@@ -148,7 +168,7 @@ export function useTurnos() {
         } finally {
             setLoading(false);
         }
-    }, [selectedDate, isAdmin, allBlockedRules, allExceptions, subscriptionsReady]);
+    }, [selectedDate, isAdmin, allBlockedRules, allExceptions, allClosures, subscriptionsReady]);
 
     // Al cambiar de fecha, limpiamos los slots y marcamos cargando (antes del paint)
     // para mostrar el skeleton mientras llega la data de la nueva fecha. Los refrescos
@@ -295,6 +315,7 @@ export function useTurnos() {
         slots,
         loading,
         dayActive,
+        closed,
         isAdmin,
         user, // Exposed for convenience
         

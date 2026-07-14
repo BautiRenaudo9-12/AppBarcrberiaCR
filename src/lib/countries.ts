@@ -47,3 +47,19 @@ export function formatPhone(country: Country, local: string): string {
   if (!localDigits) return "";
   return `+${country.dial} ${localDigits}`;
 }
+
+// Convierte un `nro` guardado (ej. "+54 11 2345 6789") al formato de dígitos que espera
+// wa.me / la API de WhatsApp (código de país + número, sin "+" ni espacios). Devuelve null
+// si no hay número utilizable. Para Argentina antepone el "9" de móviles (54 9 …), que no
+// guardamos en `nro` pero WhatsApp exige.
+export function toWhatsappNumber(nro?: string | null): string | null {
+  const raw = (nro || "").trim();
+  if (!raw) return null;
+  const { country, local } = parsePhone(raw);
+  const localDigits = local.replace(/\D/g, "").replace(/^0+/, "");
+  if (!localDigits) return null;
+  if (country.code === "AR") {
+    return `549${localDigits}`;
+  }
+  return `${country.dial}${localDigits}`;
+}

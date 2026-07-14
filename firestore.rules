@@ -102,6 +102,13 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+
+    // Closures: cierres por rango de fechas (vacaciones). Admin gestiona, usuario lee
+    // (necesario para calcular disponibilidad y ocultar los días cerrados).
+    match /closures/{closureId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
     
     // Lista de espera: el cliente gestiona (crea/lee/borra) solo sus propias entradas;
     // el admin puede leer todo. `lastNotifiedAt` lo escribe el server (Admin SDK, saltea

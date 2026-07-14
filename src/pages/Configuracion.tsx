@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useUI } from "@/context/UIContext";
 import { DayConfig } from "@/types/config";
 import { DayConfigCard } from "@/components/configuracion/DayConfigCard";
+import { ClosuresCard } from "@/components/configuracion/ClosuresCard";
 import ConfigSkeleton from "@/components/configuracion/ConfigSkeleton";
 import {
   AlertDialog,
@@ -307,6 +308,9 @@ export default function Configuracion() {
             </button>
           </div>
         </div>
+
+        {/* Cierre por rango de fechas (vacaciones) */}
+        <ClosuresCard />
 
         {isLoadingDays ? (
           <ConfigSkeleton />

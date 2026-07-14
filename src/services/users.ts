@@ -5,11 +5,12 @@ import {
   getDocs, 
   collection, 
   query, 
-  orderBy, 
-  limit, 
-  startAfter, 
+  orderBy,
+  limit,
+  startAfter,
   where,
-  QueryDocumentSnapshot, 
+  documentId,
+  QueryDocumentSnapshot,
   DocumentData,
   getCountFromServer,
   setDoc
@@ -165,6 +166,25 @@ export const searchClientes = async (term: string) => {
 export const updateUserProfile = async (email: string, data: Partial<DocumentData>) => {
     if (!email) throw new Error("Email required");
     await updateDoc(doc(db, "clientes", email), data);
+};
+
+// Devuelve un mapa email -> nro (teléfono) para un conjunto de clientes. Uso admin
+// (ej. botón de WhatsApp en la lista de turnos). Consulta por documentId en chunks de 10
+// (límite de `in` en Firestore). Solo admin puede listar `clientes` (ver firestore.rules).
+export const getClientsPhones = async (emails: string[]): Promise<Record<string, string>> => {
+  const unique = [...new Set(emails.filter(Boolean))];
+  const result: Record<string, string> = {};
+  const chunkSize = 10;
+  for (let i = 0; i < unique.length; i += chunkSize) {
+    const chunk = unique.slice(i, i + chunkSize);
+    const q = query(collection(db, "clientes"), where(documentId(), "in", chunk));
+    const snap = await getDocs(q);
+    snap.docs.forEach((d) => {
+      const nro = d.data().nro;
+      if (nro) result[d.id] = nro as string;
+    });
+  }
+  return result;
 };
 
 export const getHistory = async () => {

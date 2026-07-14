@@ -56,6 +56,19 @@ messaging.onBackgroundMessage((payload) => {
       });
     }
 
+    // 1c. Recordatorio de re-reserva ("ya te toca"): el cliente hace rato que no viene.
+    if (payload.data && payload.data.type === 'reengagement') {
+      return self.registration.showNotification(payload.data.title || '¿Te toca un corte? ✂️', {
+        body: payload.data.body,
+        icon: '/pwa-192x192.png',
+        badge: '/masked-icon.svg',
+        vibrate: [200, 100, 200],
+        tag: 'reengagement',
+        renotify: true,
+        data: payload.data // incluye url: /turnos para el notificationclick
+      });
+    }
+
     // 2. FALLBACK: Si llega cualquier otro mensaje data-only
     if (payload.data) {
         const title = payload.data.title || payload.notification?.title || 'Notificación';
@@ -91,8 +104,22 @@ self.addEventListener('notificationclick', function(event) {
     // Redirigir a una URL que maneje la cancelación (Home.tsx lo hace)
     urlToOpen = `/?action=cancel&id=${payloadData.appointmentId}`;
   } else if (event.action === 'confirm') {
-    // Solo cerrar la notificación
-    return; 
+    // Confirmar asistencia SIN abrir la app: fetch en segundo plano a la function, que
+    // valida el token HMAC del payload y marca el turno como confirmado. Solo cerramos
+    // la notificación (ya se hizo arriba con close()).
+    if (payloadData.appointmentId && payloadData.confirmToken) {
+      event.waitUntil(
+        fetch('/api/confirm-appointment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            appointmentId: payloadData.appointmentId,
+            token: payloadData.confirmToken
+          })
+        }).catch((err) => console.error('confirm-appointment falló:', err))
+      );
+    }
+    return;
   }
 
   // Solo abrir ventana si NO es la acción de confirmar

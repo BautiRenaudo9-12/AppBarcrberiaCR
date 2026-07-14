@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions';
 import admin from 'firebase-admin';
+import crypto from 'crypto';
 
 // Initialize Firebase Admin (Singleton)
 // We do this lazily or safely at top level but don't crash if it fails immediately
@@ -158,10 +159,19 @@ export const handler: Handler = async (event, context) => {
               timeZone: 'America/Argentina/Buenos_Aires'
         });
 
+        // Token HMAC para que el cliente pueda confirmar la asistencia desde el push sin
+        // abrir la app (lo valida la function confirm-appointment). CRON_SECRET ya está
+        // garantizado arriba (fail-closed), así que siempre podemos generarlo.
+        const confirmToken = crypto
+          .createHmac('sha256', process.env.CRON_SECRET as string)
+          .update(doc.id)
+          .digest('hex');
+
         const messagePayload = {
             data: {
               type: 'appointment_reminder',
               appointmentId: doc.id,
+              confirmToken,
               title: '¡Tu turno se acerca!',
               body: `Tienes un turno a las ${formattedTime}. ¡Te esperamos!`,
               url: '/'

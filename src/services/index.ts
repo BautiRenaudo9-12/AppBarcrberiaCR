@@ -5,3 +5,4 @@ export * from "./notifications";
 export * from "./announcements";
 export * from "./config";
 export * from "./waitlist";
+export * from "./closures";

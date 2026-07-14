@@ -15,6 +15,7 @@ import {
 import { db } from "@/lib/firebase";
 import moment from "moment";
 import { getBlockedRule, BlockedSlot, getCustomDayIndex, getDayTimestamp } from "@/services/blocks";
+import { isDateClosed } from "@/services/closures";
 
 export interface Appointment {
   id?: string;
@@ -25,6 +26,10 @@ export interface Appointment {
   clientName: string;
   status: "confirmed" | "cancelled" | "completed" | "blocked";
   createdAt: Timestamp;
+  // Confirmación de asistencia del cliente (desde el push de recordatorio). La escribe la
+  // Netlify function `confirm-appointment` vía Admin SDK; el cliente no la toca directo.
+  clientConfirmed?: boolean;
+  confirmedAt?: Timestamp;
 }
 
 // Fetch appointments for a specific date range (or single date)
@@ -85,15 +90,20 @@ export const isSlotAvailable = async (dateStr: string, timeStr: string) => {
   );
 
   // Execute in parallel
-  const [appSnap, singleSnap, recurringSnap, exceptionSnap] = await Promise.all([
+  const [appSnap, singleSnap, recurringSnap, exceptionSnap, closed] = await Promise.all([
     appSnapshotPromise,
     getDocs(qSingle),
     getDocs(qRecurring),
-    getDocs(qExceptions)
+    getDocs(qExceptions),
+    isDateClosed(dateStr)
   ]);
 
   // A. If real appointment exists -> NOT Available
   if (!appSnap.empty) return false;
+
+  // A2. If the whole day is inside a closure (vacaciones) -> NOT Available.
+  // Un cierre pisa todo, incluso sobreturnos/excepciones.
+  if (closed) return false;
 
   // B. If Exception exists -> Available (overrides blocks)
   if (!exceptionSnap.empty) return true;
@@ -181,6 +191,12 @@ export const createAppointment = async (
    
     await runTransaction(db, async (transaction) => {
       const docSnap = await transaction.get(appointmentRef);
+
+      // Para clientes reales leemos también su perfil (antes de cualquier escritura, como
+      // exige runTransaction) para actualizar los agregados de re-reserva.
+      const clientRef = doc(db, "clientes", clientEmail);
+      const clientSnap = force ? null : await transaction.get(clientRef);
+
       if (docSnap.exists()) {
         const data = docSnap.data() as Appointment;
         // If it exists but is cancelled, we can overwrite.
@@ -197,6 +213,24 @@ export const createAppointment = async (
       if (!force) {
         const historyRef = doc(db, "clientes", clientEmail, "history", docId);
         transaction.set(historyRef, { time: timestamp, id: docId });
+
+        // Agregados para el recordatorio de re-reserva ("ya te toca"). Promedio incremental
+        // O(1): con firstVisit + lastVisit + visitCount alcanza para el intervalo medio, sin
+        // leer todo el historial. `nextNudgeAt = lastVisit + intervaloMedio` es lo que el
+        // cron consulta (una query indexada por rango). Ver netlify/functions/nudge-reengagement.
+        const cData = clientSnap && clientSnap.exists() ? clientSnap.data() : {};
+        const prevCount = typeof cData.visitCount === "number" ? cData.visitCount : 0;
+        const visitCount = prevCount + 1;
+        const firstVisit = (cData.firstVisit as Timestamp) ?? timestamp;
+        const lastVisit = timestamp;
+
+        const patch: Record<string, unknown> = { firstVisit, lastVisit, visitCount };
+        // El intervalo medio necesita al menos 2 visitas. nextNudgeAt solo se agenda desde ahí.
+        if (visitCount >= 2 && lastVisit.toMillis() > firstVisit.toMillis()) {
+          const avgMs = (lastVisit.toMillis() - firstVisit.toMillis()) / (visitCount - 1);
+          patch.nextNudgeAt = Timestamp.fromMillis(lastVisit.toMillis() + avgMs);
+        }
+        transaction.set(clientRef, patch, { merge: true });
       }
     });
 

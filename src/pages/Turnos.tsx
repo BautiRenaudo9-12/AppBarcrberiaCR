@@ -29,6 +29,7 @@ export default function Turnos() {
     slots,
     loading,
     dayActive,
+    closed,
     isAdmin,
     reserveAppointment,
     blockSlot,
@@ -140,9 +141,18 @@ export default function Turnos() {
             maxDate={!isAdmin ? moment().add(maxDays, 'days').format("YYYY-MM-DD") : undefined}
         />
 
-        {/* Cliente en un día laborable sin turnos libres: ofrecemos la lista de espera en
-            lugar del mensaje de "no hay turnos". */}
-        {!isAdmin && !loading && dayActive && slots.length === 0 ? (
+        {/* Día cerrado por rango (vacaciones): no hay turnos ni lista de espera. */}
+        {!loading && closed ? (
+            <div className="bg-card border border-white/10 rounded-2xl px-4 py-8 text-center space-y-1">
+                <p className="text-2xl">🏖️</p>
+                <p className="font-semibold">Cerrado por este día</p>
+                <p className="text-sm text-muted-foreground">
+                    No hay atención en esta fecha. Probá con otro día.
+                </p>
+            </div>
+        ) : !isAdmin && !loading && dayActive && slots.length === 0 ? (
+            /* Cliente en un día laborable sin turnos libres: ofrecemos la lista de espera
+               en lugar del mensaje de "no hay turnos". */
             <WaitlistCard date={selectedDate} />
         ) : (
             <TurnosList
