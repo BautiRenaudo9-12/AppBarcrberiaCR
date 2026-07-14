@@ -43,7 +43,7 @@ function Calendar({
         ),
         selected:
           "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-md",
-        today: "bg-accent text-accent-foreground rounded-md",
+        today: "border border-accent/70 text-foreground rounded-md",
         outside: "text-muted-foreground opacity-50",
         disabled: "text-muted-foreground opacity-50",
         range_middle:

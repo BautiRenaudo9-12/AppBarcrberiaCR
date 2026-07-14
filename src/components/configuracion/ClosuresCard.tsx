@@ -127,11 +127,6 @@ export function ClosuresCard() {
               defaultMonth={range?.from}
               locale={es}
               showOutsideDays={false}
-              classNames={{
-                // "Hoy" sin relleno verde: solo borde (cuando no está seleccionado; al
-                // entrar en el rango, las clases de selección lo pintan igual).
-                today: "border border-accent/70 text-foreground rounded-md",
-              }}
             />
           </PopoverContent>
         </Popover>
