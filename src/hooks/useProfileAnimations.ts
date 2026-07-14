@@ -1,6 +1,11 @@
 import { useRef, useLayoutEffect } from "react";
 import { gsap } from "gsap";
-import { prefersReducedMotion, isRouteTransitionRecent } from "@/lib/motion";
+import {
+    prefersReducedMotion,
+    isRouteTransitionRecent,
+    shouldPlayProfileEntrance,
+    markProfileEntrancePlayed,
+} from "@/lib/motion";
 
 export function useProfileAnimations() {
     const pageRef = useRef<HTMLDivElement>(null);
@@ -10,6 +15,10 @@ export function useProfileAnimations() {
         if (!page) return;
 
         if (prefersReducedMotion()) return;
+
+        // Solo la primera vez que se abre la app: al volver a Perfil no se repite.
+        if (!shouldPlayProfileEntrance()) return;
+        markProfileEntrancePlayed();
 
         const ctx = gsap.context(() => {
             const headerItems = page!.querySelectorAll("[data-header-stagger]");

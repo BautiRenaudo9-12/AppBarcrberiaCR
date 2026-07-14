@@ -1,4 +1,5 @@
 import { useState, useRef, useLayoutEffect } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { signIn, signUp, _setUserProperties, signInWithGoogle } from "@/services/auth";
 import { useUI } from "@/context/UIContext";
 import { useNavigate } from "react-router-dom";
@@ -8,11 +9,13 @@ import { prefersReducedMotion } from "@/lib/motion";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { createSearchKeywords } from "@/lib/keywords";
+import PhoneInput from "@/components/PhoneInput";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const { setLoading } = useUI();
@@ -120,11 +123,11 @@ export default function Login() {
           </p>
         </div>
 
-        <div data-login-card className="bg-card border border-white/10 rounded-3xl p-8 shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div data-login-card className="bg-card border border-white/10 rounded-3xl px-8 py-6 shadow-xl">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {!isLogin && (
               <>
-                <div data-login-field className="space-y-2">
+                <div data-login-field className="space-y-1">
                   <label className="text-sm font-medium leading-none">Nombre Completo</label>
                   <input
                     type="text"
@@ -135,21 +138,14 @@ export default function Login() {
                     placeholder="Juan Pérez"
                   />
                 </div>
-                <div data-login-field className="space-y-2">
+                <div data-login-field className="space-y-1">
                   <label className="text-sm font-medium leading-none">Teléfono</label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="+54 9 ..."
-                  />
+                  <PhoneInput value={phone} onChange={setPhone} required />
                 </div>
               </>
             )}
             
-            <div data-login-field className="space-y-2">
+            <div data-login-field className="space-y-1">
               <label className="text-sm font-medium leading-none">Email</label>
               <input
                 type="email"
@@ -161,29 +157,39 @@ export default function Login() {
               />
             </div>
             
-            <div data-login-field className="space-y-2">
+            <div data-login-field className="space-y-1">
               <label className="text-sm font-medium leading-none">Contraseña</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="flex h-12 w-full rounded-xl border border-input bg-background pl-3 pr-11 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
               data-login-field
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 h-12 rounded-xl font-medium transition-colors mt-6"
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 h-12 rounded-xl font-medium transition-colors mt-5"
             >
               {isLogin ? "Ingresar" : "Registrarse"}
             </button>
           </form>
 
           {/* Separador */}
-          <div className="flex items-center gap-3 my-6">
+          <div className="flex items-center gap-3 my-4">
             <div className="h-px flex-1 bg-white/10" />
             <span className="text-xs text-muted-foreground">o</span>
             <div className="h-px flex-1 bg-white/10" />

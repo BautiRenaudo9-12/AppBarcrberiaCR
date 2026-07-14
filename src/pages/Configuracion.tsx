@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Save, CalendarRange } from "lucide-react";
 import { useConfigAnimations } from "@/hooks/useConfigAnimations";
-import { getDays } from "@/services/reservations";
+import { getDays, DAYS_META } from "@/services/reservations";
 import { updateBookingConfig } from "@/services/config";
 import { useBookingConfig } from "@/hooks/useBookingConfig";
 import { useQueryClient } from "@tanstack/react-query";
@@ -96,19 +96,21 @@ export default function Configuracion() {
     // loading in-place, consistente con el resto de las páginas.
     try {
       const snap = await getDays();
-      const loadedDays = snap.docs.map(d => {
-        const data = d.data();
+      const byId = new Map(snap.docs.map(d => [d.id, d.data()]));
+      // Mostramos siempre los 7 días (lunes → domingo). Si el doc de un día todavía no
+      // existe en Firestore (p. ej. sábado/domingo recién agregados), aparece con valores
+      // por defecto y desactivado; se crea al guardarlo.
+      const loadedDays = DAYS_META.map(meta => {
+        const data = byId.get(meta.id);
         return {
-          id: d.id,
-          dia: data.dia || d.id,
-          desde: data.desde || "09:00",
-          hasta: data.hasta || "18:00",
-          intervalo: data.intervalo || 30,
-          activo: data.activo !== false
+          id: meta.id,
+          dia: (data?.dia as string) || meta.dia,
+          desde: (data?.desde as string) || "09:00",
+          hasta: (data?.hasta as string) || "18:00",
+          intervalo: (data?.intervalo as number) || 30,
+          activo: data ? data.activo !== false : false
         } as DayConfig;
       });
-      const sorter = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
-      loadedDays.sort((a, b) => sorter.indexOf(a.id) - sorter.indexOf(b.id));
       setDays(loadedDays);
     } catch (error) {
       console.error(error);
@@ -140,15 +142,20 @@ export default function Configuracion() {
     setLoading(true);
     try {
       const batch = writeBatch(db);
-      
+
       days.forEach(day => {
         const ref = doc(db, "turnos", day.id);
-        batch.update(ref, {
+        // set + merge para crear el doc si aún no existe (sábado/domingo). Incluimos
+        // `dia` e `index` para que la query `orderBy("index")` de getDays lo devuelva.
+        const meta = DAYS_META.find(m => m.id === day.id);
+        batch.set(ref, {
+          dia: day.dia,
+          ...(meta ? { index: meta.index } : {}),
           desde: day.desde || "09:00",
           hasta: day.hasta || "18:00",
           intervalo: day.intervalo || 30,
           activo: day.activo !== false
-        });
+        }, { merge: true });
       });
 
       await batch.commit();
@@ -182,15 +189,20 @@ export default function Configuracion() {
     try {
       const batch = writeBatch(db);
       const ref = doc(db, "turnos", day.id);
-      
+      const meta = DAYS_META.find(m => m.id === day.id);
+
+      // set + merge para crear el doc si aún no existe (sábado/domingo). Incluimos
+      // `dia` e `index` para que la query `orderBy("index")` de getDays lo devuelva.
       const sanitizedDay = {
+        dia: day.dia,
+        ...(meta ? { index: meta.index } : {}),
         desde: day.desde || "09:00",
         hasta: day.hasta || "18:00",
         intervalo: day.intervalo || 30,
         activo: day.activo !== false
       };
 
-      batch.update(ref, sanitizedDay);
+      batch.set(ref, sanitizedDay, { merge: true });
       await batch.commit();
       
       toast.success(`Configuración de ${day.dia} guardada`);

@@ -43,3 +43,17 @@ export function markHomeEntrancePlayed() {
 export function resetHomeEntrancePlayed() {
   homeEntrancePlayed = false;
 }
+
+// --- Entrance animations de Profile (una sola vez por apertura de la app) -----
+// El intro de Perfil se ejecuta solo la primera vez que se monta durante la
+// sesión. Al navegar de vuelta a Perfil no se repite; se resetea al recargar
+// o relanzar la app.
+let profileEntrancePlayed = false;
+
+export function shouldPlayProfileEntrance(): boolean {
+  return !profileEntrancePlayed;
+}
+
+export function markProfileEntrancePlayed() {
+  profileEntrancePlayed = true;
+}

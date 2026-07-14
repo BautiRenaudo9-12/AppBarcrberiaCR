@@ -41,8 +41,11 @@ export default function PageTitle({ children, className }: PageTitleProps) {
         return () => ctx.revert();
     }, []);
 
+    // whitespace-nowrap: el título es un ítem flex dentro del header y, si se lo deja
+    // encoger, palabras largas como "Configuración" se parten en dos líneas. Forzamos
+    // una sola línea en todas las secciones.
     return (
-        <h1 ref={titleRef} className={className}>
+        <h1 ref={titleRef} className={`whitespace-nowrap ${className ?? ""}`}>
             {children}
         </h1>
     );

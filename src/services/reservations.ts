@@ -5,6 +5,20 @@ import { db } from "@/lib/firebase";
 // para que coincida con los IDs de los docs de `turnos/{dia}`.
 export const arrayDias = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
 
+// Los 7 días de la semana en orden de negocio (lunes → domingo). `id` coincide con el ID
+// del doc en `turnos/{dia}` (sin tildes/minúsculas) y `index` es el campo por el que
+// `getDays()` ordena — por eso hay que escribirlo siempre al crear un día nuevo, o el doc
+// no aparecería en la query `orderBy("index")`. `dia` es el nombre para mostrar en la UI.
+export const DAYS_META = [
+  { id: "lunes", dia: "Lunes", index: 0 },
+  { id: "martes", dia: "Martes", index: 1 },
+  { id: "miercoles", dia: "Miércoles", index: 2 },
+  { id: "jueves", dia: "Jueves", index: 3 },
+  { id: "viernes", dia: "Viernes", index: 4 },
+  { id: "sabado", dia: "Sábado", index: 5 },
+  { id: "domingo", dia: "Domingo", index: 6 },
+] as const;
+
 // Config de todos los días (panel de Configuración), ordenada por `index`.
 export const getDays = async () => {
   const q = query(collection(db, "turnos"), orderBy("index"));

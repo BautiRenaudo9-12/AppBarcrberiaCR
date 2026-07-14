@@ -8,11 +8,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUser } from "@/context/UserContext";
 import { updateUserProfile } from "@/services/users";
 import { createSearchKeywords } from "@/lib/keywords";
+import PhoneInput from "@/components/PhoneInput";
 import { toast } from "sonner";
 
 // Paso obligatorio tras el login con Google: el usuario debe cargar su teléfono
@@ -64,17 +64,13 @@ export default function CompleteProfileGate() {
 
         <div className="space-y-2 py-2">
           <Label htmlFor="gate-phone">Teléfono</Label>
-          <Input
+          <PhoneInput
             id="gate-phone"
-            type="tel"
-            inputMode="tel"
             value={nro}
-            onChange={(e) => setNro(e.target.value)}
-            placeholder="11 2345 6789"
-            autoComplete="tel"
+            onChange={setNro}
             autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && isValid && !loading) handleSave();
+            onEnter={() => {
+              if (isValid && !loading) handleSave();
             }}
           />
         </div>

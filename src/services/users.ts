@@ -174,6 +174,15 @@ export const getHistory = async () => {
   return docsSnap;
 };
 
+// Historial de un cliente arbitrario (uso admin). Solo admin puede leer la subcolección
+// history de otro cliente según firestore.rules.
+export const getClientHistory = async (email: string) => {
+  if (!email) return { docs: [] };
+  const q = query(collection(db, "clientes", email, "history"), orderBy("time", "desc"));
+  const docsSnap = await getDocs(q);
+  return docsSnap;
+};
+
 export const getHistoryCount = async () => {
     if (!auth.currentUser?.email) return 0;
     try {

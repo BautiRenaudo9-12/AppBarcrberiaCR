@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateUserProfile } from "@/services/users";
 import { createSearchKeywords } from "@/lib/keywords";
+import PhoneInput from "@/components/PhoneInput";
 import { toast } from "sonner";
 
 interface EditProfileDialogProps {
@@ -91,15 +92,7 @@ export default function EditProfileDialog({
 
           <div className="space-y-2">
             <Label htmlFor="edit-phone">Teléfono</Label>
-            <Input
-              id="edit-phone"
-              type="tel"
-              inputMode="tel"
-              value={nro}
-              onChange={(e) => setNro(e.target.value)}
-              placeholder="11 2345 6789"
-              autoComplete="tel"
-            />
+            <PhoneInput id="edit-phone" value={nro} onChange={setNro} />
           </div>
 
           <div className="space-y-2">

@@ -1,10 +1,11 @@
-import { memo, useRef, useCallback, useMemo } from "react";
+import { memo, useRef, useCallback, useMemo, useState } from "react";
 import { User, Mail, Phone, History } from "lucide-react";
 import { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { gsap } from "gsap";
 import { prefersReducedMotion } from "@/lib/motion";
 import { useCardHover } from "@/hooks/useCardHover";
 import { whatsappLink } from "@/lib/phone";
+import ClientHistoryDialog from "@/components/clientes/ClientHistoryDialog";
 
 // lucide-react ya no trae íconos de marca, así que el glifo de WhatsApp va inline.
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -33,12 +34,15 @@ export const ClientCard = memo(({ client, innerRef }: ClientCardProps) => {
   const cardRef = useCardHover();
   const iconRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const waLink = useMemo(() => whatsappLink(client.nro), [client.nro]);
 
   const handleBtnClick = useCallback(() => {
-    if (!btnRef.current || prefersReducedMotion()) return;
-    gsap.fromTo(btnRef.current, { scale: 1 }, { scale: 1.05, duration: 0.15, yoyo: true, repeat: 1, ease: "power2.inOut" });
+    if (btnRef.current && !prefersReducedMotion()) {
+      gsap.fromTo(btnRef.current, { scale: 1 }, { scale: 1.05, duration: 0.15, yoyo: true, repeat: 1, ease: "power2.inOut" });
+    }
+    setHistoryOpen(true);
   }, []);
 
   const combinedRef = useCallback((node: HTMLDivElement) => {
@@ -61,7 +65,8 @@ export const ClientCard = memo(({ client, innerRef }: ClientCardProps) => {
   }, []);
 
   return (
-    <div 
+    <>
+    <div
       ref={combinedRef}
       data-client-card
       onMouseEnter={handleCardEnter}
@@ -120,6 +125,13 @@ export const ClientCard = memo(({ client, innerRef }: ClientCardProps) => {
          </button>
       </div>
     </div>
+    <ClientHistoryDialog
+      open={historyOpen}
+      onClose={() => setHistoryOpen(false)}
+      clientEmail={client.id}
+      clientName={client.name}
+    />
+    </>
   );
 });
 
