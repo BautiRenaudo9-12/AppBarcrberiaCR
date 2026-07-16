@@ -3,6 +3,7 @@ import moment from "moment";
 import { useMemo, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { prefersReducedMotion } from "@/lib/motion";
+import { googleCalendarUrl } from "@/lib/calendar";
 
 interface ActiveReservationProps {
     reserve: any;
@@ -14,18 +15,18 @@ export default function ActiveReservation({ reserve, isLoading, onCancel }: Acti
     const glowRef = useRef<HTMLDivElement>(null);
     const cardRef = useRef<HTMLDivElement>(null);
 
-    const { formattedDateCapitalized, formattedTime } = useMemo(() => {
-        if (!reserve || !reserve.timestamp) return { formattedDateCapitalized: "", formattedTime: "" };
+    const { formattedDateCapitalized, formattedTime, calendarUrl } = useMemo(() => {
+        if (!reserve || !reserve.timestamp) return { formattedDateCapitalized: "", formattedTime: "", calendarUrl: "" };
 
         const dateObj = reserve.timestamp?.toDate ? reserve.timestamp.toDate() : null;
 
-        if (!dateObj) return { formattedDateCapitalized: "", formattedTime: "" };
+        if (!dateObj) return { formattedDateCapitalized: "", formattedTime: "", calendarUrl: "" };
 
         const formattedDate = moment(dateObj).format("dddd, D [de] MMMM");
         const formattedTime = moment(dateObj).format("HH:mm");
         const formattedDateCapitalized = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
-        return { formattedDateCapitalized, formattedTime };
+        return { formattedDateCapitalized, formattedTime, calendarUrl: googleCalendarUrl(dateObj) };
     }, [reserve]);
 
     useEffect(() => {
@@ -97,13 +98,22 @@ export default function ActiveReservation({ reserve, isLoading, onCancel }: Acti
                     <p className="text-sm text-muted-foreground font-medium">{formattedTime} - Corte de cabello</p>
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex items-center justify-between gap-3 pt-2">
                     <button
                         onClick={onCancel}
                         className="text-sm text-destructive hover:text-destructive/80 transition-colors font-medium"
                     >
                         Cancelar
                     </button>
+
+                    <a
+                        href={calendarUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        + Google Calendar
+                    </a>
                 </div>
             </div>
         </div>
