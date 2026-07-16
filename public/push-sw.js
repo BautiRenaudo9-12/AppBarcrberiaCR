@@ -27,7 +27,7 @@ messaging.onBackgroundMessage((payload) => {
       const notificationOptions = {
         body: payload.data.body,
         icon: '/pwa-192x192.png',
-        badge: '/masked-icon.svg', // Icono pequeño en barra de estado (Android)
+        badge: '/notification-badge.png', // Icono pequeño en barra de estado (Android)
         image: '/pwa-512x512.png', // Imagen grande (opcional)
         vibrate: [200, 100, 200], // Vibrar: Bzz-Pausa-Bzz
         tag: 'appointment-reminder', // Agrupar notificaciones
@@ -47,7 +47,7 @@ messaging.onBackgroundMessage((payload) => {
       return self.registration.showNotification(payload.data.title || '¡Se liberó un turno!', {
         body: payload.data.body,
         icon: '/pwa-192x192.png',
-        badge: '/masked-icon.svg',
+        badge: '/notification-badge.png',
         vibrate: [200, 100, 200],
         tag: 'waitlist-slot-' + (payload.data.date || ''),
         renotify: true,
@@ -61,7 +61,7 @@ messaging.onBackgroundMessage((payload) => {
       return self.registration.showNotification(payload.data.title || '¿Te toca un corte? ✂️', {
         body: payload.data.body,
         icon: '/pwa-192x192.png',
-        badge: '/masked-icon.svg',
+        badge: '/notification-badge.png',
         vibrate: [200, 100, 200],
         tag: 'reengagement',
         renotify: true,
@@ -77,7 +77,7 @@ messaging.onBackgroundMessage((payload) => {
         return self.registration.showNotification(title, {
             body: body,
             icon: '/pwa-192x192.png',
-            badge: '/masked-icon.svg',
+            badge: '/notification-badge.png',
             vibrate: [100, 50, 100],
             data: payload.data
         });
@@ -88,7 +88,8 @@ messaging.onBackgroundMessage((payload) => {
     // Intento final para evitar "Site updated in background"
     return self.registration.showNotification('Barbería CR', {
         body: 'Tienes un nuevo mensaje',
-        icon: '/pwa-192x192.png'
+        icon: '/pwa-192x192.png',
+        badge: '/notification-badge.png'
     });
   }
 });
