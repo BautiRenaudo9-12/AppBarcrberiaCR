@@ -26,7 +26,14 @@ React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (
 - **Despliegue**: ver sección "Despliegue" más abajo. Firebase quedó solo como Auth + Firestore; el hosting es Netlify.
 
 ## Despliegue
-**Producción es Netlify y se publica solo al pushear a `main`.** La integración Git de Netlify buildea (`npm run build` → `dist/`, ver `netlify.toml`) y publica sin intervención. No busques CI en el repo: no hay `.github/workflows`, la config vive en el dashboard de Netlify. Netlify sirve también las functions (`netlify/functions/*`: `check-upcoming-appointments`, `push-notification`).
+**Producción es Netlify y se publica solo al pushear a `main`.** La integración Git de Netlify buildea (`npm run build` → `dist/`, ver `netlify.toml`) y publica sin intervención. No busques CI en el repo: no hay `.github/workflows`, la config vive en el dashboard de Netlify. Netlify sirve también las functions (`netlify/functions/*`):
+- `check-upcoming-appointments` — cron (cada 10 min): recordatorio de turno ~1h antes. Incluye token HMAC para confirmar asistencia desde el push.
+- `nudge-reengagement` — cron (diario): recordatorio de re-reserva ("ya te toca"). Ver `docs/adr/0003`.
+- `notify-waitlist` — la llama el browser al liberarse un turno; avisa a la lista de espera del día. Ver `docs/adr/0002`.
+- `confirm-appointment` — la llama el service worker al tocar "Confirmar" en el push de recordatorio (valida el HMAC).
+- `shared/*` — init del Admin SDK, lookup de turnos activos y limpieza de tokens FCM muertos, compartidos entre las de arriba.
+
+Los dos cron se disparan desde un scheduler externo con header `x-api-key: <CRON_SECRET>` (no hay `netlify.toml [functions]` schedule).
 
 **Firebase Hosting ya no se usa.** La carpeta `firebase-public/`, la caché `.firebase/` y los scripts `deploy`/`predeploy`/`postdeploy` se eliminaron el 2026-07-16. De Firebase siguen vivos Auth y Firestore (reglas e índices, vía `firebase deploy --only firestore`).
 
