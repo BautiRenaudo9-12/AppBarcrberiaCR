@@ -29,7 +29,12 @@ React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (
 
 **Firebase Hosting ya no se usa.** El bloque `hosting` de `firebase.json`, la carpeta `firebase-public/` y el script `npm run deploy` son remanentes de la migración y no tocan producción. De Firebase siguen vivos Auth y Firestore (reglas e índices, vía `firebase deploy --only firestore`).
 
-> ⚠️ **Los headers de seguridad se perdieron en la migración a Netlify.** CSP, HSTS, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` y `X-Content-Type-Options` están definidos en el bloque `hosting` de `firebase.json` — que Netlify no lee. No hay `[[headers]]` en `netlify.toml` ni archivo `_headers`, así que hoy la app se sirve **sin ninguno de esos headers**. Para restaurarlos hay que portarlos a `netlify.toml`.
+**Headers de seguridad**: viven en `[[headers]]` de `netlify.toml` (`for = "/*"`). Se perdieron en la migración porque estaban en el bloque `hosting` de `firebase.json`, que Netlify no lee; ese bloque quedó como remanente y **ya no es la fuente de verdad** — editar `netlify.toml`.
+
+Al tocar la CSP tener en cuenta:
+- **Netlify no aplica custom headers a contenido proxeado**, así que `/__/auth/*` y `/__/firebase/*` se sirven con los headers de Firebase, no con los nuestros. De ahí que `frame-ancestors 'none'` no rompa el iframe de Firebase Auth.
+- La CSP **no** es la de `firebase.json` tal cual: esa versión bloquea la fuente Inter (`@import` a `fonts.googleapis.com` en `src/global.css`) y `apis.google.com/js/api.js`, que el SDK de Auth carga para el login con Google. Los agregados están comentados uno por uno en `netlify.toml`.
+- **HSTS no está en `netlify.toml` a propósito**: Netlify ya lo manda solo y más fuerte (`max-age=31536000; includeSubDomains; preload`).
 
 ## UI
 Las reglas de diseño (paleta dark "Apple-style", glassmorphism, tipografía, componentes) viven en `DESIGN_SYSTEM.md`. Seguir ese documento para cualquier cambio visual.

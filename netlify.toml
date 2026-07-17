@@ -34,3 +34,30 @@
 
 [functions]
   directory = "netlify/functions"
+
+# Headers de seguridad. Fuente original: bloque `hosting` de firebase.json, que
+# Netlify no lee — desde la migracion se servian sin ninguno de estos.
+#
+# OJO: Netlify NO aplica custom headers a contenido proxeado, asi que estos NO
+# llegan a /__/auth/* ni /__/firebase/* (los sirve Firebase con los suyos). Por eso
+# `frame-ancestors 'none'` no rompe el iframe de Firebase Auth: ese iframe lo sirve
+# el proxy, no nosotros.
+#
+# HSTS no esta aca a proposito: Netlify ya lo manda solo, y mas fuerte que el de
+# firebase.json (incluye `preload`). Duplicarlo solo puede debilitarlo.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    # Diferencias respecto de la CSP de firebase.json, cada una por un uso real y verificado:
+    #  - script-src + apis.google.com  -> el SDK de Auth carga apis.google.com/js/api.js
+    #    (gapi) para el iframe que resuelve el login con Google.
+    #  - style-src  + fonts.googleapis.com -> src/global.css hace @import de Inter.
+    #  - font-src   + fonts.gstatic.com    -> los .woff2 de Inter salen de ahi.
+    #  - frame-src 'self' explicito -> iframe de Auth en {authDomain}/__/auth/iframe,
+    #    que hoy es este mismo dominio.
+    # www.gstatic.com en script-src lo necesita push-sw.js (importScripts de firebase-*-compat).
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; manifest-src 'self'; worker-src 'self'; frame-src 'self'; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com"
