@@ -3,13 +3,13 @@
 App de reservas de **barbería** (Barbería CR): los clientes reservan turnos y ven su historial; un panel admin gestiona turnos, clientes y anuncios. SPA web.
 
 ## Stack
-React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (`@tanstack/react-query`) · React Router v6 · React Hook Form + Zod · Firebase (Auth + Firestore + Hosting) · Netlify Functions (cron de recordatorios + push).
+React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (`@tanstack/react-query`) · React Router v6 · React Hook Form + Zod · Firebase (Auth + Firestore) · Netlify (hosting + functions: cron de recordatorios + push).
 
 ## Comandos
 - `npm run dev` — servidor de desarrollo (Vite, `--host`).
 - `npm run build` — build de producción a `dist/`.
 - `npm run lint` — **roto hoy, no lo uses para verificar**: el script está limitado a `--ext js,jsx` pero `src/` es todo TypeScript (146 `.ts`/`.tsx`, 0 `.js`/`.jsx`), así que ESLint corta con `No files matching the pattern "src"` y exit 2 — nunca lintea nada. Arreglarlo (`--ext ts,tsx`) destapa los errores que hoy quedan ocultos. **Verificar con `npm run build`.**
-- `npm run deploy` — copia `dist` → `firebase-public` y `firebase deploy`.
+- `npm run deploy` — **legacy de Firebase Hosting: NO es el camino a producción** (ver "Despliegue"). Buildea, copia `dist` → `firebase-public/` y corre `firebase deploy`, encadenado por los hooks `pre`/`post` de npm. Como `firebase deploy` va sin `--only`, publica también las reglas de Firestore; para reglas/índices conviene `firebase deploy --only firestore`.
 - Dev con functions de Netlify: ver `netlify.toml` (puerto 8888).
 
 ## Arquitectura y convenciones
@@ -22,7 +22,14 @@ React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (
 - **Auth**: `firebase/auth` + `onAuthStateChanged` en `src/context/UserContext.tsx`. **Admin se decide por email** comparando con `VITE_ADMIN_EMAILS` (array JSON) en el cliente (ver memoria `admin-auth-risk`); la seguridad real depende de `firestore.rules`.
 - **Config/env**: variables `VITE_*` en `.env` → `import.meta.env`, validadas con Zod en `src/lib/env.ts` (`VITE_ADMIN_EMAILS`, `VITE_VAPID_KEY`, `VITE_FIREBASE_CONFIG`).
 - **Firebase init**: `src/lib/firebase.ts` (alias `@/` → `src/`).
-- **Despliegue doble**: Firebase Hosting (hosting estático) + Netlify (`netlify/functions/*` para `check-upcoming-appointments` y `push-notification`).
+- **Despliegue**: ver sección "Despliegue" más abajo. Firebase quedó solo como Auth + Firestore; el hosting es Netlify.
+
+## Despliegue
+**Producción es Netlify y se publica solo al pushear a `main`.** La integración Git de Netlify buildea (`npm run build` → `dist/`, ver `netlify.toml`) y publica sin intervención. No busques CI en el repo: no hay `.github/workflows`, la config vive en el dashboard de Netlify. Netlify sirve también las functions (`netlify/functions/*`: `check-upcoming-appointments`, `push-notification`).
+
+**Firebase Hosting ya no se usa.** El bloque `hosting` de `firebase.json`, la carpeta `firebase-public/` y el script `npm run deploy` son remanentes de la migración y no tocan producción. De Firebase siguen vivos Auth y Firestore (reglas e índices, vía `firebase deploy --only firestore`).
+
+> ⚠️ **Los headers de seguridad se perdieron en la migración a Netlify.** CSP, HSTS, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` y `X-Content-Type-Options` están definidos en el bloque `hosting` de `firebase.json` — que Netlify no lee. No hay `[[headers]]` en `netlify.toml` ni archivo `_headers`, así que hoy la app se sirve **sin ninguno de esos headers**. Para restaurarlos hay que portarlos a `netlify.toml`.
 
 ## UI
 Las reglas de diseño (paleta dark "Apple-style", glassmorphism, tipografía, componentes) viven en `DESIGN_SYSTEM.md`. Seguir ese documento para cualquier cambio visual.
