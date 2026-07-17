@@ -57,7 +57,10 @@
     #    (gapi) para el iframe que resuelve el login con Google.
     #  - style-src  + fonts.googleapis.com -> src/global.css hace @import de Inter.
     #  - font-src   + fonts.gstatic.com    -> los .woff2 de Inter salen de ahi.
-    #  - frame-src 'self' explicito -> iframe de Auth en {authDomain}/__/auth/iframe,
-    #    que hoy es este mismo dominio.
+    #  - frame-src -> iframe de Auth en {authDomain}/__/auth/iframe. Va el host de
+    #    authDomain (barberiacr.netlify.app) explicito y no solo 'self': en produccion
+    #    coinciden, pero en los deploy preview el origen es deploy-preview-N--...,
+    #    asi que con solo 'self' el iframe se bloquea y el login con Google no se puede
+    #    probar antes de mergear. Si cambia authDomain, cambiar tambien este host.
     # www.gstatic.com en script-src lo necesita push-sw.js (importScripts de firebase-*-compat).
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; manifest-src 'self'; worker-src 'self'; frame-src 'self'; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; manifest-src 'self'; worker-src 'self'; frame-src 'self' https://barberiacr.netlify.app; connect-src 'self' https://barberiacr.netlify.app https://*.googleapis.com https://*.google.com https://*.gstatic.com"
