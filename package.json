@@ -6,9 +6,6 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "predeploy": "npm run build",
-    "deploy": "Xcopy dist firebase-public /E /H /C /I",
-    "postdeploy": "firebase deploy",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "generate:pwa-assets": "node scripts/generate-pwa-assets.mjs",
     "screenshots": "vite build && node scripts/capture-screenshots.mjs",

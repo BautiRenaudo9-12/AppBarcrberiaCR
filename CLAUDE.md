@@ -9,7 +9,8 @@ React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (
 - `npm run dev` — servidor de desarrollo (Vite, `--host`).
 - `npm run build` — build de producción a `dist/`.
 - `npm run lint` — **roto hoy, no lo uses para verificar**: el script está limitado a `--ext js,jsx` pero `src/` es todo TypeScript (146 `.ts`/`.tsx`, 0 `.js`/`.jsx`), así que ESLint corta con `No files matching the pattern "src"` y exit 2 — nunca lintea nada. Arreglarlo (`--ext ts,tsx`) destapa los errores que hoy quedan ocultos. **Verificar con `npm run build`.**
-- `npm run deploy` — **legacy de Firebase Hosting: NO es el camino a producción** (ver "Despliegue"). Buildea, copia `dist` → `firebase-public/` y corre `firebase deploy`, encadenado por los hooks `pre`/`post` de npm. Como `firebase deploy` va sin `--only`, publica también las reglas de Firestore; para reglas/índices conviene `firebase deploy --only firestore`.
+- **No hay script de deploy**: producción se publica sola al pushear a `main` (ver "Despliegue"). Los scripts `deploy`/`predeploy`/`postdeploy` y la carpeta `firebase-public/` se eliminaron el 2026-07-16 por ser legacy de Firebase Hosting.
+- `firebase deploy --only firestore` — publica reglas e índices de Firestore (lo único que queda de Firebase CLI).
 - Dev con functions de Netlify: ver `netlify.toml` (puerto 8888).
 
 ## Arquitectura y convenciones
@@ -27,9 +28,11 @@ React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (
 ## Despliegue
 **Producción es Netlify y se publica solo al pushear a `main`.** La integración Git de Netlify buildea (`npm run build` → `dist/`, ver `netlify.toml`) y publica sin intervención. No busques CI en el repo: no hay `.github/workflows`, la config vive en el dashboard de Netlify. Netlify sirve también las functions (`netlify/functions/*`: `check-upcoming-appointments`, `push-notification`).
 
-**Firebase Hosting ya no se usa.** El bloque `hosting` de `firebase.json`, la carpeta `firebase-public/` y el script `npm run deploy` son remanentes de la migración y no tocan producción. De Firebase siguen vivos Auth y Firestore (reglas e índices, vía `firebase deploy --only firestore`).
+**Firebase Hosting ya no se usa.** La carpeta `firebase-public/`, la caché `.firebase/` y los scripts `deploy`/`predeploy`/`postdeploy` se eliminaron el 2026-07-16. De Firebase siguen vivos Auth y Firestore (reglas e índices, vía `firebase deploy --only firestore`).
 
-> ⚠️ **Los headers de seguridad se perdieron en la migración a Netlify.** CSP, HSTS, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` y `X-Content-Type-Options` están definidos en el bloque `hosting` de `firebase.json` — que Netlify no lee. No hay `[[headers]]` en `netlify.toml` ni archivo `_headers`, así que hoy la app se sirve **sin ninguno de esos headers**. Para restaurarlos hay que portarlos a `netlify.toml`.
+> ⚠️ **Los headers de seguridad se perdieron en la migración a Netlify.** CSP, HSTS, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` y `X-Content-Type-Options` siguen definidos en el bloque `hosting` de `firebase.json` — que Netlify no lee. No hay `[[headers]]` en `netlify.toml` ni archivo `_headers`, así que hoy la app se sirve **sin ninguno de esos headers**.
+>
+> Por eso el bloque `hosting` de `firebase.json` **todavía no se borró**, aunque ya no sirva para desplegar: es el único registro de qué headers hay que restaurar. Una vez portados a `netlify.toml`, ese bloque se puede eliminar (y ahí `firebase deploy` pasa a tocar solo Firestore).
 
 ## UI
 Las reglas de diseño (paleta dark "Apple-style", glassmorphism, tipografía, componentes) viven en `DESIGN_SYSTEM.md`. Seguir ese documento para cualquier cambio visual.
