@@ -36,5 +36,7 @@ Al tocar la CSP tener en cuenta:
 - La CSP **no** es la de `firebase.json` tal cual: esa versión bloquea la fuente Inter (`@import` a `fonts.googleapis.com` en `src/global.css`) y `apis.google.com/js/api.js`, que el SDK de Auth carga para el login con Google. Los agregados están comentados uno por uno en `netlify.toml`.
 - **HSTS no está en `netlify.toml` a propósito**: Netlify ya lo manda solo y más fuerte (`max-age=31536000; includeSubDomains; preload`).
 
+> ⚠️ **El login con Google no funciona en los deploy preview**, y no es un bug del código: el dominio `deploy-preview-N--barberiacr.netlify.app` no está en los **authorized domains** de Firebase Auth (solo lo están `localhost`, `barberiacr.netlify.app`, `react-appbarberiacr.firebaseapp.com` y `.web.app`), así que el SDK corta con `auth/unauthorized-domain`. El error se ve como un toast genérico ("No se pudo iniciar sesión con Google") porque `Login.tsx` no loguea el `error.code`. Para probar login en un preview hay que agregar ese dominio en Firebase Console → Authentication → Settings → Authorized domains. En local funciona porque `localhost` sí está autorizado.
+
 ## UI
 Las reglas de diseño (paleta dark "Apple-style", glassmorphism, tipografía, componentes) viven en `DESIGN_SYSTEM.md`. Seguir ese documento para cualquier cambio visual.
