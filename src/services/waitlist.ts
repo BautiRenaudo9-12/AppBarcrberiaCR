@@ -67,8 +67,9 @@ export const clearMyWaitlist = async (email: string) => {
 };
 
 // Dispara el fan-out de avisos a la lista de espera de un día (best-effort). La hace el
-// browser al cancelar un turno (ver docs/adr/0002): llama a la Netlify function con el ID
-// token de Firebase. Falla en silencio para no romper el flujo de cancelación.
+// browser cada vez que se libera un turno de ese día —una cancelación (cliente o admin) o
+// un sobreturno del admin— llamando a la Netlify function con el ID token de Firebase
+// (ver docs/adr/0002). Falla en silencio para no romper el flujo que la disparó.
 export const notifyWaitlist = async (date: string) => {
   try {
     const user = auth.currentUser;

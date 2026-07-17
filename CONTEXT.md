@@ -37,7 +37,7 @@ Liberación de una **reserva** existente, hecha por el propio **cliente** o por 
 _Avoid_: Baja, anulación.
 
 **Lista de espera**:
-Anotación de un **cliente** que quiere un **turno** en un **día** que está lleno, para que se le avise si ese día se libera alguno. Es **por día**: un cliente puede anotarse a varios días (con un tope), y cualquier **cancelación** de ese día dispara el aviso a los anotados.
+Anotación de un **cliente** que quiere un **turno** en un **día** que está lleno, para que se le avise si ese día se libera alguno. Es **por día**: un cliente puede anotarse a varios días (con un tope), y cualquier **cancelación** o **sobreturno** de ese día dispara el aviso a los anotados.
 _Avoid_: Cola, waitlist, reserva pendiente (no es una reserva).
 
 ## Example dialogue
@@ -48,3 +48,5 @@ _Avoid_: Cola, waitlist, reserva pendiente (no es una reserva).
 > **Experto:** Sí. Cualquier cancelación de ese día libera el turno y avisa a los de la lista de espera de ese día, sin importar si canceló el cliente o el admin.
 > **Dev:** Un walk-in que carga el admin, ¿cuenta como reserva para la lista de espera?
 > **Experto:** El walk-in ocupa el turno, pero no es una reserva de un cliente con cuenta; si después se cancela, igual libera el turno y avisa.
+> **Dev:** Si el admin abre un sobreturno en un día lleno, ¿también avisa?
+> **Experto:** Sí. No hubo cancelación, pero apareció un turno donde no había: para el de la lista de espera es lo mismo. Avisa una sola vez, cuando el sobreturno se crea; volver a tocarlo no vuelve a avisar.

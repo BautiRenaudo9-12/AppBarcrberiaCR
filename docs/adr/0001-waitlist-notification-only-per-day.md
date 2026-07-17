@@ -9,5 +9,6 @@ Con push automático, la **relevancia es supervivencia**: si a la gente le llega
 ## Consecuencias
 
 - Solo pueden anotarse clientes **sin reserva activa** (es quien llega al flujo de reserva; ver `HomeMenu` `canReserve`).
-- Al reservar (por aviso o normal) se borran las entradas de lista de espera del cliente; las de días pasados expiran.
+- Al reservar (por aviso o normal) se borran las entradas de lista de espera del cliente.
+- Las entradas de días pasados expiran **lógicamente** (`getMyWaitlist` y el fan-out filtran `date >= hoy`), pero **no se borran de Firestore**: no hay TTL ni barrido. Deuda P2 asumida — son docs mínimos y no afectan funcionalidad. Cuando la app entre en uso real, la opción idiomática es un campo `expireAt` + política de TTL nativa de Firestore.
 - No cubre "quiero el sábado a la mañana" como filtro fino: cualquier hueco del sábado avisa.

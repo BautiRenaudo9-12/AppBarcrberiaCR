@@ -92,7 +92,9 @@ export interface SlotException {
   time: string; // HH:mm
 }
 
-export const addBlockException = async (dateStr: string, timeStr: string) => {
+// Devuelve true solo si creó la excepción (false si ya existía), para que quien llama sepa
+// si realmente se abrió un turno nuevo — el aviso a la lista de espera depende de eso.
+export const addBlockException = async (dateStr: string, timeStr: string): Promise<boolean> => {
   // Check if already exists to avoid duplicates
   const q = query(
     collection(db, "slot_exceptions"),
@@ -100,13 +102,14 @@ export const addBlockException = async (dateStr: string, timeStr: string) => {
     where("time", "==", timeStr)
   );
   const snapshot = await getDocs(q);
-  if (!snapshot.empty) return; // Already exempted
+  if (!snapshot.empty) return false; // Already exempted
 
   await addDoc(collection(db, "slot_exceptions"), {
     date: dateStr,
     time: timeStr,
     createdAt: Date.now()
   });
+  return true;
 };
 
 export const removeBlockException = async (dateStr: string, timeStr: string) => {

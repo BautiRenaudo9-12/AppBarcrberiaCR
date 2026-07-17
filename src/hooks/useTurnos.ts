@@ -296,7 +296,11 @@ export function useTurnos() {
     const activateException = async (time: string) => {
         setLoading(true);
         try {
-            await addBlockException(selectedDate, time);
+            const created = await addBlockException(selectedDate, time);
+            // Un sobreturno abre un turno que antes no existía: avisamos a la lista de espera
+            // de ese día, igual que en una cancelación (best-effort). Solo si se creó de verdad,
+            // para que re-tocar un sobreturno ya existente no vuelva a disparar el aviso.
+            if (created) notifyWaitlist(selectedDate);
             toast.success("Horario activado para hoy");
             return true;
         } catch (error) {
