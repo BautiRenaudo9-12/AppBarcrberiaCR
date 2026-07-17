@@ -8,7 +8,7 @@ React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (
 ## Comandos
 - `npm run dev` — servidor de desarrollo (Vite, `--host`).
 - `npm run build` — build de producción a `dist/`.
-- `npm run lint` — ESLint sobre `src` (0 warnings permitidos).
+- `npm run lint` — **roto hoy, no lo uses para verificar**: el script está limitado a `--ext js,jsx` pero `src/` es todo TypeScript (146 `.ts`/`.tsx`, 0 `.js`/`.jsx`), así que ESLint corta con `No files matching the pattern "src"` y exit 2 — nunca lintea nada. Arreglarlo (`--ext ts,tsx`) destapa los errores que hoy quedan ocultos. **Verificar con `npm run build`.**
 - `npm run deploy` — copia `dist` → `firebase-public` y `firebase deploy`.
 - Dev con functions de Netlify: ver `netlify.toml` (puerto 8888).
 
