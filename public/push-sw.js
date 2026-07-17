@@ -34,9 +34,12 @@ messaging.onBackgroundMessage((payload) => {
         renotify: true, // Volver a sonar si llega otra con el mismo tag
         requireInteraction: true, // Mantener visible hasta que el usuario interactúe
         data: payload.data,
+        // Orden visual: Cancelar a la izquierda, Confirmar a la derecha (Android respeta el
+        // orden del array). El dispatch en notificationclick es por `action`, no por posición,
+        // así que el orden es puramente visual.
         actions: [
-          { action: 'confirm', title: 'Confirmar' },
-          { action: 'cancel', title: 'Cancelar' }
+          { action: 'cancel', title: 'Cancelar' },
+          { action: 'confirm', title: 'Confirmar' }
         ]
       };
       return self.registration.showNotification(notificationTitle, notificationOptions);

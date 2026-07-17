@@ -7,7 +7,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      // autoUpdate: el SW nuevo se activa solo en la próxima carga, sin que el usuario tenga
+      // que tocar nada. Es lo correcto para una PWA con push: con 'prompt', quien solo recibe
+      // notificaciones en segundo plano se quedaba con un SW viejo indefinidamente (si nunca
+      // aceptaba el cartel de actualización), sirviendo push con código desactualizado.
+      registerType: 'autoUpdate',
       injectRegister: 'auto',
       // Registra el Service Worker también en `npm run dev` para poder probar el
       // push de FCM en local (sin esto, navigator.serviceWorker.ready nunca resuelve
