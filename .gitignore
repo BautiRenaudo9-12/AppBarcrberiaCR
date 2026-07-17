@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Service worker que vite-plugin-pwa genera en dev
+dev-dist
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
