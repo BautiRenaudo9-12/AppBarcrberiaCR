@@ -1,84 +1,7 @@
 import { Handler } from '@netlify/functions';
-import admin from 'firebase-admin';
 import crypto from 'crypto';
-
-// Initialize Firebase Admin (Singleton)
-// We do this lazily or safely at top level but don't crash if it fails immediately
-let isFirebaseInitialized = false;
-
-function initFirebase() {
-    if (admin.apps.length) {
-        isFirebaseInitialized = true;
-        return;
-    }
-    
-    // Method 1: Try FIREBASE_SERVICE_ACCOUNT JSON
-    const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT;
-    
-    if (serviceAccountStr) {
-        try {
-            // ... (Existing sanitization logic could go here, but let's keep it simple or reuse if robust)
-            // For brevity in this replacement, we'll try the robust sanitization we added before
-            // OR just try basic parse first. 
-            // Actually, let's keep the robust logic we built but wrap it nicely.
-            
-            let sanitized = serviceAccountStr;
-            
-            // Handle quotes wrapper
-            if (sanitized.startsWith('"') && sanitized.endsWith('"')) sanitized = sanitized.slice(1, -1);
-            if (sanitized.startsWith("'") && sanitized.endsWith("'")) sanitized = sanitized.slice(1, -1);
-
-            // Robust sanitization (re-implementing the successful logic from before)
-             try {
-                // Fix private_key specifically
-                sanitized = sanitized.replace(
-                    /("private_key"\s*:\s*")([\s\S]*?)(")/,
-                    (match, prefix, content, suffix) => {
-                        return prefix + content.replace(/\r?\n/g, '\\n') + suffix;
-                    }
-                );
-                sanitized = sanitized.replace(/\r?\n/g, ' '); // Clean structure
-
-                const serviceAccount = JSON.parse(sanitized);
-                admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-                isFirebaseInitialized = true;
-                return;
-             } catch (jsonErr) {
-                 // Ignore and fall through to Method 2 or throw
-                 console.log("JSON init failed, trying individual vars...", jsonErr);
-                 (global as any).firebaseInitError = `JSON Parse Error: ${(jsonErr as Error).message}`;
-             }
-        } catch (e: any) {
-             (global as any).firebaseInitError = e.message;
-        }
-    }
-
-    // Method 2: Individual Environment Variables
-    // Check if we have the breakdown vars
-    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-        try {
-            admin.initializeApp({
-                credential: admin.credential.cert({
-                    projectId: process.env.FIREBASE_PROJECT_ID,
-                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Fix escaped newlines
-                }),
-            });
-            isFirebaseInitialized = true;
-            return;
-        } catch (e: any) {
-            console.error("Individual vars init failed", e);
-            (global as any).firebaseInitError = `Individual Vars Error: ${e.message}`;
-        }
-    } else {
-        if (!(global as any).firebaseInitError) {
-             (global as any).firebaseInitError = "No valid Firebase configuration found (checked FIREBASE_SERVICE_ACCOUNT and individual vars).";
-        }
-    }
-}
-
-// Attempt init at load time, but don't throw
-initFirebase();
+import { getAdmin } from './shared/firebaseAdmin';
+import { DEAD_TOKEN_CODES, clearDeadTokens } from './shared/fcm';
 
 export const handler: Handler = async (event, context) => {
   // Fail-closed: require a configured secret that matches the request header.
@@ -87,18 +10,16 @@ export const handler: Handler = async (event, context) => {
     return { statusCode: 401, body: 'Unauthorized' };
   }
 
-  // Ensure Firebase is ready
-  if (!isFirebaseInitialized) {
-      // Try one more time? Or just fail gracefully
-      initFirebase();
-      if (!isFirebaseInitialized) {
-          // Log details server-side only; do not leak config/error specifics to the caller.
-          console.error('Firebase initialization failed.', (global as any).firebaseInitError || 'Unknown error');
-          return {
-              statusCode: 500,
-              body: JSON.stringify({ success: false, error: 'Firebase initialization failed.' })
-          };
-      }
+  let admin;
+  try {
+    admin = getAdmin();
+  } catch (e) {
+    // Log details server-side only; do not leak config/error specifics to the caller.
+    console.error('Firebase initialization failed.', e);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ success: false, error: 'Firebase initialization failed.' }),
+    };
   }
 
   try {
@@ -120,6 +41,7 @@ export const handler: Handler = async (event, context) => {
     const batch = db.batch();
     let batchCount = 0;
     const notificationsSent: string[] = [];
+    const staleTokens: { email: string; token: string }[] = [];
 
     for (const doc of appointmentsSnapshot.docs) {
       const data = doc.data();
@@ -147,7 +69,17 @@ export const handler: Handler = async (event, context) => {
       // Always read the FCM token from the (private) client profile via Admin SDK.
       // Tokens are intentionally NOT denormalized into the publicly-readable appointments.
       const userDoc = await db.collection('clientes').doc(email).get();
-      const fcmToken = userDoc.exists ? userDoc.data()?.fcmToken : undefined;
+      const profile = userDoc.exists ? userDoc.data() ?? {} : {};
+
+      // Respetar el opt-out explícito, igual que notify-waitlist y nudge-reengagement. Hoy
+      // desactivar deja además fcmToken en null, así que el chequeo de abajo ya alcanzaría;
+      // esto es defensa en profundidad para que las tres functions lean la preferencia igual.
+      if (profile.notifEnabled === false) {
+          console.log(`Skipping ${doc.id}: notificaciones desactivadas por el cliente`);
+          continue;
+      }
+
+      const fcmToken = profile.fcmToken;
 
       if (fcmToken) {
         // Prepare Notification Payload
@@ -185,6 +117,12 @@ export const handler: Handler = async (event, context) => {
           batch.update(doc.ref, { notified: true });
           batchCount++;
         } catch (sendError: any) {
+          // Token muerto: fuera del perfil. Si no, este cliente no recibe recordatorios nunca
+          // más y lo reintentamos cada 10 minutos para siempre. Sin token, la app le vuelve a
+          // pedir permiso y re-registra uno nuevo en su próxima visita.
+          if (DEAD_TOKEN_CODES.has(sendError?.code)) {
+            staleTokens.push({ email, token: fcmToken });
+          }
           console.error(`Failed to send reminder for appointment ${doc.id}:`, sendError.code || sendError.message);
         }
       } else {
@@ -196,12 +134,15 @@ export const handler: Handler = async (event, context) => {
         await batch.commit();
     }
 
+    await clearDeadTokens(db, staleTokens);
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ 
-        success: true, 
-        processed: appointmentsSnapshot.size, 
-        notificationsSent
+      body: JSON.stringify({
+        success: true,
+        processed: appointmentsSnapshot.size,
+        notificationsSent,
+        cleanedTokens: staleTokens.length
       }),
     };
 
