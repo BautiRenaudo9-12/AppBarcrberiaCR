@@ -2,7 +2,7 @@ import moment from "moment";
 
 // Datos fijos del local que se vuelcan en el evento.
 const BARBERSHOP_NAME = "Barberia CR";
-const BARBERSHOP_ADDRESS = "Brown 2178, Rosario";
+const BARBERSHOP_ADDRESS = "Brown 2178, Rosario, Santa Fe";
 
 // Duración del evento. La fuente real es `intervalo` de `turnos/{dia}`, pero la card del
 // próximo turno no tiene esa config a mano: 30 min es el default del negocio (ver
