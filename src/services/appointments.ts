@@ -1,15 +1,16 @@
-import { 
-  collection, 
+import {
+  collection,
   addDoc,
   setDoc,
   getDoc,
   runTransaction,
-  getDocs, 
-  query, 
-  where, 
+  getDocs,
+  query,
+  where,
   Timestamp,
   doc,
   deleteDoc,
+  deleteField,
   onSnapshot
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -126,6 +127,79 @@ export const isSlotAvailable = async (dateStr: string, timeStr: string) => {
   return true;
 };
 
+// Cotas del intervalo medio entre visitas. El promedio crudo no sirve solo: con reservas
+// juntas (reservó, canceló y volvió a reservar el mismo día) da horas, y el cliente queda
+// vencido para siempre — pasó de verdad, ver el backfill del 2026-07-16. Del otro lado, un
+// cliente que volvió después de años daría meses y no lo empujaríamos nunca.
+const MIN_NUDGE_INTERVAL_DAYS = 14;
+const MAX_NUDGE_INTERVAL_DAYS = 120;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// `nextNudgeAt = última visita + intervalo medio acotado` es lo que consulta el cron de
+// re-reserva (ver netlify/functions/nudge-reengagement y docs/adr/0003). El intervalo medio
+// necesita al menos 2 visitas; con menos no se agenda nada. La fórmula vive en un solo lado a
+// propósito: la usan tanto la reserva (incremental) como el recálculo al cancelar, y si se
+// duplicara los dos caminos derivarían en silencio.
+const nextNudgeFrom = (
+  firstVisit: Timestamp,
+  lastVisit: Timestamp,
+  visitCount: number
+): Timestamp | null => {
+  if (visitCount < 2 || lastVisit.toMillis() <= firstVisit.toMillis()) return null;
+  const avgMs = (lastVisit.toMillis() - firstVisit.toMillis()) / (visitCount - 1);
+  const intervalMs = Math.min(
+    Math.max(avgMs, MIN_NUDGE_INTERVAL_DAYS * DAY_MS),
+    MAX_NUDGE_INTERVAL_DAYS * DAY_MS
+  );
+  return Timestamp.fromMillis(lastVisit.toMillis() + intervalMs);
+};
+
+// Recalcula los agregados de re-reserva desde `history`, que es la fuente de verdad (suma una
+// entrada al reservar, resta al cancelar). Hace falta recalcular en vez de restar: los
+// agregados son incrementales y una cancelación no se puede invertir sin saber cuál pasa a
+// ser la última visita — eso solo lo dice el historial. Es O(N) sobre el historial de UN
+// cliente y solo al cancelar: el cron sigue sin leer historiales, que era el punto del diseño.
+const recalcNudgeAggregates = async (clientEmail: string) => {
+  const histSnap = await getDocs(collection(db, "clientes", clientEmail, "history"));
+  const times = histSnap.docs
+    .map((d) => d.data().time as Timestamp | undefined)
+    .filter((t): t is Timestamp => typeof t?.toMillis === "function")
+    .sort((a, b) => a.toMillis() - b.toMillis());
+
+  const clientRef = doc(db, "clientes", clientEmail);
+
+  if (!times.length) {
+    await setDoc(
+      clientRef,
+      {
+        visitCount: 0,
+        firstVisit: deleteField(),
+        lastVisit: deleteField(),
+        nextNudgeAt: deleteField(),
+      },
+      { merge: true }
+    );
+    return;
+  }
+
+  const firstVisit = times[0];
+  const lastVisit = times[times.length - 1];
+  const visitCount = times.length;
+
+  await setDoc(
+    clientRef,
+    {
+      firstVisit,
+      lastVisit,
+      visitCount,
+      // Si quedó con una sola visita no hay intervalo que estimar: borramos el nextNudgeAt
+      // viejo en vez de dejarlo apuntando a un turno que ya no existe.
+      nextNudgeAt: nextNudgeFrom(firstVisit, lastVisit, visitCount) ?? deleteField(),
+    },
+    { merge: true }
+  );
+};
+
 // Create a new appointment
 export const createAppointment = async (
   dateStr: string, // YYYY-MM-DD
@@ -224,12 +298,12 @@ export const createAppointment = async (
         const firstVisit = (cData.firstVisit as Timestamp) ?? timestamp;
         const lastVisit = timestamp;
 
-        const patch: Record<string, unknown> = { firstVisit, lastVisit, visitCount };
-        // El intervalo medio necesita al menos 2 visitas. nextNudgeAt solo se agenda desde ahí.
-        if (visitCount >= 2 && lastVisit.toMillis() > firstVisit.toMillis()) {
-          const avgMs = (lastVisit.toMillis() - firstVisit.toMillis()) / (visitCount - 1);
-          patch.nextNudgeAt = Timestamp.fromMillis(lastVisit.toMillis() + avgMs);
-        }
+        // `nudgeStreak` = cuántos "ya te toca" seguidos le mandamos sin que vuelva. Reservar
+        // es exactamente la señal de que volvió, así que lo reinicia y le devuelve el crédito
+        // completo de insistencia (el cron corta al llegar al tope, ver nudge-reengagement).
+        const patch: Record<string, unknown> = { firstVisit, lastVisit, visitCount, nudgeStreak: 0 };
+        const nextNudgeAt = nextNudgeFrom(firstVisit, lastVisit, visitCount);
+        if (nextNudgeAt) patch.nextNudgeAt = nextNudgeAt;
         transaction.set(clientRef, patch, { merge: true });
       }
     });
@@ -245,9 +319,10 @@ export const createAppointment = async (
   };
   
   // Cancel/Delete appointment. Hard delete para liberar el slot. Además resta la entrada
-  // del historial del cliente (el id de la entrada coincide con el del turno). Leemos el
-  // turno primero para saber a qué cliente pertenece, así sirve tanto para la cancelación
-  // del propio cliente como para la del admin sobre la reserva de un cliente.
+  // del historial del cliente (el id de la entrada coincide con el del turno) y recalcula los
+  // agregados de re-reserva. Leemos el turno primero para saber a qué cliente pertenece, así
+  // sirve tanto para la cancelación del propio cliente como para la del admin sobre la
+  // reserva de un cliente (firestore.rules deja al admin escribir el doc del cliente).
   export const cancelAppointment = async (appointmentId: string) => {
       const appointmentRef = doc(db, "appointments", appointmentId);
       const snap = await getDoc(appointmentRef);
@@ -257,7 +332,15 @@ export const createAppointment = async (
 
       if (clientEmail) {
           try {
-              await deleteDoc(doc(db, "clientes", clientEmail, "history", appointmentId));
+              // Solo las reservas de clientes reales dejan entrada en el historial. Si no hay,
+              // era un walk-in que cargó el admin con su propio email: no hay agregados suyos
+              // que tocar y no queremos escribirle basura al doc del admin.
+              const historyRef = doc(db, "clientes", clientEmail, "history", appointmentId);
+              const histSnap = await getDoc(historyRef);
+              if (!histSnap.exists()) return;
+
+              await deleteDoc(historyRef);
+              await recalcNudgeAggregates(clientEmail);
           } catch (e) {
               console.error("No se pudo restar la entrada del historial al cancelar:", e);
           }
