@@ -7,6 +7,8 @@
     "dev": "vite --host",
     "build": "vite build",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "generate:pwa-assets": "node scripts/generate-pwa-assets.mjs",
     "screenshots": "vite build && node scripts/capture-screenshots.mjs",
     "preview": "vite preview"
@@ -71,6 +73,7 @@
     "typescript": "^5.9.3",
     "vite": "^4.4.0",
     "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^2.1.9",
     "zod": "^4.3.5"
   }
 }

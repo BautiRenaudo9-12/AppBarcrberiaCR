@@ -2,6 +2,7 @@ import { Handler } from "@netlify/functions";
 import { getAdmin } from "./shared/firebaseAdmin";
 import { emailsWithActiveAppointment } from "./shared/activeAppointments";
 import { DEAD_TOKEN_CODES, clearDeadTokens } from "./shared/fcm";
+import { sweepExpiredDocs } from "./shared/cleanup";
 
 // Recordatorio de re-reserva ("ya te toca"). Cron diario: busca clientes que, según su
 // intervalo medio de visitas, ya deberían haber vuelto, y les manda UN push suave.
@@ -196,6 +197,16 @@ export const handler: Handler = async (event) => {
     // limpieza lee el perfil ya reprogramado.
     await clearDeadTokens(db, staleTokens);
 
+    // Barrido de lista de espera y sobreturnos vencidos. Va colgado de este cron por ser el
+    // único diario, y es best-effort: si falla, los nudges (el trabajo real de esta function)
+    // ya están hechos y no tiene sentido devolver un error.
+    let sweptDocs: Record<string, number> = {};
+    try {
+      sweptDocs = await sweepExpiredDocs(db);
+    } catch (e) {
+      console.error("Falló el barrido de datos vencidos:", e);
+    }
+
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -204,6 +215,7 @@ export const handler: Handler = async (event) => {
         rescheduled: skipped.length,
         exhausted: exhausted.length,
         cleanedTokens: staleTokens.length,
+        swept: sweptDocs,
       }),
     };
   } catch (error: any) {

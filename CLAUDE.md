@@ -8,7 +8,9 @@ React 18 + TypeScript · Vite 4 · Tailwind + Shadcn UI (Radix) · React Query (
 ## Comandos
 - `npm run dev` — servidor de desarrollo (Vite, `--host`).
 - `npm run build` — build de producción a `dist/`.
-- `npm run lint` — **roto hoy, no lo uses para verificar**: el script está limitado a `--ext js,jsx` pero `src/` es todo TypeScript (146 `.ts`/`.tsx`, 0 `.js`/`.jsx`), así que ESLint corta con `No files matching the pattern "src"` y exit 2 — nunca lintea nada. Arreglarlo (`--ext ts,tsx`) destapa los errores que hoy quedan ocultos. **Verificar con `npm run build`.**
+- `npm test` — vitest sobre la lógica pura (normalización de teléfonos para WhatsApp, grilla de horarios, token HMAC de confirmación). `npm run test:watch` para desarrollo. **Verificar con `npm run build` + `npm test`.**
+- **Reglas de Firestore**: se prueban con el emulador, no con vitest. `npx tsc --noEmit` **no** cubre `netlify/functions/` (el tsconfig solo incluye `src`); para chequearlas hay que pasarle esos archivos a mano.
+- `npm run lint` — **roto hoy, no lo uses para verificar**: el script está limitado a `--ext js,jsx` pero `src/` es todo TypeScript (146 `.ts`/`.tsx`, 0 `.js`/`.jsx`), así que ESLint corta con `No files matching the pattern "src"` y exit 2 — nunca lintea nada. Arreglarlo (`--ext ts,tsx`) destapa los errores que hoy quedan ocultos. `npx tsc --noEmit` tampoco sirve de portón: arrastra ~42 errores preexistentes (componentes de shadcn que importan paquetes de Radix no instalados, imports sin usar).
 - **No hay script de deploy**: producción se publica sola al pushear a `main` (ver "Despliegue"). Los scripts `deploy`/`predeploy`/`postdeploy` y la carpeta `firebase-public/` se eliminaron el 2026-07-16 por ser legacy de Firebase Hosting.
 - `firebase deploy --only firestore` — publica reglas e índices de Firestore (lo único que queda de Firebase CLI).
 - Dev con functions de Netlify: ver `netlify.toml` (puerto 8888).
@@ -37,9 +39,13 @@ Los dos cron se disparan desde un scheduler externo con header `x-api-key: <CRON
 
 **Firebase Hosting ya no se usa.** La carpeta `firebase-public/`, la caché `.firebase/` y los scripts `deploy`/`predeploy`/`postdeploy` se eliminaron el 2026-07-16. De Firebase siguen vivos Auth y Firestore (reglas e índices, vía `firebase deploy --only firestore`).
 
-> ⚠️ **Los headers de seguridad se perdieron en la migración a Netlify.** CSP, HSTS, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` y `X-Content-Type-Options` siguen definidos en el bloque `hosting` de `firebase.json` — que Netlify no lee. No hay `[[headers]]` en `netlify.toml` ni archivo `_headers`, así que hoy la app se sirve **sin ninguno de esos headers**.
+> ⚠️ **Headers de seguridad: portados a `netlify.toml`, con la CSP todavía en Report-Only.** Se habían perdido en la migración (seguían solo en el bloque `hosting` de `firebase.json`, que Netlify no lee). Hoy `[[headers]]` en `netlify.toml` sirve `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security` y `Permissions-Policy` ya aplicando.
 >
-> Por eso el bloque `hosting` de `firebase.json` **todavía no se borró**, aunque ya no sirva para desplegar: es el único registro de qué headers hay que restaurar. Una vez portados a `netlify.toml`, ese bloque se puede eliminar (y ahí `firebase deploy` pasa a tocar solo Firestore).
+> Dos cosas pendientes:
+> - **La CSP va como `Content-Security-Policy-Report-Only`**: reporta violaciones en la consola pero no bloquea nada. Para activarla hay que navegar producción (incluido el login con Google, que es lo más frágil), confirmar que no aparecen violaciones y recién ahí renombrar el header a `Content-Security-Policy`.
+> - **`X-Frame-Options` es `SAMEORIGIN`, no `DENY`** como en `firebase.json`: el login por redirect usa un iframe en `/__/auth/`, que en Netlify es un proxy de nuestro propio dominio (en Firebase Hosting esas rutas eran reservadas y no pasaban por esta config). Con `DENY` el login de mobile/PWA se rompe.
+>
+> El bloque `hosting` de `firebase.json` se puede borrar una vez que la CSP quede aplicando (ahí `firebase deploy` pasa a tocar solo Firestore).
 
 ## UI
 Las reglas de diseño (paleta dark "Apple-style", glassmorphism, tipografía, componentes) viven en `DESIGN_SYSTEM.md`. Seguir ese documento para cualquier cambio visual.

@@ -116,5 +116,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  test: {
+    // Además de los defaults hay que excluir `.claude/`: ahí viven los worktrees de las
+    // sesiones de Claude Code, con una copia entera del repo (y de sus tests) adentro.
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
+  },
 })
 

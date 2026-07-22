@@ -147,7 +147,11 @@ export const subscribeToBlockedSlots = (callback: (slots: BlockedSlot[]) => void
   );
 
   // 2. Single Blocks (Only future or today)
-  // Get timestamp for today at 00:00:00 to include today's blocks
+  // Get timestamp for today at 00:00:00 to include today's blocks.
+  // CONSECUENCIA CONOCIDA: mirando una fecha pasada, el admin ve como libres los horarios que
+  // ese día estaban bloqueados puntualmente (las reglas recurrentes sí se evalúan bien). Es el
+  // precio de no traer todo el histórico de bloqueos en cada carga, y no afecta a reservar:
+  // el cliente no puede elegir fechas pasadas y la disponibilidad real se revalida al reservar.
   const todayTimestamp = moment().startOf('day').valueOf();
   const qSingle = query(
     collection(db, "blocked_slots"),

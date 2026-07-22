@@ -1,6 +1,10 @@
 importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js');
 
+// OJO: esta config está duplicada de VITE_FIREBASE_CONFIG (ver src/lib/firebase.ts). No es
+// secreta —la config web de Firebase es pública—, pero el service worker se sirve tal cual
+// desde public/ y no pasa por Vite, así que no puede leer import.meta.env. Si algún día
+// cambian estos valores hay que tocar los DOS lados o el push deja de llegar.
 const firebaseConfig = {
   apiKey: "AIzaSyCEvPU8AVRTP436__VucfKIh2sKeff8ewY",
   authDomain: "react-appbarberiacr.firebaseapp.com",
