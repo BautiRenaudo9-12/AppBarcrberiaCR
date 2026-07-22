@@ -22,6 +22,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import ReloadPrompt from "@/components/ReloadPrompt";
 import NetworkStatus from "@/components/NetworkStatus";
 import CompleteProfileGate from "@/components/profile/CompleteProfileGate";
+import NotificationActionBridge from "@/components/NotificationActionBridge";
 import { useEffect } from "react";
 import { onMessageListener, showNotification } from "@/services/notifications";
 
@@ -187,6 +188,7 @@ const App = () => {
             <NetworkStatus />
             <CompleteProfileGate />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <NotificationActionBridge />
               <AppRoutes />
             </BrowserRouter>
           </UserProvider>

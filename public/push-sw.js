@@ -104,17 +104,12 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
 
-  const payloadData = event.notification.data;
-  let urlToOpen = payloadData.url || '/';
+  const payloadData = event.notification.data || {};
 
-  // Manejo de acciones
-  if (event.action === 'cancel') {
-    // Redirigir a una URL que maneje la cancelación (Home.tsx lo hace)
-    urlToOpen = `/?action=cancel&id=${payloadData.appointmentId}`;
-  } else if (event.action === 'confirm') {
-    // Confirmar asistencia SIN abrir la app: fetch en segundo plano a la function, que
-    // valida el token HMAC del payload y marca el turno como confirmado. Solo cerramos
-    // la notificación (ya se hizo arriba con close()).
+  // Confirmar asistencia SIN abrir la app: fetch en segundo plano a la function, que
+  // valida el token HMAC del payload y marca el turno como confirmado. Solo cerramos
+  // la notificación (ya se hizo arriba con close()).
+  if (event.action === 'confirm') {
     if (payloadData.appointmentId && payloadData.confirmToken) {
       event.waitUntil(
         fetch('/api/confirm-appointment', {
@@ -130,24 +125,45 @@ self.addEventListener('notificationclick', function(event) {
     return;
   }
 
-  // Solo abrir ventana si NO es la acción de confirmar
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Intentar enfocar una ventana existente
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if (client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
-          return client.focus().then(focusedClient => {
-              if (focusedClient.navigate) {
-                  return focusedClient.navigate(urlToOpen);
-              }
-          });
-        }
+  const isCancel = event.action === 'cancel';
+  // Cancelar abre la app en una URL que Home.tsx sabe interpretar (?action=cancel&id=...).
+  // Para el resto (tap en el cuerpo) usamos la url del payload.
+  const urlToOpen = isCancel
+    ? `/?action=cancel&id=${encodeURIComponent(payloadData.appointmentId || '')}`
+    : (payloadData.url || '/');
+
+  event.waitUntil((async () => {
+    const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const client = windowClients.find((c) => c.url.indexOf(self.location.origin) === 0 && 'focus' in c);
+
+    if (client) {
+      await client.focus();
+
+      if (isCancel) {
+        // App abierta: disparamos la cancelación por postMessage en vez de client.navigate().
+        // navigate() rechaza cuando la ventana no está controlada por el SW (p. ej. justo
+        // después de un update) y, al ir dentro de waitUntil sin catch, el botón "no hacía
+        // nada". postMessage funciona con clientes controlados y no controlados y no recarga
+        // la página; el puente NotificationActionBridge lo enruta al diálogo de cancelación.
+        client.postMessage({
+          type: 'notification-action',
+          action: 'cancel',
+          appointmentId: payloadData.appointmentId
+        });
+        return;
       }
-      // Si no hay ventana abierta, abrir una nueva
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
+
+      if (client.navigate) {
+        // Tap en el cuerpo: best-effort, si navigate() falla la ventana ya quedó enfocada.
+        try { await client.navigate(urlToOpen); } catch (err) { /* ya está enfocada */ }
       }
-    })
-  );
+      return;
+    }
+
+    // Sin ventana abierta: la abrimos en la URL destino. En frío, Home.tsx lee el query param
+    // (?action=cancel&id=...) al montar y abre el diálogo.
+    if (clients.openWindow) {
+      await clients.openWindow(urlToOpen);
+    }
+  })());
 });
