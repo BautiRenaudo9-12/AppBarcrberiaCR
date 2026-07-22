@@ -87,6 +87,7 @@ export default function EditProfileDialog({
               onChange={(e) => setName(e.target.value)}
               placeholder="Juan Pérez"
               autoComplete="name"
+              maxLength={80}
             />
           </div>
 

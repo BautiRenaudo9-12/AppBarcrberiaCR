@@ -78,12 +78,59 @@ service cloud.firestore {
 
     // Appointments: Core logic for new architecture
     match /appointments/{appointmentId} {
-      // Users need to read appointments to know which slots are taken (availability)
+
+      // La ID del doc es determinista ("2026-01-16_10-00") y ES el mecanismo que evita el
+      // doble-booking: dos reservas del mismo slot colisionan en la misma ID. Si el cliente
+      // pudiera elegir una ID que no se corresponde con la fecha/hora que guarda, esquivaría
+      // esa colisión y podría reservar un turno ya tomado.
+      function idMatchesSlot() {
+        return appointmentId ==
+          request.resource.data.date + "_" + request.resource.data.time.replace(":", "-");
+      }
+
+      // Validación de forma del turno nuevo. `hasOnly` corta la inyección de campos que el
+      // cliente no debería escribir (p. ej. `notified` o `clientConfirmed`, que son del
+      // servidor). Falla cerrado a propósito: si algún día se agrega un campo a la reserva
+      // hay que sumarlo acá, y mientras tanto ninguna reserva se crea a medias.
+      function validNewAppointment() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(
+                 ['date', 'time', 'timestamp', 'clientEmail', 'clientName', 'status', 'createdAt']
+               )
+               && d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+               && d.time is string && d.time.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$')
+               && d.timestamp is timestamp
+               && d.createdAt is timestamp
+               && d.status == 'confirmed'
+               && d.clientName is string
+               // El tope es holgado a propósito: acá el objetivo es frenar basura, no validar
+               // nombres. Si queda justo, un nombre largo hace fallar la reserva —la acción
+               // central de la app— con un error genérico e indescifrable. Los formularios
+               // limitan a 80, así que 120 deja margen para lo que ya esté guardado.
+               && d.clientName.size() > 0 && d.clientName.size() <= 120
+               && idMatchesSlot();
+      }
+
+      // Users need to read appointments to know which slots are taken (availability).
+      // LIMITACIÓN ACEPTADA: esto expone `clientEmail`/`clientName` de todos los turnos a
+      // cualquier usuario logueado. Las reglas no filtran por campo; ocultarlos exigiría una
+      // colección paralela con la disponibilidad sin datos personales.
       allow read: if isSignedIn();
-      
-      // Users can create if they sign it with their own email
-      allow create: if isSignedIn() && request.resource.data.clientEmail == request.auth.token.email;
-      
+
+      // Users can create if they sign it with their own email.
+      // LIMITACIÓN ACEPTADA: el tope de "un turno activo por cliente" NO se impone acá. Las
+      // reglas pueden leer un doc puntual (`get`) pero no hacer queries, y cualquier puntero
+      // que guardáramos en `clientes/{email}` lo puede borrar el propio cliente. Cerrarlo de
+      // verdad requiere crear las reservas desde una function con Admin SDK.
+      // `validNewAppointment()` va PRIMERO y `isAdmin()` queda de fallback: el orden importa
+      // en plata. isAdmin() termina en un exists(/admins/{email}), que se factura como lectura;
+      // evaluándolo primero, CADA reserva de CADA cliente pagaba esa lectura extra. Los
+      // walk-ins del admin escriben exactamente la misma forma, así que también pasan por
+      // validación y el exists() casi nunca llega a ejecutarse.
+      allow create: if isSignedIn()
+                    && request.resource.data.clientEmail == request.auth.token.email
+                    && (validNewAppointment() || isAdmin());
+
       // Users can delete (cancel) their own
       allow delete: if isAdmin() || (isSignedIn() && resource.data.clientEmail == request.auth.token.email);
       

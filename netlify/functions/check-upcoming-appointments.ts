@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
-import crypto from 'crypto';
 import { getAdmin } from './shared/firebaseAdmin';
 import { DEAD_TOKEN_CODES, clearDeadTokens } from './shared/fcm';
+import { confirmTokenFor } from './shared/confirmToken';
 
 export const handler: Handler = async (event, context) => {
   // Fail-closed: require a configured secret that matches the request header.
@@ -94,10 +94,7 @@ export const handler: Handler = async (event, context) => {
         // Token HMAC para que el cliente pueda confirmar la asistencia desde el push sin
         // abrir la app (lo valida la function confirm-appointment). CRON_SECRET ya está
         // garantizado arriba (fail-closed), así que siempre podemos generarlo.
-        const confirmToken = crypto
-          .createHmac('sha256', process.env.CRON_SECRET as string)
-          .update(doc.id)
-          .digest('hex');
+        const confirmToken = confirmTokenFor(doc.id, email, process.env.CRON_SECRET as string);
 
         const messagePayload = {
             data: {
