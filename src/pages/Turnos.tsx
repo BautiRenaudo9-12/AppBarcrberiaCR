@@ -29,6 +29,7 @@ export default function Turnos() {
     slots,
     loading,
     dayActive,
+    hasFutureSlots,
     closed,
     isAdmin,
     reserveAppointment,
@@ -118,6 +119,25 @@ export default function Turnos() {
       if (success) setSlotToCancel(null);
   };
 
+  // La lista de espera solo tiene sentido si el día está lleno, no si ya terminó: sin
+  // horarios por delante, un turno que se libere hoy quedaría en el pasado.
+  const showWaitlist =
+    !isAdmin && !loading && dayActive && hasFutureSlots && slots.length === 0;
+
+  const turnosList = (
+    <TurnosList
+      slots={slots}
+      isAdmin={isAdmin}
+      loading={loading}
+      onReserve={setSelectedTurno}
+      onBlock={setSlotToBlock}
+      onUnblock={setSlotToUnblock}
+      onActivate={setSlotToActivate}
+      onRecurringAction={setSlotToRecurringAction}
+      onCancel={setSlotToCancel}
+    />
+  );
+
   return (
     <div className="h-dvh bg-background text-foreground flex flex-col">
       <div className="bg-background/90 backdrop-blur-md border-b border-white/10 px-4 py-4 sm:px-6">
@@ -141,8 +161,8 @@ export default function Turnos() {
             maxDate={!isAdmin ? moment().add(maxDays, 'days').format("YYYY-MM-DD") : undefined}
         />
 
-        {/* Día cerrado por rango (vacaciones): no hay turnos ni lista de espera. */}
-        {!loading && closed ? (
+        {/* Día cerrado por rango (vacaciones): no se generan horarios nuevos. */}
+        {!loading && closed && (
             <div className="bg-card border border-white/10 rounded-2xl px-4 py-8 text-center space-y-1">
                 <p className="text-2xl">🏖️</p>
                 <p className="font-semibold">Cerrado por este día</p>
@@ -150,22 +170,18 @@ export default function Turnos() {
                     No hay atención en esta fecha. Probá con otro día.
                 </p>
             </div>
-        ) : !isAdmin && !loading && dayActive && slots.length === 0 ? (
-            /* Cliente en un día laborable sin turnos libres: ofrecemos la lista de espera
-               en lugar del mensaje de "no hay turnos". */
+        )}
+
+        {closed ? (
+            /* Aun cerrado puede haber reservas anteriores al cierre: se listan debajo del
+               cartel (en la práctica solo las ve el admin; el cliente no tiene slots acá). */
+            (loading || slots.length > 0) && turnosList
+        ) : showWaitlist ? (
+            /* Cliente en un día laborable lleno: ofrecemos la lista de espera en lugar del
+               mensaje de "no hay turnos". */
             <WaitlistCard date={selectedDate} />
         ) : (
-            <TurnosList
-                slots={slots}
-                isAdmin={isAdmin}
-                loading={loading}
-                onReserve={setSelectedTurno}
-                onBlock={setSlotToBlock}
-                onUnblock={setSlotToUnblock}
-                onActivate={setSlotToActivate}
-                onRecurringAction={setSlotToRecurringAction}
-                onCancel={setSlotToCancel}
-            />
+            turnosList
         )}
 
         {/* --- DIALOGS --- */}

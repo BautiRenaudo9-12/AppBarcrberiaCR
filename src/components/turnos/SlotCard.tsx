@@ -95,6 +95,15 @@ function SlotCard({
               <span className="text-xs font-semibold text-accent">Sobreturno</span>
             )}
 
+            {slot.outOfSchedule && isAdmin && (
+              <span
+                className="text-[10px] bg-white/10 text-muted-foreground px-1.5 rounded shrink-0"
+                title="Este turno quedó fuera del horario configurado para el día"
+              >
+                Fuera de horario
+              </span>
+            )}
+
             {slot.status === "reserved" && (
               <p className="text-sm font-medium text-accent truncate">
                 {isAdmin ? slot.appointment?.clientName || "Cliente" : "Reservado"}

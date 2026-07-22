@@ -5,7 +5,7 @@ import moment from "moment";
 import { Slot } from "@/types/turnos";
 import { useTurnos } from "@/hooks/useTurnos";
 import { getClientsPhones } from "@/services/users";
-import { toWhatsappNumber } from "@/lib/countries";
+import { toWhatsappNumber } from "@/lib/phone";
 import DateSelector from "@/components/turnos/DateSelector";
 import SlotCard from "@/components/turnos/SlotCard";
 import TurnosSkeleton from "@/components/turnos/TurnosSkeleton";

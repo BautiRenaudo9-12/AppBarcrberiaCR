@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Slot } from "@/types/turnos";
 import { useUser } from "@/context/UserContext";
 import { getDayConfig, arrayDias } from "@/services/reservations";
-import { generateVirtualSlots } from "@/lib/slots";
+import { generateVirtualSlots, findOutOfScheduleAppointments } from "@/lib/slots";
 import { getAppointmentsByDate, createAppointment, cancelAppointment } from "@/services/appointments";
 import { clearMyWaitlist, notifyWaitlist } from "@/services/waitlist";
 import {
@@ -29,10 +29,13 @@ export function useTurnos() {
     // la preseleccionamos; si no, hoy.
     const [searchParams] = useSearchParams();
     const paramDate = searchParams.get("date");
+    const today = moment().format("YYYY-MM-DD");
+    // Además del formato exigimos que no sea pasada: el link del aviso queda en el historial
+    // de notificaciones y tocarlo días después abría el día viejo, donde no se puede reservar.
     const initialDate =
-        paramDate && /^\d{4}-\d{2}-\d{2}$/.test(paramDate)
+        paramDate && /^\d{4}-\d{2}-\d{2}$/.test(paramDate) && paramDate >= today
             ? paramDate
-            : moment().format("YYYY-MM-DD");
+            : today;
 
     // Data State
     const [selectedDate, setSelectedDate] = useState(initialDate);
@@ -43,6 +46,9 @@ export function useTurnos() {
     const [dayActive, setDayActive] = useState(false);
     // ¿El día cae dentro de un cierre por rango (vacaciones)?
     const [closed, setClosed] = useState(false);
+    // ¿Queda algún horario de la grilla todavía por delante? Distingue "el día está lleno"
+    // de "el día ya pasó": solo en el primer caso tiene sentido ofrecer la lista de espera.
+    const [hasFutureSlots, setHasFutureSlots] = useState(false);
 
     // Internal subscriptions state
     const [allBlockedRules, setAllBlockedRules] = useState<BlockedSlot[]>([]);
@@ -93,14 +99,15 @@ export function useTurnos() {
 
         setLoading(true);
         try {
-            // Cierre por rango (vacaciones): el día está cerrado, no se genera ningún slot.
-            if (isDateInClosure(selectedDate, allClosures)) {
-                setSlots([]);
-                setDayActive(false);
-                setClosed(true);
-                return;
-            }
-            setClosed(false);
+            // Los turnos ya reservados se traen SIEMPRE y antes de cualquier corte (cierre,
+            // día inactivo): siguen existiendo aunque la config del día haya cambiado por
+            // debajo, y esconderlos deja al admin sin manera de verlos ni cancelarlos,
+            // mientras el cliente los conserva en su home y el cron le manda el recordatorio.
+            const appointments = await getAppointmentsByDate(selectedDate);
+
+            // Cierre por rango (vacaciones): el día no genera ningún horario nuevo.
+            const isClosed = isDateInClosure(selectedDate, allClosures);
+            setClosed(isClosed);
 
             const dateMoment = moment(selectedDate);
             const rawDayName = arrayDias[Number(dateMoment.format("d"))].toLowerCase();
@@ -109,25 +116,28 @@ export function useTurnos() {
                 .normalize("NFD")
                 .replace(/[\u0300-\u036f]/g, "");
 
-            const config = await getDayConfig(dayName);
+            // En un día cerrado no hace falta la config: no hay horarios que generar.
+            const config = isClosed ? null : await getDayConfig(dayName);
 
-            if (!config || !config.activo) {
-                setSlots([]);
-                setDayActive(false);
-                return;
-            }
-
-            const virtualSlots = generateVirtualSlots(
-                config.desde || "09:00",
-                config.hasta || "18:00",
-                config.intervalo || 30
-            );
+            const virtualSlots =
+                config && config.activo
+                    ? generateVirtualSlots(
+                          config.desde || "09:00",
+                          config.hasta || "18:00",
+                          config.intervalo || 30
+                      )
+                    : [];
 
             // Día laborable con al menos un horario configurado.
-            setDayActive(virtualSlots.length > 0);
+            setDayActive(!isClosed && virtualSlots.length > 0);
 
-            const appointments = await getAppointmentsByDate(selectedDate);
             const now = moment();
+
+            setHasFutureSlots(
+                virtualSlots.some(time =>
+                    moment(`${selectedDate} ${time}`, "YYYY-MM-DD HH:mm").isAfter(now)
+                )
+            );
 
             const mappedSlots: Slot[] = virtualSlots.map(time => {
                 const appointment = appointments.find(a => a.time === time);
@@ -150,8 +160,28 @@ export function useTurnos() {
                 return { time, status, appointment, blockedRule, isException: exceptionExists };
             });
 
+            // Turnos cuyo horario ya no cae en la grilla: el admin movió el horario o el
+            // intervalo, desactivó el día o lo tapó un cierre, pero la reserva sigue viva.
+            // Se agregan como slots propios para que ninguna reserva confirmada pueda
+            // desaparecer de /turnos ni de /lista-turnos.
+            const orphanSlots: Slot[] = findOutOfScheduleAppointments(
+                appointments,
+                virtualSlots
+            ).map(a => ({
+                time: a.time,
+                status: a.status === 'blocked' ? 'blocked' : 'reserved',
+                appointment: a,
+                outOfSchedule: true
+            }));
+
+            const allSlots = [...mappedSlots, ...orphanSlots].sort((a, b) =>
+                a.time.localeCompare(b.time)
+            );
+
             if (!isAdmin) {
-                const filtered = mappedSlots.filter(slot => {
+                // El cliente solo ve horarios libres y futuros, así que los huérfanos
+                // (siempre reservados o bloqueados) quedan afuera por definición.
+                const filtered = allSlots.filter(slot => {
                     if (slot.status !== 'free') return false;
                     const slotMoment = moment(`${selectedDate} ${slot.time}`, "YYYY-MM-DD HH:mm");
                     if (slotMoment.isBefore(now)) return false;
@@ -159,7 +189,7 @@ export function useTurnos() {
                 });
                 setSlots(filtered);
             } else {
-                setSlots(mappedSlots);
+                setSlots(allSlots);
             }
 
         } catch (error) {
@@ -319,6 +349,7 @@ export function useTurnos() {
         slots,
         loading,
         dayActive,
+        hasFutureSlots,
         closed,
         isAdmin,
         user, // Exposed for convenience
