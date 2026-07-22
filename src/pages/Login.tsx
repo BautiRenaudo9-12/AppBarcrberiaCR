@@ -51,17 +51,22 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // El ID del doc en `clientes` ES el email, y firestore.rules lo compara contra
+    // `request.auth.token.email`, que Firebase Auth normaliza a minúsculas. Si usáramos el
+    // string tal cual se tipeó, un "Juan@Gmail.com" crearía un doc que las reglas rechazan:
+    // la cuenta queda creada pero el perfil (nombre y teléfono) se pierde.
+    const emailId = email.trim().toLowerCase();
     try {
       if (isLogin) {
-        await signIn(email, password);
-        
+        await signIn(emailId, password);
+
         // Update keywords on login (backfill strategy)
         try {
-            const userRef = doc(db, "clientes", email);
+            const userRef = doc(db, "clientes", emailId);
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
                 const userData = userSnap.data();
-                const keywords = createSearchKeywords(userData.name || "", userData.email || email, userData.nro || "");
+                const keywords = createSearchKeywords(userData.name || "", userData.email || emailId, userData.nro || "");
                 await setDoc(userRef, { keywords }, { merge: true });
             }
         } catch (err) {
@@ -71,17 +76,20 @@ export default function Login() {
 
         toast.success("Bienvenido de nuevo");
       } else {
-        const user = await signUp(email, password);
+        const user = await signUp(emailId, password);
         if (user) {
           await _setUserProperties({ nameValue: name, nroValue: phone });
-          
-          const keywords = createSearchKeywords(name, email, phone);
-          
-          await setDoc(doc(db, "clientes", email), {
-            email,
+
+          // El email del credential es la fuente de verdad (es el que va en el token).
+          const profileEmail = user.email || emailId;
+          const keywords = createSearchKeywords(name, profileEmail, phone);
+
+          await setDoc(doc(db, "clientes", profileEmail), {
+            email: profileEmail,
             name,
             nro: phone,
-            keywords
+            keywords,
+            notifEnabled: true
           });
           toast.success("Cuenta creada exitosamente");
         }
@@ -132,6 +140,7 @@ export default function Login() {
                   <input
                     type="text"
                     required
+                    maxLength={80}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"

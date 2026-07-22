@@ -30,6 +30,15 @@ export interface TokenResult {
   token?: string;
 }
 
+// Estado del permiso de notificaciones, con "unsupported" para los entornos donde la API
+// no existe (iOS Safari sin la PWA instalada, WebViews viejas). Leer `Notification.permission`
+// directo en esos casos tira ReferenceError y tumba el componente entero, así que todo el
+// código de UI debe pasar por acá en vez de tocar el global.
+export type NotificationPermissionState = NotificationPermission | "unsupported";
+
+export const getNotificationPermission = (): NotificationPermissionState =>
+  typeof Notification === "undefined" ? "unsupported" : Notification.permission;
+
 // Evita que `navigator.serviceWorker.ready` cuelgue para siempre cuando no hay SW
 // registrado (típico en `npm run dev`, donde la PWA no se registra).
 const SW_READY_TIMEOUT_MS = 10000;

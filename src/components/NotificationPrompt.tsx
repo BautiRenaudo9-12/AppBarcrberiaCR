@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Bell, X, AlertCircle } from "lucide-react";
 import { gsap } from "gsap";
 import { prefersReducedMotion } from "@/lib/motion";
-import { requestForToken, showNotification } from "@/services/notifications";
+import { getNotificationPermission, requestForToken, showNotification } from "@/services/notifications";
 
 interface NotificationPromptProps {
     onDismiss: () => void;
@@ -16,7 +16,7 @@ export default function NotificationPrompt({ onDismiss, onSuccess }: Notificatio
     const promptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (Notification.permission === "denied") {
+        if (getNotificationPermission() === "denied") {
             setIsBlocked(true);
         }
         setTimeout(() => setIsVisible(true), 500);

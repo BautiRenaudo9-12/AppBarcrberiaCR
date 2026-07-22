@@ -5,7 +5,7 @@ import { useUI } from "@/context/UIContext";
 import { cancelAppointment } from "@/services/appointments";
 import { notifyWaitlist } from "@/services/waitlist";
 import { getActiveAnnouncement, Announcement } from "@/services/announcements";
-import { requestForToken } from "@/services/notifications";
+import { getNotificationPermission, requestForToken } from "@/services/notifications";
 import { updateUserProfile } from "@/services/users";
 import { toast } from "sonner";
 import NotificationPrompt from "@/components/NotificationPrompt";
@@ -45,22 +45,30 @@ export default function Home() {
     const shouldOfferReminder = () => {
         if (isAdmin || !user?.email) return false;
 
-        const blocked =
-            typeof Notification !== "undefined" && Notification.permission === "denied";
+        const permission = getNotificationPermission();
+        const blocked = permission === "denied";
         const active =
             !!userProfile?.fcmToken &&
             userProfile?.notifEnabled !== false &&
-            !blocked &&
-            typeof Notification !== "undefined" &&
-            Notification.permission === "granted";
+            permission === "granted";
         if (active || blocked) return false;
 
         const lastAsked = Number(localStorage.getItem(REMINDER_PROMPT_KEY) || 0);
         return Date.now() - lastAsked > REMINDER_THROTTLE_MS;
     };
 
-    // Sync FCM Token
-    useFcmToken(user, userProfile?.fcmToken, userProfile?.notifEnabled !== false, isAdmin);
+    // Sync FCM Token. Pasamos `undefined` mientras no sepamos la preferencia real (ver
+    // useFcmToken). Exigimos la clave presente y no solo el perfil: el USER_INFO cacheado
+    // por una versión anterior no la trae, y asumir "activadas" ahí le re-escribiría el
+    // token a quien se dio de baja, justo hasta que llegue el perfil fresco.
+    // Chequeamos el TIPO del valor en vez de usar `in`: `userProfile` sale de localStorage y
+    // puede ser cualquier JSON válido, no necesariamente un objeto (safeParse solo atrapa el
+    // parseo roto, no un `5` o un `"texto"`). `"x" in 5` tira TypeError y se lleva puesto el
+    // Home entero. Con `typeof` un perfil corrupto cae en "no sé" y esperamos al perfil fresco.
+    const notifPreference =
+        typeof userProfile?.notifEnabled === "boolean" ? userProfile.notifEnabled : undefined;
+
+    useFcmToken(user, userProfile?.fcmToken, notifPreference, isAdmin);
 
     // Initial Data Load (Announcements)
     useEffect(() => {
@@ -79,7 +87,7 @@ export default function Home() {
         }
 
         // Proactive check for new users
-        if (Notification.permission === "default" && !localStorage.getItem("NOTIF_PROMPT_DISMISSED")) {
+        if (getNotificationPermission() === "default" && !localStorage.getItem("NOTIF_PROMPT_DISMISSED")) {
              const timer = setTimeout(() => {
                  setShowNotifPrompt(true);
              }, 3000);

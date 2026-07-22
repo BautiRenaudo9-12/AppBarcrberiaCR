@@ -4,7 +4,7 @@ import { BellRing, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useUser } from "@/context/UserContext";
 import { useWaitlist } from "@/hooks/useWaitlist";
-import { requestForToken } from "@/services/notifications";
+import { getNotificationPermission, requestForToken } from "@/services/notifications";
 import { updateUserProfile } from "@/services/users";
 
 interface WaitlistCardProps {
@@ -30,11 +30,10 @@ export default function WaitlistCard({ date }: WaitlistCardProps) {
     const alreadyOn =
       !!userProfile?.fcmToken &&
       userProfile?.notifEnabled !== false &&
-      typeof Notification !== "undefined" &&
-      Notification.permission === "granted";
+      getNotificationPermission() === "granted";
     if (alreadyOn) return;
 
-    if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+    if (getNotificationPermission() === "denied") {
       toast.warning("Tenés las notificaciones bloqueadas: desbloqueálas para recibir el aviso.");
       return;
     }

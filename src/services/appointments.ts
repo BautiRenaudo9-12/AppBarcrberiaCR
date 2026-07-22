@@ -271,12 +271,12 @@ export const createAppointment = async (
       const clientRef = doc(db, "clientes", clientEmail);
       const clientSnap = force ? null : await transaction.get(clientRef);
 
+      // Si el doc existe, el slot está tomado y punto. No hay caso "existe pero cancelado":
+      // cancelar borra el doc (hard delete, ver cancelAppointment) y nada escribe nunca el
+      // estado `cancelled`. Aunque quedara uno viejo de otra época, sobrescribirlo sería un
+      // update, que firestore.rules solo permite al admin — el cliente fallaría igual.
       if (docSnap.exists()) {
-        const data = docSnap.data() as Appointment;
-        // If it exists but is cancelled, we can overwrite.
-        if (data.status !== 'cancelled') {
-              throw new Error("El turno acaba de ser reservado por otra persona.");
-        }
+        throw new Error("El turno acaba de ser reservado por otra persona.");
       }
       transaction.set(appointmentRef, newAppointment);
 

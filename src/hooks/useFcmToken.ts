@@ -4,7 +4,11 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { requestForToken } from "@/services/notifications";
 
-export function useFcmToken(user: User | null, dbToken?: string, enabled: boolean = true, isAdmin: boolean = false) {
+// `enabled` es tri-estado a propósito: `undefined` significa "todavía no sabemos si el
+// cliente tiene las notificaciones activadas" (el perfil no cargó aún). No alcanza con
+// asumir `true`: el opt-out es de la app, no del navegador, así que el permiso sigue en
+// "granted" y sincronizar en esa ventana le vuelve a escribir el token a quien se dio de baja.
+export function useFcmToken(user: User | null, dbToken?: string, enabled?: boolean, isAdmin: boolean = false) {
     useEffect(() => {
         if (!user || !user.email) {
             console.log("ℹ️ [useFcmToken] No user or email, skipping token sync.");
@@ -21,6 +25,11 @@ export function useFcmToken(user: User | null, dbToken?: string, enabled: boolea
                     })
                     .catch((err) => console.error("❌ [useFcmToken] Error clearing admin token:", err));
             }
+            return;
+        }
+
+        if (enabled === undefined) {
+            console.log("ℹ️ [useFcmToken] Perfil sin cargar, esperando para sincronizar.");
             return;
         }
 

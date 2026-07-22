@@ -8,6 +8,7 @@ import { useHistoryCount, useUserInfo } from "@/hooks/useUserQuery";
 import { useProfileAnimations } from "@/hooks/useProfileAnimations";
 import { useCounter } from "@/hooks/useCounter";
 import { useQueryClient } from "@tanstack/react-query";
+import { getNotificationPermission } from "@/services/notifications";
 import EditProfileDialog from "@/components/profile/EditProfileDialog";
 import NotificationsDialog from "@/components/profile/NotificationsDialog";
 import { gsap } from "gsap";
@@ -129,8 +130,7 @@ export default function Profile() {
     ? displayProfile.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
-  const notifBlocked =
-    typeof Notification !== "undefined" && Notification.permission === "denied";
+  const notifBlocked = getNotificationPermission() === "denied";
   const notifEnabled =
     !!displayProfile?.fcmToken && displayProfile?.notifEnabled !== false && !notifBlocked;
   const notifStatusLabel = notifBlocked

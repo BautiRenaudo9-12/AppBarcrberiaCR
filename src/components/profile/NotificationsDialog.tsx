@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { requestForToken } from "@/services/notifications";
+import { getNotificationPermission, requestForToken } from "@/services/notifications";
 import { updateUserProfile } from "@/services/users";
 import { toast } from "sonner";
 
@@ -34,9 +34,7 @@ export default function NotificationsDialog({
 }: NotificationsDialogProps) {
   const [loading, setLoading] = useState(false);
 
-  const permission =
-    typeof Notification !== "undefined" ? Notification.permission : "default";
-  const blocked = permission === "denied";
+  const blocked = getNotificationPermission() === "denied";
 
   let status: { label: string; tone: "on" | "off" | "blocked" };
   if (blocked) {
@@ -51,8 +49,10 @@ export default function NotificationsDialog({
     setLoading(true);
     try {
       if (isAdmin) {
-        await updateUserProfile(email, { fcmToken: null, notifEnabled: true });
-        onChanged({ fcmToken: null, notifEnabled: true });
+        // No escribimos nada: los admins no tienen doc en `clientes` (UserContext saltea
+        // ensureClientProfile), así que `updateDoc` fallaría con not-found — y un
+        // setDoc(merge) contaría como create, que firestore.rules rechaza porque el patch
+        // no trae el campo `email`. Si quedó un token viejo de antes, useFcmToken lo limpia.
         toast.info("Los administradores no reciben recordatorios de turnos");
         return;
       }

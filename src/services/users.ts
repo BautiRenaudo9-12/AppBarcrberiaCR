@@ -22,13 +22,17 @@ import { createSearchKeywords, searchTokens } from "@/lib/keywords";
 export const getUserInfo = async () => {
   const stored = localStorage.getItem("USER_INFO");
   const userInfo = stored ? JSON.parse(stored) : null;
-  if (userInfo && userInfo.name) {
+  // Exigimos `notifEnabled` presente: las cachés escritas antes de que este campo existiera
+  // no lo traen, y sin él la app da por activas las notificaciones de quien las apagó
+  // (y `useFcmToken` le vuelve a escribir el token, deshaciendo el opt-out).
+  if (userInfo && userInfo.name && "notifEnabled" in userInfo) {
     return {
       name: userInfo.name,
       email: userInfo.email,
       nro: userInfo.nro,
       photoURL: userInfo.photoURL,
       fcmToken: userInfo.fcmToken,
+      notifEnabled: userInfo.notifEnabled,
     };
   }
 
@@ -42,7 +46,11 @@ export const getUserInfo = async () => {
       email: data.email,
       nro: data.nro,
       photoURL: data.photoURL,
-      fcmToken: data.fcmToken
+      fcmToken: data.fcmToken,
+      // Booleano explícito y no el valor crudo: `JSON.stringify` descarta las claves
+      // `undefined`, así que un perfil sin el campo perdería la clave al cachearse y
+      // volvería a caer en el caso de arriba.
+      notifEnabled: data.notifEnabled !== false,
     };
     localStorage.setItem("USER_INFO", JSON.stringify(info));
     return info;
@@ -68,9 +76,19 @@ export const ensureClientProfile = async (user: User) => {
       nro: "",
       photoURL: user.photoURL || "",
       keywords: createSearchKeywords(name, email, ""),
+      // Explícito desde el alta: el opt-out vive en este flag y las Netlify functions
+      // lo leen para decidir si mandan push.
+      notifEnabled: true,
     };
     await setDoc(ref, profile);
-    const info = { name, email, nro: "", photoURL: profile.photoURL, fcmToken: undefined };
+    const info = {
+      name,
+      email,
+      nro: "",
+      photoURL: profile.photoURL,
+      fcmToken: undefined,
+      notifEnabled: true,
+    };
     localStorage.setItem("USER_INFO", JSON.stringify(info));
     return info;
   }
@@ -91,6 +109,7 @@ export const ensureClientProfile = async (user: User) => {
     nro: data.nro,
     photoURL: data.photoURL || user.photoURL || "",
     fcmToken: data.fcmToken,
+    notifEnabled: data.notifEnabled !== false,
   };
   localStorage.setItem("USER_INFO", JSON.stringify(info));
   return info;
