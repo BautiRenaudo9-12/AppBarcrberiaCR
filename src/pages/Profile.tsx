@@ -288,6 +288,16 @@ export default function Profile() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Legal */}
+        <div className="pt-1 pb-6 text-center">
+          <Link
+            to="/privacidad"
+            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+          >
+            Política de privacidad
+          </Link>
+        </div>
       </div>
 
       <EditProfileDialog

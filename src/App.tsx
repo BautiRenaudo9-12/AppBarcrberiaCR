@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import Configuracion from "./pages/Configuracion";
 import Clientes from "./pages/Clientes";
 import Anuncios from "./pages/Anuncios";
+import Privacidad from "./pages/Privacidad";
 import NotFound from "./pages/NotFound";
 import { UIProvider } from "@/context/UIContext";
 import { UserProvider, useUser } from "@/context/UserContext";
@@ -153,6 +154,9 @@ const AppRoutes = () => {
             </AdminRoute>
           }
         />
+        {/* Ruta PÚBLICA sin guarda: la exige App Store Connect como URL de política de
+            privacidad y debe abrirse sin login (incluido el equipo de revisión de Apple). */}
+        <Route path="/privacidad" element={<Privacidad />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </TransitionManager>
